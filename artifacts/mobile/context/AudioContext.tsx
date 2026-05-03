@@ -13,6 +13,7 @@ import { type Story } from "@/data/stories";
 interface AudioContextValue {
   currentStory: Story | null;
   isPlaying: boolean;
+  isBuffering: boolean;
   progress: number;
   elapsedSeconds: number;
   sleepTimerSeconds: number | null;
@@ -27,6 +28,7 @@ const AudioContext = createContext<AudioContextValue | null>(null);
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [currentStory, setCurrentStory] = useState<Story | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [sleepTimerSeconds, setSleepTimerSeconds] = useState<number | null>(null);
 
@@ -108,10 +110,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setSleepTimerSeconds(null);
       setCurrentStory(story);
       setElapsedSeconds(0);
+      setIsBuffering(false);
 
-      const source = STORY_AUDIO[story.id];
+      const remoteUri = story.audioUrl ?? null;
+      const source = remoteUri ? { uri: remoteUri } : STORY_AUDIO[story.id];
 
       if (source) {
+        setIsBuffering(true);
         try {
           const { sound } = await Audio.Sound.createAsync(source, {
             shouldPlay: true,
@@ -121,15 +126,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
           sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
             if (!status.isLoaded) return;
+            setIsBuffering(status.isBuffering ?? false);
             setElapsedSeconds(Math.floor(status.positionMillis / 1000));
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
               setIsPlaying(false);
+              setIsBuffering(false);
             }
           });
 
           setIsPlaying(true);
+          setIsBuffering(false);
         } catch {
+          setIsBuffering(false);
           setIsPlaying(true);
         }
       } else {
@@ -160,6 +169,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     sleepTimerRef.current = null;
     setSleepTimerSeconds(null);
     setIsPlaying(false);
+    setIsBuffering(false);
     setCurrentStory(null);
     setElapsedSeconds(0);
   }, [clearInterval_, unloadSound]);
@@ -180,6 +190,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentStory,
         isPlaying,
+        isBuffering,
         progress,
         elapsedSeconds,
         sleepTimerSeconds,

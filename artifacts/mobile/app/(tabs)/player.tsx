@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Modal,
   Platform,
@@ -51,6 +52,7 @@ export default function PlayerScreen() {
   const {
     currentStory,
     isPlaying,
+    isBuffering,
     progress,
     elapsedSeconds,
     sleepTimerSeconds,
@@ -256,19 +258,27 @@ export default function PlayerScreen() {
             <Ionicons name="play-skip-back" size={30} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleToggle} activeOpacity={0.8}>
+          <TouchableOpacity
+            onPress={handleToggle}
+            activeOpacity={0.8}
+            disabled={isBuffering}
+          >
             <View
               style={[
                 styles.playBtnInner,
                 { backgroundColor: "rgba(255,255,255,0.95)" },
               ]}
             >
-              <Ionicons
-                name={isPlaying ? "pause" : "play"}
-                size={36}
-                color={cardBg}
-                style={isPlaying ? undefined : { marginLeft: 4 }}
-              />
+              {isBuffering ? (
+                <ActivityIndicator size="large" color={cardBg} />
+              ) : (
+                <Ionicons
+                  name={isPlaying ? "pause" : "play"}
+                  size={36}
+                  color={cardBg}
+                  style={isPlaying ? undefined : { marginLeft: 4 }}
+                />
+              )}
             </View>
           </TouchableOpacity>
 
