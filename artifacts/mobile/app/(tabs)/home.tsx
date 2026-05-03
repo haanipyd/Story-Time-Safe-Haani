@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ContinueListeningBar from "@/components/ContinueListeningBar";
 import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
@@ -85,6 +86,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
+      <ContinueListeningBar />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -12,9 +12,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import PaywallModal from "@/components/PaywallModal";
 import { useAudio } from "@/context/AudioContext";
+import { useProfile } from "@/context/ProfileContext";
 import { getCategoryById } from "@/data/preferences";
-import { getStoryById } from "@/data/stories";
+import { STORIES, getStoryById, type Story } from "@/data/stories";
 import { useColors } from "@/hooks/useColors";
 
 const COVER_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -35,31 +37,79 @@ export default function PlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { currentStory, isPlaying, progress, elapsedSeconds, playStory, togglePlay, stop } =
+  const { currentStory, isPlaying, progress, elapsedSeconds, playStory, togglePlay } =
     useAudio();
+  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
 
-  const story = getStoryById(id ?? "") ?? currentStory;
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [pendingStory, setPendingStory] = useState<Story | null>(null);
+
+  const initStory = getStoryById(id ?? "");
+  const story = currentStory ?? initStory;
   const category = story ? getCategoryById(story.category) : null;
   const coverImage = story ? COVER_IMAGES[story.id] : null;
   const cardBg = category?.color ?? colors.coral;
 
   useEffect(() => {
-    if (story && (!currentStory || currentStory.id !== story.id)) {
-      playStory(story);
+    if (initStory && (!currentStory || currentStory.id !== initStory.id)) {
+      playStory(initStory);
     }
-  }, [story?.id]);
+  }, [initStory?.id]);
 
   const totalSeconds = story ? story.duration * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;
 
-  const handleBack = () => {
-    router.back();
+  const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
+  const prevStory =
+    currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
+  const nextStory =
+    currentIdx >= 0 && currentIdx < STORIES.length - 1
+      ? STORIES[currentIdx + 1]
+      : STORIES[0];
+
+  const doPlayStory = useCallback(
+    (s: Story) => {
+      if (freePlayCount >= 5 && !isPremium) {
+        setPendingStory(s);
+        setShowPaywall(true);
+        return;
+      }
+      incrementPlayCount();
+      addToHistory(s.id);
+      playStory(s);
+    },
+    [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]
+  );
+
+  const handlePrev = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    doPlayStory(prevStory);
+  };
+
+  const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    doPlayStory(nextStory);
   };
 
   const handleToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     togglePlay();
   };
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  const handlePaywallUnlock = useCallback(() => {
+    unlockPremium();
+    setShowPaywall(false);
+    if (pendingStory) {
+      incrementPlayCount();
+      addToHistory(pendingStory.id);
+      playStory(pendingStory);
+      setPendingStory(null);
+    }
+  }, [pendingStory, unlockPremium, incrementPlayCount, addToHistory, playStory]);
 
   if (!story) {
     return (
@@ -107,7 +157,7 @@ export default function PlayerScreen() {
         <Ionicons name="arrow-back" size={26} color="#fff" />
       </TouchableOpacity>
 
-      <View style={[styles.centerContent]}>
+      <View style={styles.centerContent}>
         <View
           style={[
             styles.categoryBadge,
@@ -142,26 +192,58 @@ export default function PlayerScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          onPress={handleToggle}
-          style={styles.playBtn}
-          activeOpacity={0.8}
-        >
-          <View
-            style={[
-              styles.playBtnInner,
-              { backgroundColor: "rgba(255,255,255,0.95)" },
-            ]}
+        <View style={styles.controlsRow}>
+          <TouchableOpacity
+            onPress={handlePrev}
+            style={styles.skipBtn}
+            hitSlop={10}
           >
             <Ionicons
-              name={isPlaying ? "pause" : "play"}
-              size={36}
-              color={cardBg}
-              style={isPlaying ? {} : { marginLeft: 4 }}
+              name="play-skip-back"
+              size={30}
+              color="rgba(255,255,255,0.85)"
             />
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleToggle}
+            style={styles.playBtn}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.playBtnInner,
+                { backgroundColor: "rgba(255,255,255,0.95)" },
+              ]}
+            >
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={36}
+                color={cardBg}
+                style={isPlaying ? undefined : { marginLeft: 4 }}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleNext}
+            style={styles.skipBtn}
+            hitSlop={10}
+          >
+            <Ionicons
+              name="play-skip-forward"
+              size={30}
+              color="rgba(255,255,255,0.85)"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => { setShowPaywall(false); setPendingStory(null); }}
+        onUnlock={handlePaywallUnlock}
+      />
     </View>
   );
 }
@@ -251,9 +333,20 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 2,
   },
-  playBtn: {
+  controlsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 28,
     marginBottom: 8,
   },
+  skipBtn: {
+    width: 52,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playBtn: {},
   playBtnInner: {
     width: 80,
     height: 80,

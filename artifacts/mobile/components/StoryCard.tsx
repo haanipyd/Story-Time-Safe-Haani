@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import PaywallModal from "@/components/PaywallModal";
 import { useAudio } from "@/context/AudioContext";
 import { useProfile } from "@/context/ProfileContext";
 import { getCategoryById } from "@/data/preferences";
@@ -39,25 +40,42 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const colors = useColors();
   const router = useRouter();
   const { playStory } = useAudio();
-  const { addToHistory } = useProfile();
+  const { addToHistory, freePlayCount, isPremium, incrementPlayCount, unlockPremium } = useProfile();
+  const [showPaywall, setShowPaywall] = useState(false);
   const category = getCategoryById(story.category);
   const coverImage = COVER_IMAGES[story.id];
   const { width, height } = SIZE_CONFIG[size];
 
   const durationLabel = `${story.duration} min`;
 
-  const handlePress = useCallback(() => {
+  const doPlay = useCallback(() => {
+    incrementPlayCount();
     addToHistory(story.id);
     playStory(story);
-    router.push({
-      pathname: "/(tabs)/player",
-      params: { id: story.id },
-    });
-  }, [story, playStory, addToHistory, router]);
+    router.push({ pathname: "/(tabs)/player", params: { id: story.id } });
+  }, [story, playStory, addToHistory, incrementPlayCount, router]);
+
+  const handlePress = useCallback(() => {
+    if (freePlayCount >= 5 && !isPremium) {
+      setShowPaywall(true);
+      return;
+    }
+    doPlay();
+  }, [freePlayCount, isPremium, doPlay]);
 
   const cardBgColor = category?.color ?? colors.coral;
 
   return (
+    <>
+    <PaywallModal
+      visible={showPaywall}
+      onClose={() => setShowPaywall(false)}
+      onUnlock={() => {
+        unlockPremium();
+        setShowPaywall(false);
+        doPlay();
+      }}
+    />
     <TouchableOpacity
       onPress={handlePress}
       activeOpacity={0.88}
@@ -118,6 +136,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
         </View>
       </View>
     </TouchableOpacity>
+    </>
   );
 }
 

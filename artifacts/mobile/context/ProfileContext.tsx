@@ -36,9 +36,14 @@ interface ProfileContextValue extends ProfileState {
   completeOnboarding: (profile: Omit<ChildProfile, "id">) => void;
   updateSettings: (updates: Partial<AppSettings>) => void;
   addToHistory: (storyId: string) => void;
+  freePlayCount: number;
+  isPremium: boolean;
+  incrementPlayCount: () => void;
+  unlockPremium: () => void;
 }
 
 const STORAGE_KEY = "storytime_profiles_v1";
+const SUBSCRIPTION_KEY = "storytime_subscription_v1";
 
 const defaultSettings: AppSettings = {
   sleepTimer: null,
@@ -55,6 +60,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     settings: defaultSettings,
     isLoading: true,
   });
+  const [subscription, setSubscription] = useState({ freePlayCount: 0, isPremium: false });
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
@@ -74,6 +80,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setState((prev) => ({ ...prev, isLoading: false }));
+      }
+    });
+    AsyncStorage.getItem(SUBSCRIPTION_KEY).then((raw) => {
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw) as { freePlayCount: number; isPremium: boolean };
+          setSubscription(saved);
+        } catch {}
       }
     });
   }, []);
@@ -180,6 +194,22 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const incrementPlayCount = useCallback(() => {
+    setSubscription((prev) => {
+      const next = { ...prev, freePlayCount: prev.freePlayCount + 1 };
+      AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const unlockPremium = useCallback(() => {
+    setSubscription((prev) => {
+      const next = { ...prev, isPremium: true };
+      AsyncStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const addToHistory = useCallback((storyId: string) => {
     setState((prev) => {
       const currentId = prev.currentProfileId;
@@ -218,6 +248,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         completeOnboarding,
         updateSettings,
         addToHistory,
+        freePlayCount: subscription.freePlayCount,
+        isPremium: subscription.isPremium,
+        incrementPlayCount,
+        unlockPremium,
       }}
     >
       {children}
