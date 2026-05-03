@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -40,8 +41,9 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const colors = useColors();
   const router = useRouter();
   const { playStory } = useAudio();
-  const { addToHistory, freePlayCount, isPremium, incrementPlayCount, unlockPremium } = useProfile();
+  const { addToHistory, freePlayCount, isPremium, incrementPlayCount, unlockPremium, toggleFavourite, currentProfile } = useProfile();
   const [showPaywall, setShowPaywall] = useState(false);
+  const isFavourited = currentProfile?.favourites?.includes(story.id) ?? false;
   const category = getCategoryById(story.category);
   const coverImage = COVER_IMAGES[story.id];
   const { width, height } = SIZE_CONFIG[size];
@@ -116,6 +118,25 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
         ]}
       />
 
+      <TouchableOpacity
+        style={styles.heartBtn}
+        onPress={() => {
+          Haptics.impactAsync(
+            isFavourited
+              ? Haptics.ImpactFeedbackStyle.Light
+              : Haptics.ImpactFeedbackStyle.Medium
+          );
+          toggleFavourite(story.id);
+        }}
+        hitSlop={6}
+      >
+        <Ionicons
+          name={isFavourited ? "heart" : "heart-outline"}
+          size={size === "featured" ? 20 : 16}
+          color={isFavourited ? "#FF6B6B" : "rgba(255,255,255,0.85)"}
+        />
+      </TouchableOpacity>
+
       <View style={styles.textContainer}>
         <Text
           style={[
@@ -162,6 +183,18 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
+  },
+  heartBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   textContainer: {
     position: "absolute",

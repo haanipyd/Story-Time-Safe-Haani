@@ -69,6 +69,14 @@ export default function HomeScreen() {
     return getCurated(currentProfile.age, currentProfile.preferences);
   }, [currentProfile]);
 
+  const favouriteStories = useMemo(() => {
+    if (!currentProfile) return [];
+    const ids = currentProfile.favourites ?? [];
+    return ids
+      .map((id) => getStoryById(id))
+      .filter((s): s is NonNullable<typeof s> => s !== undefined);
+  }, [currentProfile]);
+
   const recentlyPlayed = useMemo(() => {
     if (!currentProfile) return [];
     const history = currentProfile.listeningHistory ?? [];
@@ -122,6 +130,18 @@ export default function HomeScreen() {
           <StoryCard story={curated.featured} size="featured" />
         </View>
 
+        {favouriteStories.length > 0 && (
+          <View style={styles.recentSection}>
+            <View style={styles.recentHeader}>
+              <Ionicons name="heart" size={15} color={colors.coral} />
+              <Text style={[styles.recentTitle, { color: colors.navy }]}>
+                {name}&apos;s Favourites
+              </Text>
+            </View>
+            <SectionRow title="" stories={favouriteStories} />
+          </View>
+        )}
+
         {recentlyPlayed.length > 0 && (
           <View style={styles.recentSection}>
             <View style={styles.recentHeader}>
@@ -135,7 +155,7 @@ export default function HomeScreen() {
         )}
 
         {curated.favorites.length > 0 && (
-          <SectionRow title={`${name}'s Favourites`} stories={curated.favorites} />
+          <SectionRow title="Picks for You" stories={curated.favorites} />
         )}
 
         {curated.moreLikeThis.length > 0 && (

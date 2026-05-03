@@ -13,6 +13,7 @@ export interface ChildProfile {
   age: number;
   preferences: string[];
   listeningHistory?: string[];
+  favourites?: string[];
 }
 
 export interface AppSettings {
@@ -36,6 +37,7 @@ interface ProfileContextValue extends ProfileState {
   completeOnboarding: (profile: Omit<ChildProfile, "id">) => void;
   updateSettings: (updates: Partial<AppSettings>) => void;
   addToHistory: (storyId: string) => void;
+  toggleFavourite: (storyId: string) => void;
   freePlayCount: number;
   isPremium: boolean;
   incrementPlayCount: () => void;
@@ -210,6 +212,32 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const toggleFavourite = useCallback((storyId: string) => {
+    setState((prev) => {
+      const currentId = prev.currentProfileId;
+      if (!currentId) return prev;
+      const profiles = prev.profiles.map((p) => {
+        if (p.id !== currentId) return p;
+        const existing = p.favourites ?? [];
+        const updated = existing.includes(storyId)
+          ? existing.filter((id) => id !== storyId)
+          : [...existing, storyId];
+        return { ...p, favourites: updated };
+      });
+      const next = { ...prev, profiles };
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          profiles: next.profiles,
+          currentProfileId: next.currentProfileId,
+          onboardingComplete: next.onboardingComplete,
+          settings: next.settings,
+        })
+      );
+      return next;
+    });
+  }, []);
+
   const addToHistory = useCallback((storyId: string) => {
     setState((prev) => {
       const currentId = prev.currentProfileId;
@@ -248,6 +276,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         completeOnboarding,
         updateSettings,
         addToHistory,
+        toggleFavourite,
         freePlayCount: subscription.freePlayCount,
         isPremium: subscription.isPremium,
         incrementPlayCount,
