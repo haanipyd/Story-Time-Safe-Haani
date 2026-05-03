@@ -45,7 +45,9 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const [showPaywall, setShowPaywall] = useState(false);
   const isFavourited = currentProfile?.favourites?.includes(story.id) ?? false;
   const category = getCategoryById(story.category);
-  const coverImage = COVER_IMAGES[story.id];
+  const remoteThumbnail = story.thumbnailUrl ?? null;
+  const localCover = COVER_IMAGES[story.id] ?? null;
+  const hasImage = !!(remoteThumbnail || localCover);
   const { width, height } = SIZE_CONFIG[size];
 
   const durationLabel = `${story.duration} min`;
@@ -83,9 +85,15 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
       activeOpacity={0.88}
       style={[styles.container, { width, height, borderRadius: colors.radius }]}
     >
-      {coverImage ? (
+      {remoteThumbnail ? (
         <Image
-          source={coverImage}
+          source={{ uri: remoteThumbnail }}
+          style={[styles.image, { borderRadius: colors.radius }]}
+          resizeMode="cover"
+        />
+      ) : localCover ? (
+        <Image
+          source={localCover}
           style={[styles.image, { borderRadius: colors.radius }]}
           resizeMode="cover"
         />
@@ -114,7 +122,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
       <View
         style={[
           styles.overlay,
-          { borderRadius: colors.radius, backgroundColor: coverImage ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.18)" },
+          { borderRadius: colors.radius, backgroundColor: hasImage ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.18)" },
         ]}
       />
 

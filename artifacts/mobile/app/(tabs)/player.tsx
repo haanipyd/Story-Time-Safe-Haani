@@ -68,7 +68,9 @@ export default function PlayerScreen() {
   const initStory = getStoryById(id ?? "");
   const story = currentStory ?? initStory;
   const category = story ? getCategoryById(story.category) : null;
-  const coverImage = story ? COVER_IMAGES[story.id] : null;
+  const remoteThumbnail = story?.thumbnailUrl ?? null;
+  const coverImage = story ? (remoteThumbnail ? null : COVER_IMAGES[story.id] ?? null) : null;
+  const hasImage = !!(remoteThumbnail || coverImage);
   const cardBg = category?.color ?? colors.coral;
 
   useEffect(() => {
@@ -157,7 +159,13 @@ export default function PlayerScreen() {
 
   return (
     <View style={styles.root}>
-      {coverImage ? (
+      {remoteThumbnail ? (
+        <Image
+          source={{ uri: remoteThumbnail }}
+          style={[StyleSheet.absoluteFillObject]}
+          resizeMode="cover"
+        />
+      ) : coverImage ? (
         <Image
           source={coverImage}
           style={[StyleSheet.absoluteFillObject]}

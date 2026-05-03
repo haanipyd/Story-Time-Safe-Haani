@@ -7,6 +7,9 @@ export interface Story {
   ageMax: number;
   description: string;
   hasCover?: boolean;
+  thumbnailUrl?: string | null;
+  audioUrl?: string | null;
+  videoUrl?: string | null;
 }
 
 export const STORIES: Story[] = [
