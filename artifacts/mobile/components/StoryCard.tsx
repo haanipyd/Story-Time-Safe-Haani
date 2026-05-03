@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useAudio } from "@/context/AudioContext";
+import { useProfile } from "@/context/ProfileContext";
 import { getCategoryById } from "@/data/preferences";
 import { type Story } from "@/data/stories";
 import { useColors } from "@/hooks/useColors";
@@ -38,27 +39,23 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const colors = useColors();
   const router = useRouter();
   const { playStory } = useAudio();
+  const { addToHistory } = useProfile();
   const category = getCategoryById(story.category);
   const coverImage = COVER_IMAGES[story.id];
   const { width, height } = SIZE_CONFIG[size];
 
-  const durationLabel =
-    story.duration < 5
-      ? `${story.duration} min`
-      : story.duration >= 10
-        ? `${story.duration} min`
-        : `${story.duration} min`;
+  const durationLabel = `${story.duration} min`;
 
   const handlePress = useCallback(() => {
+    addToHistory(story.id);
     playStory(story);
     router.push({
       pathname: "/(tabs)/player",
       params: { id: story.id },
     });
-  }, [story, playStory, router]);
+  }, [story, playStory, addToHistory, router]);
 
   const cardBgColor = category?.color ?? colors.coral;
-  const cardLightBg = category?.lightColor ?? "#FFF";
 
   return (
     <TouchableOpacity

@@ -12,6 +12,7 @@ export interface ChildProfile {
   name: string;
   age: number;
   preferences: string[];
+  listeningHistory?: string[];
 }
 
 export interface AppSettings {
@@ -34,6 +35,7 @@ interface ProfileContextValue extends ProfileState {
   switchProfile: (id: string) => void;
   completeOnboarding: (profile: Omit<ChildProfile, "id">) => void;
   updateSettings: (updates: Partial<AppSettings>) => void;
+  addToHistory: (storyId: string) => void;
 }
 
 const STORAGE_KEY = "storytime_profiles_v1";
@@ -178,6 +180,30 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const addToHistory = useCallback((storyId: string) => {
+    setState((prev) => {
+      const currentId = prev.currentProfileId;
+      if (!currentId) return prev;
+      const profiles = prev.profiles.map((p) => {
+        if (p.id !== currentId) return p;
+        const existing = p.listeningHistory ?? [];
+        const deduped = [storyId, ...existing.filter((id) => id !== storyId)];
+        return { ...p, listeningHistory: deduped.slice(0, 20) };
+      });
+      const next = { ...prev, profiles };
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          profiles: next.profiles,
+          currentProfileId: next.currentProfileId,
+          onboardingComplete: next.onboardingComplete,
+          settings: next.settings,
+        })
+      );
+      return next;
+    });
+  }, []);
+
   const currentProfile =
     state.profiles.find((p) => p.id === state.currentProfileId) ?? null;
 
@@ -191,6 +217,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         switchProfile,
         completeOnboarding,
         updateSettings,
+        addToHistory,
       }}
     >
       {children}

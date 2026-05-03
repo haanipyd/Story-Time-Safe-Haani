@@ -15,7 +15,7 @@ import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
 import { useProfile } from "@/context/ProfileContext";
-import { STORIES } from "@/data/stories";
+import { STORIES, getStoryById } from "@/data/stories";
 import { useColors } from "@/hooks/useColors";
 
 function getCurated(age: number, preferences: string[]) {
@@ -68,6 +68,15 @@ export default function HomeScreen() {
     return getCurated(currentProfile.age, currentProfile.preferences);
   }, [currentProfile]);
 
+  const recentlyPlayed = useMemo(() => {
+    if (!currentProfile) return [];
+    const history = currentProfile.listeningHistory ?? [];
+    return history
+      .map((id) => getStoryById(id))
+      .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      .slice(0, 8);
+  }, [currentProfile]);
+
   if (!currentProfile || !curated) return null;
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -110,6 +119,18 @@ export default function HomeScreen() {
           </View>
           <StoryCard story={curated.featured} size="featured" />
         </View>
+
+        {recentlyPlayed.length > 0 && (
+          <View style={styles.recentSection}>
+            <View style={styles.recentHeader}>
+              <Ionicons name="headset-outline" size={16} color={colors.navy} />
+              <Text style={[styles.recentTitle, { color: colors.navy }]}>
+                Recently Played
+              </Text>
+            </View>
+            <SectionRow title="" stories={recentlyPlayed} size="small" />
+          </View>
+        )}
 
         {curated.favorites.length > 0 && (
           <SectionRow title={`${name}'s Favourites`} stories={curated.favorites} />
@@ -196,5 +217,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Nunito_700Bold",
     letterSpacing: 0.3,
+  },
+  recentSection: {
+    marginBottom: 4,
+  },
+  recentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  recentTitle: {
+    fontSize: 18,
+    fontFamily: "Nunito_800ExtraBold",
   },
 });
