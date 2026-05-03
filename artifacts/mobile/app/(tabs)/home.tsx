@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   StatusBar,
@@ -16,36 +17,42 @@ import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
 import { useProfile } from "@/context/ProfileContext";
-import { STORIES, getStoryById } from "@/data/stories";
 import { useColors } from "@/hooks/useColors";
+import { useStories, type RemoteStory } from "@/hooks/useStories";
 
-function getCurated(age: number, preferences: string[]) {
-  const isAgeMatch = (s: (typeof STORIES)[0]) =>
+function getCurated(
+  age: number,
+  preferences: string[],
+  stories: RemoteStory[],
+) {
+  const isAgeMatch = (s: RemoteStory) =>
     s.ageMin <= age + 1 && s.ageMax >= age - 1;
 
-  const preferred = STORIES.filter(
-    (s) => preferences.includes(s.category) && isAgeMatch(s)
+  const preferred = stories.filter(
+    (s) => preferences.includes(s.category) && isAgeMatch(s),
   );
-  const notPreferred = STORIES.filter(
-    (s) => !preferences.includes(s.category)
+  const notPreferred = stories.filter(
+    (s) => !preferences.includes(s.category),
   );
 
   const dayOfMonth = new Date().getDate();
-  const featured = preferred.length > 0
-    ? preferred[dayOfMonth % preferred.length]
-    : STORIES[0];
+  const featured =
+    preferred.length > 0
+      ? preferred[dayOfMonth % preferred.length]
+      : stories[0];
 
-  const favorites = preferred.filter((s) => s.id !== featured.id).slice(0, 8);
+  const favorites = preferred
+    .filter((s) => s.id !== featured?.id)
+    .slice(0, 8);
 
-  const moreLikeThis = STORIES.filter(
-    (s) => preferences.includes(s.category) && s.id !== featured.id
-  ).slice(0, 6);
+  const moreLikeThis = stories
+    .filter((s) => preferences.includes(s.category) && s.id !== featured?.id)
+    .slice(0, 6);
 
   const newForYou = notPreferred.slice(0, 8);
-
-  const quickListens = STORIES.filter((s) => s.duration <= 5);
-  const longStories = STORIES.filter((s) => s.duration >= 9);
-  const ageMatched = STORIES.filter((s) => isAgeMatch(s)).slice(0, 6);
+  const quickListens = stories.filter((s) => s.duration <= 5);
+  const longStories = stories.filter((s) => s.duration >= 9);
+  const ageMatched = stories.filter((s) => isAgeMatch(s)).slice(0, 6);
 
   return {
     featured,
@@ -63,33 +70,48 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
+  const { stories, loading, getStoryById } = useStories();
 
   const curated = useMemo(() => {
-    if (!currentProfile) return null;
-    return getCurated(currentProfile.age, currentProfile.preferences);
-  }, [currentProfile]);
+    if (!currentProfile || stories.length === 0) return null;
+    return getCurated(currentProfile.age, currentProfile.preferences, stories);
+  }, [currentProfile, stories]);
 
   const favouriteStories = useMemo(() => {
     if (!currentProfile) return [];
-    const ids = currentProfile.favourites ?? [];
-    return ids
+    return (currentProfile.favourites ?? [])
       .map((id) => getStoryById(id))
-      .filter((s): s is NonNullable<typeof s> => s !== undefined);
-  }, [currentProfile]);
+      .filter((s): s is RemoteStory => s !== undefined);
+  }, [currentProfile, getStoryById]);
 
   const recentlyPlayed = useMemo(() => {
     if (!currentProfile) return [];
-    const history = currentProfile.listeningHistory ?? [];
-    return history
+    return (currentProfile.listeningHistory ?? [])
       .map((id) => getStoryById(id))
-      .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      .filter((s): s is RemoteStory => s !== undefined)
       .slice(0, 8);
-  }, [currentProfile]);
-
-  if (!currentProfile || !curated) return null;
+  }, [currentProfile, getStoryById]);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const name = currentProfile.name;
+  const name = currentProfile?.name ?? "";
+
+  if (!currentProfile) return null;
+
+  if (loading && stories.length === 0) {
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.center,
+          { backgroundColor: colors.background },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.coral} />
+      </View>
+    );
+  }
+
+  if (!curated) return null;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -120,15 +142,17 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.featuredSection}>
-          <View style={styles.featuredLabel}>
-            <View style={[styles.dot, { backgroundColor: colors.coral }]} />
-            <Text style={[styles.featuredText, { color: colors.coral }]}>
-              Today&apos;s Pick for {name}
-            </Text>
+        {curated.featured && (
+          <View style={styles.featuredSection}>
+            <View style={styles.featuredLabel}>
+              <View style={[styles.dot, { backgroundColor: colors.coral }]} />
+              <Text style={[styles.featuredText, { color: colors.coral }]}>
+                Today&apos;s Pick for {name}
+              </Text>
+            </View>
+            <StoryCard story={curated.featured} size="featured" />
           </View>
-          <StoryCard story={curated.featured} size="featured" />
-        </View>
+        )}
 
         {favouriteStories.length > 0 && (
           <View style={styles.recentSection}>
@@ -145,7 +169,11 @@ export default function HomeScreen() {
         {recentlyPlayed.length > 0 && (
           <View style={styles.recentSection}>
             <View style={styles.recentHeader}>
-              <Ionicons name="headset-outline" size={16} color={colors.navy} />
+              <Ionicons
+                name="headset-outline"
+                size={16}
+                color={colors.navy}
+              />
               <Text style={[styles.recentTitle, { color: colors.navy }]}>
                 Recently Played
               </Text>
@@ -195,6 +223,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   scroll: {},
   header: {

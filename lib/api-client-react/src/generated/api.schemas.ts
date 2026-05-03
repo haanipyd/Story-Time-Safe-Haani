@@ -8,3 +8,50 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Story {
+  id: string;
+  title: string;
+  category: string;
+  duration: number;
+  ageMin: number;
+  ageMax: number;
+  description: string;
+  thumbnailUrl?: string | null;
+  audioUrl?: string | null;
+  videoUrl?: string | null;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStory {
+  id: string;
+  title: string;
+  category: string;
+  duration: number;
+  ageMin: number;
+  ageMax: number;
+  description: string;
+  thumbnailUrl?: string;
+  audioUrl?: string;
+  videoUrl?: string;
+  published?: boolean;
+}
+
+export interface UpdateStory {
+  title?: string;
+  category?: string;
+  duration?: number;
+  ageMin?: number;
+  ageMax?: number;
+  description?: string;
+  thumbnailUrl?: string;
+  audioUrl?: string;
+  videoUrl?: string;
+  published?: boolean;
+}
+
+export interface ErrorResponse {
+  error: string;
+}

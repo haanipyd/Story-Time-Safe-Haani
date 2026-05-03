@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: stories
+    description: Story management
 paths:
   /healthz:
     get:
@@ -24,6 +26,118 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /stories:
+    get:
+      operationId: listStories
+      tags: [stories]
+      summary: List all published stories
+      responses:
+        "200":
+          description: Stories list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Story"
+    post:
+      operationId: createStory
+      tags: [stories]
+      summary: Create a new story
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStory"
+      responses:
+        "201":
+          description: Story created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Story"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stories/{id}:
+    get:
+      operationId: getStory
+      tags: [stories]
+      summary: Get a single story
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Story found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Story"
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateStory
+      tags: [stories]
+      summary: Update a story
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStory"
+      responses:
+        "200":
+          description: Story updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Story"
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteStory
+      tags: [stories]
+      summary: Delete a story
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Story deleted
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +148,114 @@ components:
       required:
         - status
 
+    Story:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        duration:
+          type: integer
+        ageMin:
+          type: integer
+        ageMax:
+          type: integer
+        description:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        audioUrl:
+          type: string
+          nullable: true
+        videoUrl:
+          type: string
+          nullable: true
+        published:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - category
+        - duration
+        - ageMin
+        - ageMax
+        - description
+        - published
+        - createdAt
+        - updatedAt
+
+    CreateStory:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        duration:
+          type: integer
+        ageMin:
+          type: integer
+        ageMax:
+          type: integer
+        description:
+          type: string
+        thumbnailUrl:
+          type: string
+        audioUrl:
+          type: string
+        videoUrl:
+          type: string
+        published:
+          type: boolean
+      required:
+        - id
+        - title
+        - category
+        - duration
+        - ageMin
+        - ageMax
+        - description
+
+    UpdateStory:
+      type: object
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        duration:
+          type: integer
+        ageMin:
+          type: integer
+        ageMax:
+          type: integer
+        description:
+          type: string
+        thumbnailUrl:
+          type: string
+        audioUrl:
+          type: string
+        videoUrl:
+          type: string
+        published:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

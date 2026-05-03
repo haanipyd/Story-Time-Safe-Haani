@@ -14,3 +14,106 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all published stories
+ */
+export const ListStoriesResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  category: zod.string(),
+  duration: zod.number(),
+  ageMin: zod.number(),
+  ageMax: zod.number(),
+  description: zod.string(),
+  thumbnailUrl: zod.string().nullish(),
+  audioUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  published: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListStoriesResponse = zod.array(ListStoriesResponseItem);
+
+/**
+ * @summary Create a new story
+ */
+export const CreateStoryBody = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  category: zod.string(),
+  duration: zod.number(),
+  ageMin: zod.number(),
+  ageMax: zod.number(),
+  description: zod.string(),
+  thumbnailUrl: zod.string().optional(),
+  audioUrl: zod.string().optional(),
+  videoUrl: zod.string().optional(),
+  published: zod.boolean().optional(),
+});
+
+/**
+ * @summary Get a single story
+ */
+export const GetStoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const GetStoryResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  category: zod.string(),
+  duration: zod.number(),
+  ageMin: zod.number(),
+  ageMax: zod.number(),
+  description: zod.string(),
+  thumbnailUrl: zod.string().nullish(),
+  audioUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  published: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update a story
+ */
+export const UpdateStoryParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateStoryBody = zod.object({
+  title: zod.string().optional(),
+  category: zod.string().optional(),
+  duration: zod.number().optional(),
+  ageMin: zod.number().optional(),
+  ageMax: zod.number().optional(),
+  description: zod.string().optional(),
+  thumbnailUrl: zod.string().optional(),
+  audioUrl: zod.string().optional(),
+  videoUrl: zod.string().optional(),
+  published: zod.boolean().optional(),
+});
+
+export const UpdateStoryResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  category: zod.string(),
+  duration: zod.number(),
+  ageMin: zod.number(),
+  ageMax: zod.number(),
+  description: zod.string(),
+  thumbnailUrl: zod.string().nullish(),
+  audioUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  published: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a story
+ */
+export const DeleteStoryParams = zod.object({
+  id: zod.coerce.string(),
+});
