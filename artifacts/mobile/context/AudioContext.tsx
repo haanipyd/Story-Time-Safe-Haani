@@ -1,3 +1,4 @@
+import { Audio, type AVPlaybackStatus } from "expo-av";
 import React, {
   createContext,
   useCallback,
@@ -6,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { STORY_AUDIO } from "@/data/audioMap";
 import { type Story } from "@/data/stories";
 
 interface AudioContextValue {
@@ -27,78 +29,140 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [sleepTimerSeconds, setSleepTimerSeconds] = useState<number | null>(null);
+
+  const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sleepTimerRef = useRef<number | null>(null);
 
   const totalSeconds = currentStory ? currentStory.duration * 60 : 1;
   const progress = Math.min(elapsedSeconds / totalSeconds, 1);
 
-  const clearTimer = useCallback(() => {
+  const clearInterval_ = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
   }, []);
 
+  const unloadSound = useCallback(async () => {
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      } catch {}
+      soundRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (isPlaying && currentStory) {
-      const storyDurationSec = currentStory.duration * 60;
-      intervalRef.current = setInterval(() => {
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: true,
+    });
+    return () => {
+      unloadSound();
+      clearInterval_();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying || !currentStory) {
+      clearInterval_();
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      if (sleepTimerRef.current !== null) {
+        sleepTimerRef.current -= 1;
+        const remaining = sleepTimerRef.current;
+        setSleepTimerSeconds(remaining);
+        if (remaining <= 0) {
+          sleepTimerRef.current = null;
+          setIsPlaying(false);
+          soundRef.current?.pauseAsync().catch(() => {});
+          return;
+        }
+      }
+
+      if (!soundRef.current) {
         setElapsedSeconds((prev) => {
           const next = prev + 1;
-          if (next >= storyDurationSec) {
+          const storyMax = (currentStory?.duration ?? 1) * 60;
+          if (next >= storyMax) {
             setIsPlaying(false);
-            sleepTimerRef.current = null;
-            setSleepTimerSeconds(null);
-            return storyDurationSec;
+            return storyMax;
           }
           return next;
         });
+      }
+    }, 1000);
 
-        if (sleepTimerRef.current !== null) {
-          sleepTimerRef.current -= 1;
-          const remaining = sleepTimerRef.current;
-          setSleepTimerSeconds(remaining);
-          if (remaining <= 0) {
-            sleepTimerRef.current = null;
-            setIsPlaying(false);
-          }
-        }
-      }, 1000);
-    } else {
-      clearTimer();
-    }
-    return clearTimer;
-  }, [isPlaying, currentStory, clearTimer]);
-
-  useEffect(() => {
-    return () => clearTimer();
-  }, [clearTimer]);
+    return clearInterval_;
+  }, [isPlaying, currentStory, clearInterval_]);
 
   const playStory = useCallback(
-    (story: Story) => {
-      clearTimer();
+    async (story: Story) => {
+      clearInterval_();
+      await unloadSound();
       sleepTimerRef.current = null;
       setSleepTimerSeconds(null);
       setCurrentStory(story);
       setElapsedSeconds(0);
-      setIsPlaying(true);
+
+      const source = STORY_AUDIO[story.id];
+
+      if (source) {
+        try {
+          const { sound } = await Audio.Sound.createAsync(source, {
+            shouldPlay: true,
+            progressUpdateIntervalMillis: 500,
+          });
+          soundRef.current = sound;
+
+          sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
+            if (!status.isLoaded) return;
+            setElapsedSeconds(Math.floor(status.positionMillis / 1000));
+            setIsPlaying(status.isPlaying);
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+            }
+          });
+
+          setIsPlaying(true);
+        } catch {
+          setIsPlaying(true);
+        }
+      } else {
+        setIsPlaying(true);
+      }
     },
-    [clearTimer]
+    [clearInterval_, unloadSound]
   );
 
-  const togglePlay = useCallback(() => {
-    setIsPlaying((prev) => !prev);
+  const togglePlay = useCallback(async () => {
+    if (soundRef.current) {
+      const status = await soundRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        if (status.isPlaying) {
+          await soundRef.current.pauseAsync();
+        } else {
+          await soundRef.current.playAsync();
+        }
+      }
+    } else {
+      setIsPlaying((prev) => !prev);
+    }
   }, []);
 
-  const stop = useCallback(() => {
-    clearTimer();
+  const stop = useCallback(async () => {
+    clearInterval_();
+    await unloadSound();
     sleepTimerRef.current = null;
     setSleepTimerSeconds(null);
     setIsPlaying(false);
     setCurrentStory(null);
     setElapsedSeconds(0);
-  }, [clearTimer]);
+  }, [clearInterval_, unloadSound]);
 
   const setSleepTimer = useCallback((minutes: number | null) => {
     if (minutes === null) {
