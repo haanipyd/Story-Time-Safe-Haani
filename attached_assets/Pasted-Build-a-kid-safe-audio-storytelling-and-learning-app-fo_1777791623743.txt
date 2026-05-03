@@ -1,0 +1,129 @@
+Build a kid-safe audio storytelling and learning app for toddlers aged 1-5 years,
+inspired by Yoto and Tonies. The app is screen-light and audio-first.
+Toddlers tap large picture cards to play stories.
+
+TARGET USER
+- Primary user: child aged 1-5 (cannot read; taps pictures)
+- Parent does the initial setup but doesn't need ongoing PIN-protected access
+
+CORE PRINCIPLE: SCREEN-LIGHT
+The kid-facing screens are intentionally simple — large picture cards,
+minimal text, no navigation deeper than 2 taps. The screen exists only to start audio;
+the audio is the experience. Once playing, screen dims and shows just a play/pause
+button and the story illustration.
+
+ONBOARDING (first-time only, very short)
+Three steps, one screen each:
+
+1. Welcome → "What's your child's name?" (text input)
+2. "How old is [name]?" (age picker: 1, 2, 3, 4, 5 — large round buttons)
+3. "What does [name] enjoy?" (multi-select preference picker)
+   Options shown as large illustrated tiles, pick 3-6:
+   - Bedtime stories
+   - Adventure tales
+   - Animal stories
+   - Songs and rhymes
+   - Mythology and folktales
+   - Learning (numbers, letters, colors)
+   - Yoga and movement
+   - Nature and science
+   - Funny stories
+   - Classic fairy tales
+   Done → goes straight to home screen, library is auto-curated based on age + preferences
+
+No PIN. No account. No email. Onboarding takes under 60 seconds.
+
+SCREENS TO BUILD
+
+1. HOME SCREEN ("[Name]'s Stories")
+Layout is a vertically scrolling feed of mixed tile types, ordered by preference relevance:
+
+- TOP: a large featured tile (1 story, full-width, "Today's Pick for [Name]")
+- THEN: a horizontal-scroll row labeled "[Name]'s Favorites" (6-8 picture cards based on preferences)
+- THEN: a 2x3 grid labeled "More Like This" (cards from related categories)
+- THEN: another horizontal-scroll row labeled "New for You" (curated picks outside stated preferences, for discovery)
+- THEN: a horizontal-scroll row "Quick Listens" (stories under 5 minutes)
+- THEN: a horizontal-scroll row "Long Stories" (stories over 10 minutes)
+- THEN: a 2x3 grid "Loved by 3-year-olds" (or whatever age — age-matched)
+
+Tile design:
+- Each card is a full-bleed illustration with story title in large rounded font
+- Cards are visually varied in size: featured tile is huge (full width),
+  horizontal-scroll cards are medium (45% screen width), grid cards are smaller
+- Tap any card → goes directly to player (no intermediate screen)
+
+The variety of tile sizes and layouts is intentional — keeps the screen visually
+interesting for a toddler while staying organized for the parent who set it up.
+
+2. PLAYER SCREEN
+- Full-screen story illustration (dimmed by 30% to reduce blue light)
+- Single large play/pause button center-screen
+- Small back arrow top-left
+- Audio progress bar (thin, kid-can't-easily-scrub)
+- Auto-stops at end of story; kid is returned to home
+
+3. SETTINGS (accessible from a small gear icon top-right of home)
+No PIN required. Just basic adjustments:
+- Update child's name and age
+- Update content preferences (re-pick the tiles)
+- Sleep timer (auto-stop after 15/30/60 min)
+- Volume cap toggle (max 70%)
+- Add another child (creates a separate profile to switch between)
+
+SAMPLE CONTENT (mock 20 stories so the home screen feels populated)
+Generate 20 stories spread across all 10 preference categories, with mock 30-second
+audio loops as placeholders. Mix of durations from 3 min to 15 min. Examples:
+
+Bedtime: The Sleepy Elephant (8m), Moonbeam and Me (6m)
+Adventure: The Tiger Who Came to Tea (7m), The Lost Puppy (7m)
+Animal: Little Frog's Big Day (5m), The Brave Mouse (6m)
+Songs: Twinkle Twinkle and 4 More (12m), Wheels on the Bus Remix (4m)
+Mythology: Krishna and the Butter Pot (5m), The Story of Ganesh (6m)
+Learning: Counting with Mango Monkey (4m), ABC with Animals (5m)
+Yoga: Yoga for Little Lions (8m), Stretch Like a Cat (5m)
+Nature: Why the Sky is Blue (6m), Stars and Planets (9m)
+Funny: The Silly Sandwich (4m), Bananas in the Bathtub (3m)
+Classic: Goldilocks (6m), Three Little Pigs (6m), The Hungry Caterpillar (5m)
+
+For each story, generate a cover illustration prompt (warm, hand-drawn,
+soft watercolor style — think Eric Carle or Beatrix Potter, not Disney).
+
+PREFERENCE-BASED CURATION LOGIC
+- Stories from selected preference categories appear most often (top of feed, larger tiles)
+- Stories from age-appropriate range (within +/- 1 year of child's age) are prioritized
+- Some discovery content shown (1-2 categories not picked) to expose kid to new themes
+- "Today's Pick" rotates daily based on preferences + a random element
+
+VISUAL DESIGN SYSTEM
+- Aesthetic: warm, soft, hand-drawn. NOT corporate, NOT neon, NOT cartoon-glossy
+- Color palette: cream background (#FDF6E3), warm coral (#E8826B),
+  forest green (#5B8C5A), soft yellow (#F5C77E), navy (#2D3E5E for text)
+- Typography: rounded sans-serif for kids (think "Quicksand" or "Nunito"),
+  serif for any longer text (think "Lora")
+- Buttons and tiles: minimum 64x64 pixels for kid-facing taps
+- Animations: gentle, slow (300-500ms transitions), no aggressive bounces
+- No ads, no in-app purchase popups, no notification badges
+
+TECHNICAL PREFERENCES
+- React (Next.js if available)
+- Mobile-first responsive
+- Audio: HTML5 Audio API with mock MP3 placeholders
+- State management: useState/useReducer; no Redux
+- Mock backend: hardcode the 20 stories as a JSON array
+- Onboarding state, child profile, and preferences stored in localStorage
+- Usage tracking logged to localStorage (no real analytics yet)
+
+WHAT NOT TO BUILD
+- No PIN, no auth, no login of any kind
+- No social features
+- No video, audio only
+- No ads
+- No notifications
+
+DELIVERABLE
+A working web app I can demo on my phone:
+- Onboarding flow takes under 60 seconds end-to-end
+- Home screen feels populated, varied, and visually warm
+- Tapping any tile plays audio
+- Preferences actually shape what's shown on home
+- I can switch between child profiles or update preferences without friction
