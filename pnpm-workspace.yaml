@@ -158,3 +158,25 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # Security vulnerability fixes
+  lodash: "4.18.1"
+  path-to-regexp: "8.4.0"
+  postcss: "8.5.10"
+  yaml: "2.8.3"
+  # brace-expansion 2.0.2 (GHSA-f886-m6hf-6m8v) is a transitive dep via @expo/cli>minimatch@9
+  # and via typedoc@0.28.17>minimatch@9. Fix: target @expo/cli directly and upgrade typedoc
+  # to 0.28.19 which natively uses minimatch@10 (brace-expansion 5.x, not vulnerable).
+  "typedoc": "0.28.19"
+  "@expo/cli>brace-expansion": "2.0.3"
+  # picomatch has two vulnerable major versions in different dependency chains
+  "jest-util>picomatch": "2.3.2"
+  "micromatch>picomatch": "2.3.2"
+  "anymatch>picomatch": "2.3.2"
+  "tinyglobby>picomatch": "4.0.4"
+  "fdir>picomatch": "4.0.4"
+  "vite>picomatch": "4.0.4"
+  "@expo/cli>picomatch": "4.0.4"
+  "@expo/metro-config>picomatch": "4.0.4"
+  # uuid requires a major update to fix GHSA-w5hq-g745-h8pq; v14 is the npm-published fix
+  "xcode>uuid": "14.0.0"
+  "@expo/ngrok>uuid": "14.0.0"
