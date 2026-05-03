@@ -19,6 +19,7 @@ interface AudioContextValue {
   sleepTimerSeconds: number | null;
   playStory: (story: Story) => void;
   togglePlay: () => void;
+  seekBy: (seconds: number) => Promise<void>;
   stop: () => void;
   setSleepTimer: (minutes: number | null) => void;
 }
@@ -174,6 +175,22 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setElapsedSeconds(0);
   }, [clearInterval_, unloadSound]);
 
+  const seekBy = useCallback(async (seconds: number) => {
+    if (soundRef.current) {
+      const status = await soundRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        const newMs = Math.max(0, status.positionMillis + seconds * 1000);
+        await soundRef.current.setPositionAsync(newMs);
+        setElapsedSeconds(Math.floor(newMs / 1000));
+      }
+    } else {
+      setElapsedSeconds((prev) => {
+        const storyMax = currentStory ? currentStory.duration * 60 : 0;
+        return Math.max(0, Math.min(prev + seconds, storyMax));
+      });
+    }
+  }, [currentStory]);
+
   const setSleepTimer = useCallback((minutes: number | null) => {
     if (minutes === null) {
       sleepTimerRef.current = null;
@@ -196,6 +213,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         sleepTimerSeconds,
         playStory,
         togglePlay,
+        seekBy,
         stop,
         setSleepTimer,
       }}

@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Image,
   Modal,
   Platform,
@@ -58,6 +59,7 @@ export default function PlayerScreen() {
     sleepTimerSeconds,
     playStory,
     togglePlay,
+    seekBy,
     setSleepTimer,
   } = useAudio();
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } =
@@ -66,6 +68,58 @@ export default function PlayerScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [pendingStory, setPendingStory] = useState<Story | null>(null);
   const [showTimerSheet, setShowTimerSheet] = useState(false);
+  const [seekFlashSide, setSeekFlashSide] = useState<"left" | "right" | null>(null);
+
+  const seekFlashAnim = useRef(new Animated.Value(0)).current;
+  const leftTapCount = useRef(0);
+  const rightTapCount = useRef(0);
+  const leftTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rightTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSeekFlash = useCallback(
+    (side: "left" | "right") => {
+      setSeekFlashSide(side);
+      seekFlashAnim.setValue(1);
+      Animated.timing(seekFlashAnim, {
+        toValue: 0,
+        duration: 650,
+        useNativeDriver: true,
+      }).start();
+    },
+    [seekFlashAnim],
+  );
+
+  const handleLeftDoubleTap = useCallback(() => {
+    leftTapCount.current += 1;
+    if (leftTapCount.current >= 2) {
+      leftTapCount.current = 0;
+      if (leftTapTimer.current) clearTimeout(leftTapTimer.current);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      seekBy(-10);
+      triggerSeekFlash("left");
+    } else {
+      if (leftTapTimer.current) clearTimeout(leftTapTimer.current);
+      leftTapTimer.current = setTimeout(() => {
+        leftTapCount.current = 0;
+      }, 300);
+    }
+  }, [seekBy, triggerSeekFlash]);
+
+  const handleRightDoubleTap = useCallback(() => {
+    rightTapCount.current += 1;
+    if (rightTapCount.current >= 2) {
+      rightTapCount.current = 0;
+      if (rightTapTimer.current) clearTimeout(rightTapTimer.current);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      seekBy(10);
+      triggerSeekFlash("right");
+    } else {
+      if (rightTapTimer.current) clearTimeout(rightTapTimer.current);
+      rightTapTimer.current = setTimeout(() => {
+        rightTapCount.current = 0;
+      }, 300);
+    }
+  }, [seekBy, triggerSeekFlash]);
 
   const initStory = getStoryById(id ?? "");
   const story = currentStory ?? initStory;
@@ -186,6 +240,41 @@ export default function PlayerScreen() {
       )}
 
       <View style={[StyleSheet.absoluteFillObject, styles.dimOverlay]} />
+
+      {/* Double-tap seek zones */}
+      <TouchableOpacity
+        style={styles.seekZoneLeft}
+        onPress={handleLeftDoubleTap}
+        activeOpacity={1}
+      />
+      <TouchableOpacity
+        style={styles.seekZoneRight}
+        onPress={handleRightDoubleTap}
+        activeOpacity={1}
+      />
+
+      {/* Seek flash feedback */}
+      {seekFlashSide !== null && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.seekFlash,
+            seekFlashSide === "left" ? styles.seekFlashLeft : styles.seekFlashRight,
+            { opacity: seekFlashAnim },
+          ]}
+        >
+          <View style={styles.seekFlashCircle}>
+            <Ionicons
+              name={seekFlashSide === "left" ? "play-back" : "play-forward"}
+              size={26}
+              color="#fff"
+            />
+            <Text style={styles.seekFlashLabel}>
+              {seekFlashSide === "left" ? "−10s" : "+10s"}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
 
       <TouchableOpacity
         onPress={handleBack}
@@ -545,5 +634,51 @@ const styles = StyleSheet.create({
   timerOptionMeta: {
     fontSize: 12,
     fontFamily: "Nunito_600SemiBold",
+  },
+  seekZoneLeft: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "50%",
+    bottom: 160,
+    zIndex: 5,
+  },
+  seekZoneRight: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: "50%",
+    bottom: 160,
+    zIndex: 5,
+  },
+  seekFlash: {
+    position: "absolute",
+    top: 0,
+    bottom: 160,
+    width: "50%",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 6,
+    pointerEvents: "none",
+  },
+  seekFlashLeft: {
+    left: 0,
+  },
+  seekFlashRight: {
+    right: 0,
+  },
+  seekFlashCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  seekFlashLabel: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Nunito_700Bold",
   },
 });
