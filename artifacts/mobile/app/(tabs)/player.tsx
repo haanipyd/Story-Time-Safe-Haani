@@ -3,8 +3,8 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Dimensions,
   Image,
+  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -24,7 +24,12 @@ const COVER_IMAGES: Record<string, ReturnType<typeof require>> = {
   s9: require("../../assets/images/covers/krishna-butter.png"),
 };
 
-const { width: W, height: H } = Dimensions.get("window");
+const TIMER_OPTIONS: { label: string; minutes: number | null }[] = [
+  { label: "Off", minutes: null },
+  { label: "15 min", minutes: 15 },
+  { label: "30 min", minutes: 30 },
+  { label: "60 min", minutes: 60 },
+];
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -32,17 +37,33 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function formatSleepLabel(seconds: number) {
+  const m = Math.ceil(seconds / 60);
+  if (m <= 0) return "0m";
+  return `${m}m`;
+}
+
 export default function PlayerScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { currentStory, isPlaying, progress, elapsedSeconds, playStory, togglePlay } =
-    useAudio();
-  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
+  const {
+    currentStory,
+    isPlaying,
+    progress,
+    elapsedSeconds,
+    sleepTimerSeconds,
+    playStory,
+    togglePlay,
+    setSleepTimer,
+  } = useAudio();
+  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } =
+    useProfile();
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [pendingStory, setPendingStory] = useState<Story | null>(null);
+  const [showTimerSheet, setShowTimerSheet] = useState(false);
 
   const initStory = getStoryById(id ?? "");
   const story = currentStory ?? initStory;
@@ -100,6 +121,12 @@ export default function PlayerScreen() {
     router.back();
   };
 
+  const handleTimerOption = (minutes: number | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSleepTimer(minutes);
+    setShowTimerSheet(false);
+  };
+
   const handlePaywallUnlock = useCallback(() => {
     unlockPremium();
     setShowPaywall(false);
@@ -126,6 +153,7 @@ export default function PlayerScreen() {
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const timerActive = sleepTimerSeconds !== null;
 
   return (
     <View style={styles.root}>
@@ -157,6 +185,27 @@ export default function PlayerScreen() {
         <Ionicons name="arrow-back" size={26} color="#fff" />
       </TouchableOpacity>
 
+      <TouchableOpacity
+        onPress={() => setShowTimerSheet(true)}
+        style={[
+          styles.timerBtn,
+          { top: topPadding + 12 },
+          timerActive && styles.timerBtnActive,
+        ]}
+        hitSlop={12}
+      >
+        <Ionicons
+          name="moon"
+          size={20}
+          color={timerActive ? cardBg : "rgba(255,255,255,0.75)"}
+        />
+        {timerActive && sleepTimerSeconds !== null && (
+          <Text style={[styles.timerBadge, { color: "#fff" }]}>
+            {formatSleepLabel(sleepTimerSeconds)}
+          </Text>
+        )}
+      </TouchableOpacity>
+
       <View style={styles.centerContent}>
         <View
           style={[
@@ -164,9 +213,7 @@ export default function PlayerScreen() {
             { backgroundColor: "rgba(255,255,255,0.2)" },
           ]}
         >
-          <Text style={styles.categoryText}>
-            {category?.label ?? "Story"}
-          </Text>
+          <Text style={styles.categoryText}>{category?.label ?? "Story"}</Text>
         </View>
         <Text style={styles.storyTitle}>{story.title}</Text>
         <Text style={styles.storyDesc} numberOfLines={2}>
@@ -177,39 +224,31 @@ export default function PlayerScreen() {
       <View style={[styles.bottomControls, { paddingBottom: bottomPadding + 24 }]}>
         <View style={styles.timeRow}>
           <Text style={styles.timeText}>{formatTime(elapsedSeconds)}</Text>
-          <Text style={styles.timeText}>-{formatTime(remaining)}</Text>
+          {timerActive && sleepTimerSeconds !== null ? (
+            <View style={styles.sleepCountdown}>
+              <Ionicons name="moon" size={11} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.timeText}>{formatTime(sleepTimerSeconds)}</Text>
+            </View>
+          ) : (
+            <Text style={styles.timeText}>-{formatTime(remaining)}</Text>
+          )}
         </View>
 
         <View style={styles.progressTrack}>
           <View
             style={[
               styles.progressFill,
-              {
-                width: `${Math.min(progress * 100, 100)}%`,
-                backgroundColor: "#fff",
-              },
+              { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: "#fff" },
             ]}
           />
         </View>
 
         <View style={styles.controlsRow}>
-          <TouchableOpacity
-            onPress={handlePrev}
-            style={styles.skipBtn}
-            hitSlop={10}
-          >
-            <Ionicons
-              name="play-skip-back"
-              size={30}
-              color="rgba(255,255,255,0.85)"
-            />
+          <TouchableOpacity onPress={handlePrev} style={styles.skipBtn} hitSlop={10}>
+            <Ionicons name="play-skip-back" size={30} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleToggle}
-            style={styles.playBtn}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity onPress={handleToggle} activeOpacity={0.8}>
             <View
               style={[
                 styles.playBtnInner,
@@ -225,16 +264,8 @@ export default function PlayerScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleNext}
-            style={styles.skipBtn}
-            hitSlop={10}
-          >
-            <Ionicons
-              name="play-skip-forward"
-              size={30}
-              color="rgba(255,255,255,0.85)"
-            />
+          <TouchableOpacity onPress={handleNext} style={styles.skipBtn} hitSlop={10}>
+            <Ionicons name="play-skip-forward" size={30} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
         </View>
       </View>
@@ -244,6 +275,66 @@ export default function PlayerScreen() {
         onClose={() => { setShowPaywall(false); setPendingStory(null); }}
         onUnlock={handlePaywallUnlock}
       />
+
+      <Modal
+        visible={showTimerSheet}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTimerSheet(false)}
+      >
+        <TouchableOpacity
+          style={styles.timerOverlay}
+          activeOpacity={1}
+          onPress={() => setShowTimerSheet(false)}
+        >
+          <View
+            style={[styles.timerSheet, { backgroundColor: "rgba(20,20,35,0.97)" }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.timerSheetHeader}>
+              <Ionicons name="moon" size={18} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.timerSheetTitle}>Sleep Timer</Text>
+            </View>
+
+            {TIMER_OPTIONS.map((opt) => {
+              const isSelected =
+                opt.minutes === null
+                  ? sleepTimerSeconds === null
+                  : sleepTimerSeconds !== null &&
+                    Math.abs(sleepTimerSeconds - opt.minutes * 60) < 30;
+              return (
+                <TouchableOpacity
+                  key={opt.label}
+                  style={[
+                    styles.timerOption,
+                    isSelected && { backgroundColor: cardBg + "33" },
+                  ]}
+                  onPress={() => handleTimerOption(opt.minutes)}
+                >
+                  {isSelected ? (
+                    <Ionicons name="checkmark-circle" size={18} color={cardBg} />
+                  ) : (
+                    <View style={styles.timerOptionDot} />
+                  )}
+                  <Text
+                    style={[
+                      styles.timerOptionText,
+                      { color: isSelected ? "#fff" : "rgba(255,255,255,0.75)" },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  {isSelected && sleepTimerSeconds !== null && opt.minutes !== null && (
+                    <Text style={[styles.timerOptionMeta, { color: cardBg }]}>
+                      {formatTime(sleepTimerSeconds)} left
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -269,6 +360,24 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  timerBtn: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
+    height: 44,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 22,
+  },
+  timerBtnActive: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
+  timerBadge: {
+    fontSize: 12,
+    fontFamily: "Nunito_700Bold",
   },
   centerContent: {
     flex: 1,
@@ -315,6 +424,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     marginBottom: 8,
+    alignItems: "center",
+  },
+  sleepCountdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   timeText: {
     color: "rgba(255,255,255,0.6)",
@@ -346,7 +461,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  playBtn: {},
   playBtnInner: {
     width: 80,
     height: 80,
@@ -358,5 +472,60 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
+  },
+  timerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  timerSheet: {
+    width: 260,
+    borderRadius: 20,
+    paddingVertical: 8,
+    overflow: "hidden",
+  },
+  timerSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    marginBottom: 4,
+  },
+  timerSheetTitle: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    fontFamily: "Nunito_700Bold",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  timerOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 12,
+    borderRadius: 12,
+    marginHorizontal: 6,
+    marginVertical: 1,
+  },
+  timerOptionDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  timerOptionText: {
+    fontSize: 16,
+    fontFamily: "Nunito_700Bold",
+    flex: 1,
+  },
+  timerOptionMeta: {
+    fontSize: 12,
+    fontFamily: "Nunito_600SemiBold",
   },
 });
