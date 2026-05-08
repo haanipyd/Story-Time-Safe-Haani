@@ -36,6 +36,7 @@ interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   unlockWithRazorpay: (paymentId: string, orderId: string, signature: string) => Promise<{ error?: string }>;
+  confirmUpiPayment: (paymentId: string, orderId: string, plan: string) => Promise<{ error?: string }>;
 }
 
 const AUTH_STORAGE_KEY = "storytime_auth_v2";
@@ -170,6 +171,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [state.token, refreshSubscriptionWithToken]
   );
 
+  const confirmUpiPayment = useCallback(
+    async (paymentId: string, orderId: string, plan: string): Promise<{ error?: string }> => {
+      if (!state.token) return { error: "Not logged in" };
+      try {
+        const res = await apiFetch("/subscriptions/confirm-upi", {
+          method: "POST",
+          token: state.token,
+          body: JSON.stringify({ paymentId, orderId, plan }),
+        });
+        const data = await res.json() as { error?: string };
+        if (!res.ok) return { error: data.error ?? "Payment confirmation failed" };
+        await refreshSubscriptionWithToken(state.token);
+        return {};
+      } catch {
+        return { error: "Could not confirm payment" };
+      }
+    },
+    [state.token, refreshSubscriptionWithToken]
+  );
+
   const isPremium = state.subscription?.active === true;
 
   return (
@@ -183,6 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshSubscription,
         unlockWithRazorpay,
+        confirmUpiPayment,
       }}
     >
       {children}
