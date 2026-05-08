@@ -16,24 +16,47 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioProvider } from "@/context/AudioContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { ProfileProvider } from "@/context/ProfileContext";
+import { ProfileProvider, useProfile } from "@/context/ProfileContext";
 
 SplashScreen.preventAutoHideAsync();
 
+function injectWebFonts() {
+  if (Platform.OS !== "web") return;
+  if (document.getElementById("nunito-font")) return;
+  const link = document.createElement("link");
+  link.id = "nunito-font";
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap";
+  document.head.appendChild(link);
+}
+
 function AuthGuard() {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
+  const { currentProfile, isLoading: profileLoading } = useProfile();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) return;
+    if (authLoading || profileLoading) return;
+
     const onPhoneAuth = segments[0] === "phone-auth";
-    if (!isLoggedIn && !onPhoneAuth) {
-      router.replace("/phone-auth");
-    } else if (isLoggedIn && onPhoneAuth) {
+    const onOnboarding = segments[0] === "onboarding";
+
+    if (!isLoggedIn) {
+      if (!onPhoneAuth) router.replace("/phone-auth");
+      return;
+    }
+
+    if (!currentProfile) {
+      if (!onOnboarding) router.replace("/onboarding");
+      return;
+    }
+
+    if (onPhoneAuth || onOnboarding) {
       router.replace("/(tabs)/home");
     }
-  }, [isLoggedIn, isLoading, segments, router]);
+  }, [isLoggedIn, authLoading, profileLoading, currentProfile, segments, router]);
 
   return null;
 }
@@ -53,6 +76,10 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const isWeb = Platform.OS === "web";
+
+  useEffect(() => {
+    injectWebFonts();
+  }, []);
 
   const [fontsLoaded, fontError] = useFonts(
     isWeb
