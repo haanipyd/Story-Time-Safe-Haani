@@ -52,12 +52,6 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
   const [loading, setLoading] = useState(false);
 
   const handleSubscribe = async () => {
-    if (!isLoggedIn) {
-      onClose();
-      router.push("/login");
-      return;
-    }
-
     setLoading(true);
     try {
       const base = getApiUrl();

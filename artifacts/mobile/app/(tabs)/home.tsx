@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
-  const { isLoggedIn, isPremium } = useAuth();
+  const { isPremium } = useAuth();
   const { stories, loading, getStoryById } = useStories();
 
   const curated = useMemo(() => {
@@ -137,7 +137,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.headerBtns}>
             <TouchableOpacity
-              onPress={() => router.push(isLoggedIn ? "/(tabs)/settings" : "/login")}
+              onPress={() => router.push("/(tabs)/settings")}
               style={[
                 styles.gearBtn,
                 { backgroundColor: isPremium ? colors.coral + "22" : colors.muted },
@@ -145,7 +145,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Ionicons
-                name={isLoggedIn ? (isPremium ? "star" : "person-circle-outline") : "person-outline"}
+                name={isPremium ? "star" : "person-circle-outline"}
                 size={20}
                 color={isPremium ? colors.coral : colors.navy}
               />

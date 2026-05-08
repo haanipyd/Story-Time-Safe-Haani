@@ -1,95 +1,152 @@
 import { Router, type IRouter } from "express";
-import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, otpCodesTable } from "@workspace/db";
+import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod/v4";
 import { signToken, requireAuth } from "../middleware/auth";
+import twilio from "twilio";
 
 const router: IRouter = Router();
-
-const registerSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  password: z.string().min(6).max(128),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 }
 
-router.post("/auth/register", async (req, res) => {
-  const parsed = registerSchema.safeParse(req.body);
+function generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/[\s\-()]/g, "");
+}
+
+function getTwilioClient() {
+  const sid = process.env["TWILIO_ACCOUNT_SID"];
+  const token = process.env["TWILIO_AUTH_TOKEN"];
+  if (!sid || !token) return null;
+  return twilio(sid, token);
+}
+
+const sendOtpSchema = z.object({
+  phone: z.string().min(7).max(20),
+});
+
+const verifyOtpSchema = z.object({
+  phone: z.string().min(7).max(20),
+  otp: z.string().length(6),
+});
+
+router.post("/auth/send-otp", async (req, res) => {
+  const parsed = sendOtpSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input. Password must be at least 6 characters." });
+    res.status(400).json({ error: "Please provide a valid phone number." });
     return;
   }
-  const { name, email, password } = parsed.data;
+  const phone = normalizePhone(parsed.data.phone);
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
   try {
-    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
-    if (existing.length > 0) {
-      res.status(400).json({ error: "An account with this email already exists." });
-      return;
-    }
-    const passwordHash = await bcrypt.hash(password, 12);
-    const [user] = await db.insert(usersTable).values({
+    await db.insert(otpCodesTable).values({
       id: generateId(),
-      email: email.toLowerCase(),
-      passwordHash,
-      name,
-    }).returning();
-    const token = signToken({ userId: user.id, email: user.email });
-    res.status(201).json({
-      token,
-      user: { id: user.id, email: user.email, name: user.name },
+      phone,
+      code: otp,
+      expiresAt,
     });
+
+    const client = getTwilioClient();
+    const fromNumber = process.env["TWILIO_PHONE_NUMBER"];
+
+    if (client && fromNumber) {
+      await client.messages.create({
+        body: `Your Storytime OTP is: ${otp}. Valid for 10 minutes.`,
+        from: fromNumber,
+        to: phone,
+      });
+      req.log.info({ phone }, "OTP sent via Twilio");
+      res.json({ ok: true });
+    } else {
+      req.log.warn({ phone, otp }, "Twilio not configured — returning OTP in response (dev mode)");
+      res.json({ ok: true, devOtp: otp });
+    }
   } catch (err) {
-    req.log.error(err, "Register failed");
-    res.status(500).json({ error: "Internal server error" });
+    req.log.error(err, "Failed to send OTP");
+    res.status(500).json({ error: "Failed to send OTP. Please try again." });
   }
 });
 
-router.post("/auth/login", async (req, res) => {
-  const parsed = loginSchema.safeParse(req.body);
+router.post("/auth/verify-otp", async (req, res) => {
+  const parsed = verifyOtpSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid email or password." });
+    res.status(400).json({ error: "Invalid request." });
     return;
   }
-  const { email, password } = parsed.data;
+  const phone = normalizePhone(parsed.data.phone);
+  const { otp } = parsed.data;
+
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+    const now = new Date();
+    const [record] = await db
+      .select()
+      .from(otpCodesTable)
+      .where(
+        and(
+          eq(otpCodesTable.phone, phone),
+          eq(otpCodesTable.code, otp),
+          eq(otpCodesTable.used, false),
+          gt(otpCodesTable.expiresAt, now)
+        )
+      )
+      .orderBy(otpCodesTable.createdAt)
+      .limit(1);
+
+    if (!record) {
+      res.status(401).json({ error: "Incorrect or expired OTP. Please try again." });
+      return;
+    }
+
+    await db
+      .update(otpCodesTable)
+      .set({ used: true })
+      .where(eq(otpCodesTable.id, record.id));
+
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.phone, phone))
+      .limit(1);
+
+    let user = existing;
     if (!user) {
-      res.status(401).json({ error: "No account found with this email." });
-      return;
+      const [created] = await db
+        .insert(usersTable)
+        .values({ id: generateId(), phone, name: "Parent" })
+        .returning();
+      user = created;
     }
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
-      res.status(401).json({ error: "Incorrect password." });
-      return;
-    }
-    const token = signToken({ userId: user.id, email: user.email });
+
+    const token = signToken({ userId: user.id, phone: user.phone! });
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { id: user.id, phone: user.phone, name: user.name },
     });
   } catch (err) {
-    req.log.error(err, "Login failed");
+    req.log.error(err, "OTP verification failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
 router.get("/auth/me", requireAuth, async (req, res) => {
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.auth!.userId)).limit(1);
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, req.auth!.userId))
+      .limit(1);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json({ id: user.id, email: user.email, name: user.name });
+    res.json({ id: user.id, phone: user.phone, name: user.name });
   } catch (err) {
     req.log.error(err, "Get me failed");
     res.status(500).json({ error: "Internal server error" });

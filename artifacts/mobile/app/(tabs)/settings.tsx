@@ -282,38 +282,21 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <SectionLabel label="Account" colors={colors} />
-        {isLoggedIn ? (
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Row label="Signed in as" colors={colors}>
-              <Text style={[styles.valueText, { color: colors.navy }]} numberOfLines={1}>
-                {user?.email ?? ""}
-              </Text>
-            </Row>
-            <Divider colors={colors} />
-            <TouchableOpacity
-              onPress={async () => { await logout(); }}
-              style={styles.logoutRow}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#E55" />
-              <Text style={[styles.logoutText]}>Sign Out</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.authBtns}>
-            <TouchableOpacity
-              onPress={() => router.push("/login")}
-              style={[styles.authBtn, { backgroundColor: colors.coral }]}
-            >
-              <Text style={styles.authBtnText}>Sign In</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push("/register")}
-              style={[styles.authBtnOutline, { borderColor: colors.coral }]}
-            >
-              <Text style={[styles.authBtnOutlineText, { color: colors.coral }]}>Create Account</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Row label="Mobile" colors={colors}>
+            <Text style={[styles.valueText, { color: colors.navy }]} numberOfLines={1}>
+              {user?.phone ?? ""}
+            </Text>
+          </Row>
+          <Divider colors={colors} />
+          <TouchableOpacity
+            onPress={async () => { await logout(); }}
+            style={styles.logoutRow}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#E55" />
+            <Text style={[styles.logoutText]}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
 
         <SectionLabel label="Subscription" colors={colors} />
         {isPremium && subscription ? (

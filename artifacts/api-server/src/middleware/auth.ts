@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 
 export interface AuthPayload {
   userId: string;
-  email: string;
+  phone: string;
 }
 
 function getJwtSecret(): string {

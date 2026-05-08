@@ -10,7 +10,7 @@ import React, {
 
 export interface AuthUser {
   id: string;
-  email: string;
+  phone: string;
   name: string;
 }
 
@@ -31,14 +31,14 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   isLoggedIn: boolean;
   isPremium: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ error?: string }>;
+  sendOtp: (phone: string) => Promise<{ error?: string; devOtp?: string }>;
+  verifyOtp: (phone: string, otp: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   unlockWithRazorpay: (paymentId: string, orderId: string, signature: string) => Promise<{ error?: string }>;
 }
 
-const AUTH_STORAGE_KEY = "storytime_auth_v1";
+const AUTH_STORAGE_KEY = "storytime_auth_v2";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -106,16 +106,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshSubscriptionWithToken(state.token);
   }, [state.token, refreshSubscriptionWithToken]);
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<{ error?: string }> => {
+  const sendOtp = useCallback(
+    async (phone: string): Promise<{ error?: string; devOtp?: string }> => {
       try {
-        const res = await apiFetch("/auth/login", {
+        const res = await apiFetch("/auth/send-otp", {
           method: "POST",
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ phone }),
+        });
+        const data = await res.json() as { error?: string; devOtp?: string };
+        if (!res.ok) return { error: data.error ?? "Failed to send OTP" };
+        return { devOtp: data.devOtp };
+      } catch {
+        return { error: "Could not connect to server" };
+      }
+    },
+    []
+  );
+
+  const verifyOtp = useCallback(
+    async (phone: string, otp: string): Promise<{ error?: string }> => {
+      try {
+        const res = await apiFetch("/auth/verify-otp", {
+          method: "POST",
+          body: JSON.stringify({ phone, otp }),
         });
         const data = await res.json() as { user?: AuthUser; token?: string; error?: string };
         if (!res.ok || !data.user || !data.token) {
-          return { error: data.error ?? "Login failed" };
+          return { error: data.error ?? "Invalid OTP" };
         }
         await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token: data.token }));
         setState((p) => ({ ...p, user: data.user!, token: data.token!, subscription: null }));
@@ -126,27 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [refreshSubscriptionWithToken]
-  );
-
-  const register = useCallback(
-    async (name: string, email: string, password: string): Promise<{ error?: string }> => {
-      try {
-        const res = await apiFetch("/auth/register", {
-          method: "POST",
-          body: JSON.stringify({ name, email, password }),
-        });
-        const data = await res.json() as { user?: AuthUser; token?: string; error?: string };
-        if (!res.ok || !data.user || !data.token) {
-          return { error: data.error ?? "Registration failed" };
-        }
-        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token: data.token }));
-        setState((p) => ({ ...p, user: data.user!, token: data.token!, subscription: null }));
-        return {};
-      } catch {
-        return { error: "Could not connect to server" };
-      }
-    },
-    []
   );
 
   const logout = useCallback(async () => {
@@ -182,8 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...state,
         isLoggedIn: !!state.user,
         isPremium,
-        login,
-        register,
+        sendOtp,
+        verifyOtp,
         logout,
         refreshSubscription,
         unlockWithRazorpay,

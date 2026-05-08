@@ -154,19 +154,6 @@ export default function OnboardingScreen() {
               />
             </TouchableOpacity>
 
-            {!isLoggedIn && (
-              <TouchableOpacity
-                onPress={() => router.push("/login")}
-                style={styles.signInLink}
-              >
-                <Text style={[styles.signInLinkText, { color: colors.mutedForeground }]}>
-                  Already have an account?{" "}
-                  <Text style={{ color: colors.coral, fontFamily: "Nunito_700Bold" }}>
-                    Sign in
-                  </Text>
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
 
