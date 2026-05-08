@@ -26,8 +26,8 @@ function generateId(): string {
 }
 
 const PLANS = {
-  monthly: { amount: 39900, label: "₹399 / month" },
-  yearly: { amount: 299900, label: "₹2,999 / year" },
+  monthly: { amount: 19900, label: "₹199 / month" },
+  yearly: { amount: 19900, label: "₹199 / month" },
 } as const;
 
 async function saveSubscription(userId: string, plan: "monthly" | "yearly", orderId: string, paymentId: string) {
