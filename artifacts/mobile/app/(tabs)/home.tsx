@@ -17,6 +17,7 @@ import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
 import { useProfile } from "@/context/ProfileContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useStories, type RemoteStory } from "@/hooks/useStories";
 
@@ -70,6 +71,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
+  const { isLoggedIn, isPremium } = useAuth();
   const { stories, loading, getStoryById } = useStories();
 
   const curated = useMemo(() => {
@@ -133,13 +135,29 @@ export default function HomeScreen() {
               {name}&apos;s Stories
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/settings")}
-            style={[styles.gearBtn, { backgroundColor: colors.muted }]}
-            hitSlop={8}
-          >
-            <Ionicons name="settings-outline" size={20} color={colors.navy} />
-          </TouchableOpacity>
+          <View style={styles.headerBtns}>
+            <TouchableOpacity
+              onPress={() => router.push(isLoggedIn ? "/(tabs)/settings" : "/login")}
+              style={[
+                styles.gearBtn,
+                { backgroundColor: isPremium ? colors.coral + "22" : colors.muted },
+              ]}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={isLoggedIn ? (isPremium ? "star" : "person-circle-outline") : "person-outline"}
+                size={20}
+                color={isPremium ? colors.coral : colors.navy}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/settings")}
+              style={[styles.gearBtn, { backgroundColor: colors.muted }]}
+              hitSlop={8}
+            >
+              <Ionicons name="settings-outline" size={20} color={colors.navy} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {curated.featured && (
@@ -244,6 +262,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontFamily: "Nunito_800ExtraBold",
+  },
+  headerBtns: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
   },
   gearBtn: {
     width: 44,

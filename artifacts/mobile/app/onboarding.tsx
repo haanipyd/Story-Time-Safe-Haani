@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CATEGORIES } from "@/data/preferences";
 import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 
 const { width: W } = Dimensions.get("window");
 const AGE_OPTIONS = [1, 2, 3, 4, 5];
@@ -27,6 +28,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeOnboarding } = useProfile();
+  const { isLoggedIn } = useAuth();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -151,6 +153,20 @@ export default function OnboardingScreen() {
                 color={canContinueStep0 ? "#fff" : colors.mutedForeground}
               />
             </TouchableOpacity>
+
+            {!isLoggedIn && (
+              <TouchableOpacity
+                onPress={() => router.push("/login")}
+                style={styles.signInLink}
+              >
+                <Text style={[styles.signInLinkText, { color: colors.mutedForeground }]}>
+                  Already have an account?{" "}
+                  <Text style={{ color: colors.coral, fontFamily: "Nunito_700Bold" }}>
+                    Sign in
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -372,6 +388,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     marginBottom: 12,
+  },
+  signInLink: {
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  signInLinkText: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
   },
   doneBtn: {},
   continueBtnText: {
