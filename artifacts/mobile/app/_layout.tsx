@@ -8,6 +8,7 @@ import {
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -31,20 +32,26 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Nunito_400Regular,
-    Nunito_600SemiBold,
-    Nunito_700Bold,
-    Nunito_800ExtraBold,
-  });
+  const isWeb = Platform.OS === "web";
+
+  const [fontsLoaded, fontError] = useFonts(
+    isWeb
+      ? {}
+      : {
+          Nunito_400Regular,
+          Nunito_600SemiBold,
+          Nunito_700Bold,
+          Nunito_800ExtraBold,
+        }
+  );
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (isWeb || fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [isWeb, fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!isWeb && !fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
