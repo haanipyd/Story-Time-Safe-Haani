@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CATEGORIES } from "@/data/preferences";
 import { useProfile } from "@/context/ProfileContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 const AGE_OPTIONS = [1, 2, 3, 4, 5];
@@ -35,6 +36,7 @@ export default function SettingsScreen() {
     addProfile,
     updateSettings,
   } = useProfile();
+  const { user, isLoggedIn, isPremium, subscription, token, logout, refreshSubscription } = useAuth();
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(currentProfile?.name ?? "");
@@ -278,6 +280,111 @@ export default function SettingsScreen() {
             Add Another Child
           </Text>
         </TouchableOpacity>
+
+        <SectionLabel label="Account" colors={colors} />
+        {isLoggedIn ? (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Row label="Signed in as" colors={colors}>
+              <Text style={[styles.valueText, { color: colors.navy }]} numberOfLines={1}>
+                {user?.email ?? ""}
+              </Text>
+            </Row>
+            <Divider colors={colors} />
+            <TouchableOpacity
+              onPress={async () => { await logout(); }}
+              style={styles.logoutRow}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#E55" />
+              <Text style={[styles.logoutText]}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.authBtns}>
+            <TouchableOpacity
+              onPress={() => router.push("/login")}
+              style={[styles.authBtn, { backgroundColor: colors.coral }]}
+            >
+              <Text style={styles.authBtnText}>Sign In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/register")}
+              style={[styles.authBtnOutline, { borderColor: colors.coral }]}
+            >
+              <Text style={[styles.authBtnOutlineText, { color: colors.coral }]}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <SectionLabel label="Subscription" colors={colors} />
+        {isPremium && subscription ? (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Row label="Plan" colors={colors}>
+              <View style={[styles.activeBadge, { backgroundColor: colors.green + "22" }]}>
+                <Text style={[styles.activeBadgeText, { color: colors.green }]}>
+                  {subscription.plan === "yearly" ? "Yearly ✓" : "Monthly ✓"}
+                </Text>
+              </View>
+            </Row>
+            {subscription.currentPeriodEnd && (
+              <>
+                <Divider colors={colors} />
+                <Row label="Renews on" colors={colors}>
+                  <Text style={[styles.valueText, { color: colors.mutedForeground }]}>
+                    {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-IN", {
+                      day: "numeric", month: "short", year: "numeric",
+                    })}
+                  </Text>
+                </Row>
+              </>
+            )}
+            <Divider colors={colors} />
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(
+                  "Cancel Subscription",
+                  "Your access will continue until the end of the current period. Cancel anyway?",
+                  [
+                    { text: "Keep Premium", style: "cancel" },
+                    {
+                      text: "Cancel",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          const { default: Constants } = await import("expo-constants");
+                          const base = (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+                          await fetch(`${base}/api/subscriptions/cancel`, {
+                            method: "POST",
+                            headers: { Authorization: `Bearer ${token ?? ""}` },
+                          });
+                          await refreshSubscription();
+                        } catch {}
+                      },
+                    },
+                  ]
+                );
+              }}
+              style={styles.cancelRow}
+            >
+              <Text style={styles.cancelText}>Cancel Subscription</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Row label="Plan" colors={colors}>
+              <Text style={[styles.valueText, { color: colors.mutedForeground }]}>Free (5 stories)</Text>
+            </Row>
+            <Divider colors={colors} />
+            <TouchableOpacity
+              onPress={() => router.push("/")}
+              style={styles.upgradeRow}
+            >
+              <Ionicons name="star" size={16} color={colors.coral} />
+              <Text style={[styles.upgradeText, { color: colors.coral }]}>
+                Upgrade to Premium
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       <Modal visible={showAddChild} animationType="slide" presentationStyle="pageSheet">
@@ -509,6 +616,48 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   },
   addChildText: { fontSize: 15, fontFamily: "Nunito_700Bold" },
+  logoutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  logoutText: { fontSize: 15, fontFamily: "Nunito_600SemiBold", color: "#E55" },
+  cancelRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  cancelText: { fontSize: 14, fontFamily: "Nunito_600SemiBold", color: "#E55" },
+  upgradeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  upgradeText: { fontSize: 15, fontFamily: "Nunito_700Bold" },
+  authBtns: { marginHorizontal: 16, gap: 10 },
+  authBtn: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  authBtnText: { color: "#fff", fontSize: 15, fontFamily: "Nunito_700Bold" },
+  authBtnOutline: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    borderWidth: 1.5,
+  },
+  authBtnOutlineText: { fontSize: 15, fontFamily: "Nunito_700Bold" },
+  activeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  activeBadgeText: { fontSize: 13, fontFamily: "Nunito_700Bold" },
   prefGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

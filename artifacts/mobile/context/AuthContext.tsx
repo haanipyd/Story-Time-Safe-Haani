@@ -1,0 +1,201 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface SubscriptionStatus {
+  active: boolean;
+  plan: string | null;
+  currentPeriodEnd: string | null;
+  status: string;
+}
+
+interface AuthState {
+  user: AuthUser | null;
+  token: string | null;
+  isLoading: boolean;
+  subscription: SubscriptionStatus | null;
+}
+
+interface AuthContextValue extends AuthState {
+  isLoggedIn: boolean;
+  isPremium: boolean;
+  login: (email: string, password: string) => Promise<{ error?: string }>;
+  register: (name: string, email: string, password: string) => Promise<{ error?: string }>;
+  logout: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
+  unlockWithRazorpay: (paymentId: string, orderId: string, signature: string) => Promise<{ error?: string }>;
+}
+
+const AUTH_STORAGE_KEY = "storytime_auth_v1";
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function getApiUrl(): string {
+  return (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+}
+
+async function apiFetch(
+  path: string,
+  opts: RequestInit & { token?: string } = {}
+): Promise<Response> {
+  const { token, ...rest } = opts;
+  const base = getApiUrl();
+  return fetch(`${base}/api${path}`, {
+    ...rest,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(rest.headers ?? {}),
+    },
+  });
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    token: null,
+    isLoading: true,
+    subscription: null,
+  });
+
+  useEffect(() => {
+    AsyncStorage.getItem(AUTH_STORAGE_KEY).then((raw) => {
+      if (!raw) {
+        setState((p) => ({ ...p, isLoading: false }));
+        return;
+      }
+      try {
+        const saved = JSON.parse(raw) as { user: AuthUser; token: string };
+        setState((p) => ({
+          ...p,
+          user: saved.user,
+          token: saved.token,
+          isLoading: false,
+        }));
+        refreshSubscriptionWithToken(saved.token);
+      } catch {
+        setState((p) => ({ ...p, isLoading: false }));
+      }
+    });
+  }, []);
+
+  const refreshSubscriptionWithToken = useCallback(async (token: string) => {
+    try {
+      const res = await apiFetch("/subscriptions/status", { token });
+      if (res.ok) {
+        const data = await res.json() as SubscriptionStatus;
+        setState((p) => ({ ...p, subscription: data }));
+      }
+    } catch {}
+  }, []);
+
+  const refreshSubscription = useCallback(async () => {
+    if (!state.token) return;
+    await refreshSubscriptionWithToken(state.token);
+  }, [state.token, refreshSubscriptionWithToken]);
+
+  const login = useCallback(
+    async (email: string, password: string): Promise<{ error?: string }> => {
+      try {
+        const res = await apiFetch("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json() as { user?: AuthUser; token?: string; error?: string };
+        if (!res.ok || !data.user || !data.token) {
+          return { error: data.error ?? "Login failed" };
+        }
+        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token: data.token }));
+        setState((p) => ({ ...p, user: data.user!, token: data.token!, subscription: null }));
+        await refreshSubscriptionWithToken(data.token!);
+        return {};
+      } catch {
+        return { error: "Could not connect to server" };
+      }
+    },
+    [refreshSubscriptionWithToken]
+  );
+
+  const register = useCallback(
+    async (name: string, email: string, password: string): Promise<{ error?: string }> => {
+      try {
+        const res = await apiFetch("/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await res.json() as { user?: AuthUser; token?: string; error?: string };
+        if (!res.ok || !data.user || !data.token) {
+          return { error: data.error ?? "Registration failed" };
+        }
+        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user: data.user, token: data.token }));
+        setState((p) => ({ ...p, user: data.user!, token: data.token!, subscription: null }));
+        return {};
+      } catch {
+        return { error: "Could not connect to server" };
+      }
+    },
+    []
+  );
+
+  const logout = useCallback(async () => {
+    await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+    setState({ user: null, token: null, isLoading: false, subscription: null });
+  }, []);
+
+  const unlockWithRazorpay = useCallback(
+    async (paymentId: string, orderId: string, signature: string): Promise<{ error?: string }> => {
+      if (!state.token) return { error: "Not logged in" };
+      try {
+        const res = await apiFetch("/subscriptions/verify", {
+          method: "POST",
+          token: state.token,
+          body: JSON.stringify({ razorpay_payment_id: paymentId, razorpay_order_id: orderId, razorpay_signature: signature }),
+        });
+        const data = await res.json() as { error?: string };
+        if (!res.ok) return { error: data.error ?? "Payment verification failed" };
+        await refreshSubscriptionWithToken(state.token);
+        return {};
+      } catch {
+        return { error: "Could not verify payment" };
+      }
+    },
+    [state.token, refreshSubscriptionWithToken]
+  );
+
+  const isPremium = state.subscription?.active === true;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        ...state,
+        isLoggedIn: !!state.user,
+        isPremium,
+        login,
+        register,
+        logout,
+        refreshSubscription,
+        unlockWithRazorpay,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}

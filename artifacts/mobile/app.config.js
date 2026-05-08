@@ -8,7 +8,7 @@ module.exports = {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "mobile",
+    scheme: ["storytime", "mobile"],
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
@@ -19,7 +19,9 @@ module.exports = {
     ios: {
       supportsTablet: false,
     },
-    android: {},
+    android: {
+      package: "com.storytime.kids",
+    },
     web: {
       favicon: "./assets/images/icon.png",
     },
