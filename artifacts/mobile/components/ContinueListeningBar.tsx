@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -18,8 +18,9 @@ export default function ContinueListeningBar() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!currentStory) return null;
+  if (!currentStory || dismissed) return null;
 
   const category = getCategoryById(currentStory.category);
   const catColor = category?.color ?? colors.coral;
@@ -36,12 +37,17 @@ export default function ContinueListeningBar() {
     togglePlay();
   };
 
+  const handleDismiss = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDismissed(true);
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.bar,
         {
-          bottom: insets.bottom + 12,
+          bottom: insets.bottom + 16,
           backgroundColor: colors.card,
           borderColor: catColor,
           shadowColor: catColor,
@@ -81,6 +87,14 @@ export default function ContinueListeningBar() {
           style={isPlaying ? undefined : { marginLeft: 2 }}
         />
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.closeBtn}
+        onPress={handleDismiss}
+        hitSlop={10}
+      >
+        <Ionicons name="close" size={16} color={colors.mutedForeground} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -101,7 +115,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 8,
+    zIndex: 100,
   },
   accentStrip: {
     position: "absolute",
@@ -132,9 +147,15 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_800ExtraBold",
   },
   playBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeBtn: {
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
   },

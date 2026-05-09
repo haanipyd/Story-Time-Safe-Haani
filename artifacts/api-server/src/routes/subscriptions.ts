@@ -310,9 +310,12 @@ router.get("/subscriptions/checkout", async (req, res) => {
     p { color: #888; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
     .plan { background: #FDF6E3; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
     .plan-name { font-size: 16px; font-weight: 700; color: #2D3E5E; }
-    .plan-price { font-size: 24px; font-weight: 800; color: #E8826B; margin-top: 4px; }
+    .plan-price { font-size: 28px; font-weight: 800; color: #E8826B; margin-top: 4px; }
+    .upi-logos { font-size: 13px; color: #888; margin-bottom: 20px; }
     button { background: #E8826B; color: white; border: none; border-radius: 14px; padding: 16px 32px; font-size: 16px; font-weight: 700; width: 100%; cursor: pointer; }
     button:disabled { opacity: 0.6; }
+    .loader { display: none; margin: 24px auto 0; width: 36px; height: 36px; border: 3px solid #f3f3f3; border-top: 3px solid #E8826B; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .error { color: #e55; font-size: 13px; margin-top: 12px; display: none; }
   </style>
 </head>
@@ -322,30 +325,64 @@ router.get("/subscriptions/checkout", async (req, res) => {
     <h1>Storytime Premium</h1>
     <p>Unlimited stories for your little one.</p>
     <div class="plan">
-      <div class="plan-name">${plan === "yearly" ? "Yearly Plan" : "Monthly Plan"}</div>
-      <div class="plan-price">${planLabel}</div>
+      <div class="plan-name">Monthly Plan</div>
+      <div class="plan-price">₹199 / month</div>
     </div>
-    <button id="payBtn" onclick="startPayment()">Pay Securely with Razorpay</button>
+    <div class="upi-logos">🟦 Google Pay &nbsp;·&nbsp; 🟣 PhonePe &nbsp;·&nbsp; 🔵 Paytm &nbsp;·&nbsp; 💳 Card</div>
+    <button id="payBtn" onclick="startPayment()">Pay Now</button>
+    <div class="loader" id="loader"></div>
     <div class="error" id="errMsg"></div>
   </div>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     function startPayment() {
-      document.getElementById('payBtn').disabled = true;
+      document.getElementById('payBtn').style.display = 'none';
+      document.getElementById('loader').style.display = 'block';
       var options = {
-        key: '${keyId}', amount: '${amount}', currency: '${currency}',
-        name: 'Storytime', description: 'Premium - ${planLabel}',
+        key: '${keyId}',
+        amount: '${amount}',
+        currency: '${currency}',
+        name: 'Storytime',
+        description: 'Premium — ₹199/month',
         order_id: '${orderId}',
-        prefill: { contact: '${userPhone}', name: '${userName}' },
+        prefill: {
+          contact: '${userPhone}',
+          name: '${userName}'
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay via UPI',
+                instruments: [{ method: 'upi', flows: ['intent', 'collect', 'qr'] }]
+              },
+              other: {
+                name: 'Other Payment Methods',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' }
+                ]
+              }
+            },
+            sequence: ['block.upi', 'block.other'],
+            preferences: { show_default_blocks: false }
+          }
+        },
         theme: { color: '#E8826B' },
         handler: function(r) {
-          window.location.href = 'storytime://payment-success?paymentId=' + encodeURIComponent(r.razorpay_payment_id) + '&orderId=' + encodeURIComponent(r.razorpay_order_id) + '&signature=' + encodeURIComponent(r.razorpay_signature) + '&plan=${plan}';
+          window.location.href = 'storytime://payment-success?paymentId=' + encodeURIComponent(r.razorpay_payment_id) + '&orderId=' + encodeURIComponent(r.razorpay_order_id) + '&signature=' + encodeURIComponent(r.razorpay_signature) + '&plan=monthly';
         },
-        modal: { ondismiss: function() { window.location.href = 'storytime://payment-cancelled'; } }
+        modal: {
+          ondismiss: function() {
+            window.location.href = 'storytime://payment-cancelled';
+          }
+        }
       };
       var rzp = new Razorpay(options);
       rzp.on('payment.failed', function(r) {
-        document.getElementById('payBtn').disabled = false;
+        document.getElementById('payBtn').style.display = 'block';
+        document.getElementById('loader').style.display = 'none';
         document.getElementById('errMsg').style.display = 'block';
         document.getElementById('errMsg').textContent = 'Payment failed: ' + r.error.description;
       });

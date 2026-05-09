@@ -118,7 +118,6 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
-      <ContinueListeningBar />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -234,6 +233,7 @@ export default function HomeScreen() {
           />
         )}
       </ScrollView>
+      <ContinueListeningBar />
     </View>
   );
 }
