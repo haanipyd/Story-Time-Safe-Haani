@@ -105,7 +105,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json() as { status?: string };
-        if (data.status === "captured") {
+        if (data.status === "captured" || data.status === "authorized") {
           stopPolling();
           const result = await confirmUpiPayment(paymentId.current, orderId.current, "monthly");
           if (result.error) { setPollingStatus("failed"); Alert.alert("Verification Error", result.error); }

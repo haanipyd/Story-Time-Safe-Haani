@@ -85,6 +85,7 @@ router.post("/subscriptions/create-order", requireAuth, async (req, res) => {
     const order = await client.orders.create({
       amount: PLANS[plan].amount, currency: "INR",
       receipt: `storytime_${req.auth!.userId}_${Date.now()}`,
+      payment_capture: 1,
     });
     res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: key_id, plan });
   } catch (err) {
@@ -131,12 +132,15 @@ router.post("/subscriptions/create-upi-intent", requireAuth, async (req, res) =>
       currency: order.currency ?? "INR",
       order_id: orderId,
       method: "upi",
-      "upi[flow]": "intent",
+      upi: { flow: "intent" },
       contact,
       email: "parent@storytime.app",
+      ip: "1.1.1.1",
+      user_agent: "Storytime/1.0 (Android)",
+      referrer: "https://storytime.app",
     });
 
-    const payRes = await fetch("https://api.razorpay.com/v1/payments/create/upi", {
+    const payRes = await fetch("https://api.razorpay.com/v1/payments/create/json", {
       method: "POST",
       headers: { Authorization: auth, "Content-Type": "application/json" },
       body,
@@ -208,8 +212,8 @@ router.post("/subscriptions/confirm-upi", requireAuth, async (req, res) => {
     });
     const payment = await payRes.json() as { status?: string; order_id?: string; amount?: number };
 
-    if (payment.status !== "captured") {
-      res.status(400).json({ error: "Payment not yet captured. Please wait a moment." });
+    if (payment.status !== "captured" && payment.status !== "authorized") {
+      res.status(400).json({ error: "Payment not yet completed. Please wait a moment and try again." });
       return;
     }
     if (payment.order_id !== orderId) {
