@@ -60,8 +60,12 @@ export default function PlayerScreen() {
     playStory,
     togglePlay,
     seekBy,
+    seekTo,
     setSleepTimer,
   } = useAudio();
+
+  const trackWidthRef = useRef(0);
+
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } =
     useProfile();
 
@@ -137,6 +141,12 @@ export default function PlayerScreen() {
 
   const totalSeconds = story ? story.duration * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;
+
+  const handleProgressSeek = useCallback((locationX: number) => {
+    if (!trackWidthRef.current) return;
+    const ratio = Math.max(0, Math.min(locationX / trackWidthRef.current, 1));
+    seekTo(ratio * totalSeconds);
+  }, [seekTo, totalSeconds]);
 
   const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
   const prevStory =
@@ -333,13 +343,17 @@ export default function PlayerScreen() {
           )}
         </View>
 
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: "#fff" },
-            ]}
-          />
+        <View
+          style={styles.progressTrack}
+          onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderGrant={(e) => handleProgressSeek(e.nativeEvent.locationX)}
+          onResponderMove={(e) => handleProgressSeek(e.nativeEvent.locationX)}
+        >
+          <View style={styles.progressTrackBg} />
+          <View style={[styles.progressFill, { width: `${Math.min(progress * 100, 100)}%` }]} />
+          <View style={[styles.progressThumb, { left: `${Math.min(progress * 100, 100)}%` as unknown as number }]} />
         </View>
 
         <View style={styles.controlsRow}>
@@ -545,15 +559,38 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     width: "100%",
+    height: 28,
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+  progressTrackBg: {
+    position: "absolute",
+    left: 0,
+    right: 0,
     height: 4,
-    backgroundColor: "rgba(255,255,255,0.25)",
     borderRadius: 2,
-    marginBottom: 32,
-    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.25)",
   },
   progressFill: {
-    height: "100%",
+    position: "absolute",
+    left: 0,
+    height: 4,
     borderRadius: 2,
+    backgroundColor: "#fff",
+  },
+  progressThumb: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#fff",
+    marginLeft: -7,
+    top: 7,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   controlsRow: {
     flexDirection: "row",

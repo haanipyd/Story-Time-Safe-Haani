@@ -20,6 +20,7 @@ interface AudioContextValue {
   playStory: (story: Story) => void;
   togglePlay: () => void;
   seekBy: (seconds: number) => Promise<void>;
+  seekTo: (seconds: number) => Promise<void>;
   stop: () => void;
   setSleepTimer: (minutes: number | null) => void;
 }
@@ -191,6 +192,20 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentStory]);
 
+  const seekTo = useCallback(async (seconds: number) => {
+    const storyMax = currentStory ? currentStory.duration * 60 : 0;
+    const clamped = Math.max(0, Math.min(seconds, storyMax));
+    if (soundRef.current) {
+      const status = await soundRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        await soundRef.current.setPositionAsync(clamped * 1000);
+        setElapsedSeconds(Math.floor(clamped));
+      }
+    } else {
+      setElapsedSeconds(Math.floor(clamped));
+    }
+  }, [currentStory]);
+
   const setSleepTimer = useCallback((minutes: number | null) => {
     if (minutes === null) {
       sleepTimerRef.current = null;
@@ -214,6 +229,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         playStory,
         togglePlay,
         seekBy,
+        seekTo,
         stop,
         setSleepTimer,
       }}
