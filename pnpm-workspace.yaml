@@ -43,6 +43,7 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  fast-uri: 3.1.2
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@expo/cli>brace-expansion': 2.0.3
   '@expo/cli>picomatch': 4.0.4
