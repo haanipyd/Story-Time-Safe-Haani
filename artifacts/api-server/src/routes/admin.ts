@@ -4,6 +4,18 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+function normalizeMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  // Convert Google Drive sharing link → direct download link
+  // https://drive.google.com/file/d/FILE_ID/view?... → https://drive.google.com/uc?export=download&id=FILE_ID
+  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+  }
+  return trimmed;
+}
+
 const CATEGORIES = [
   "bedtime",
   "adventure",
@@ -265,9 +277,9 @@ router.post("/admin/stories", async (req, res) => {
       ageMin: parseInt(b.ageMin, 10),
       ageMax: parseInt(b.ageMax, 10),
       description: b.description,
-      thumbnailUrl: b.thumbnailUrl || null,
-      audioUrl: b.audioUrl || null,
-      videoUrl: b.videoUrl || null,
+      thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl),
+      audioUrl: normalizeMediaUrl(b.audioUrl),
+      videoUrl: normalizeMediaUrl(b.videoUrl),
       published: b.published === "true",
     });
     res.redirect("/api/admin?msg=Story+added+successfully");
@@ -291,9 +303,9 @@ router.post("/admin/stories/:id", async (req, res) => {
         ageMin: parseInt(b.ageMin, 10),
         ageMax: parseInt(b.ageMax, 10),
         description: b.description,
-        thumbnailUrl: b.thumbnailUrl || null,
-        audioUrl: b.audioUrl || null,
-        videoUrl: b.videoUrl || null,
+        thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl),
+        audioUrl: normalizeMediaUrl(b.audioUrl),
+        videoUrl: normalizeMediaUrl(b.videoUrl),
         published: b.published === "true",
         updatedAt: new Date(),
       })
