@@ -3,7 +3,6 @@ import { db, usersTable, otpCodesTable } from "@workspace/db";
 import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod/v4";
 import { signToken, requireAuth } from "../middleware/auth";
-import twilio from "twilio";
 
 const router: IRouter = Router();
 
@@ -19,11 +18,32 @@ function normalizePhone(phone: string): string {
   return phone.replace(/[\s\-()]/g, "");
 }
 
-function getTwilioClient() {
-  const sid = process.env["TWILIO_ACCOUNT_SID"];
-  const token = process.env["TWILIO_AUTH_TOKEN"];
-  if (!sid || !token) return null;
-  return twilio(sid, token);
+function toMsg91Mobile(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("91") && digits.length === 12) return digits;
+  if (digits.length === 10) return `91${digits}`;
+  return digits;
+}
+
+async function sendOtpViaMSG91(phone: string, otp: string): Promise<void> {
+  const authKey = process.env["MSG91_AUTH_KEY"];
+  const templateId = process.env["MSG91_TEMPLATE_ID"];
+  if (!authKey || !templateId) throw new Error("MSG91_AUTH_KEY or MSG91_TEMPLATE_ID not set");
+
+  const mobile = toMsg91Mobile(phone);
+  const res = await fetch("https://control.msg91.com/api/v5/otp", {
+    method: "POST",
+    headers: {
+      authkey: authKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ template_id: templateId, mobile, otp }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`MSG91 error ${res.status}: ${body}`);
+  }
 }
 
 const sendOtpSchema = z.object({
@@ -43,29 +63,20 @@ router.post("/auth/send-otp", async (req, res) => {
   }
   const phone = normalizePhone(parsed.data.phone);
   const otp = generateOtp();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   try {
-    await db.insert(otpCodesTable).values({
-      id: generateId(),
-      phone,
-      code: otp,
-      expiresAt,
-    });
+    await db.insert(otpCodesTable).values({ id: generateId(), phone, code: otp, expiresAt });
 
-    const client = getTwilioClient();
-    const fromNumber = process.env["TWILIO_PHONE_NUMBER"];
+    const authKey = process.env["MSG91_AUTH_KEY"];
+    const templateId = process.env["MSG91_TEMPLATE_ID"];
 
-    if (client && fromNumber) {
-      await client.messages.create({
-        body: `Your Storytime OTP is: ${otp}. Valid for 10 minutes.`,
-        from: fromNumber,
-        to: phone,
-      });
-      req.log.info({ phone }, "OTP sent via Twilio");
+    if (authKey && templateId) {
+      await sendOtpViaMSG91(phone, otp);
+      req.log.info({ phone }, "OTP sent via MSG91");
       res.json({ ok: true });
     } else {
-      req.log.warn({ phone, otp }, "Twilio not configured — returning OTP in response (dev mode)");
+      req.log.warn({ phone, otp }, "MSG91 not configured — returning OTP in response (dev mode)");
       res.json({ ok: true, devOtp: otp });
     }
   } catch (err) {
@@ -104,10 +115,7 @@ router.post("/auth/verify-otp", async (req, res) => {
       return;
     }
 
-    await db
-      .update(otpCodesTable)
-      .set({ used: true })
-      .where(eq(otpCodesTable.id, record.id));
+    await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, record.id));
 
     const [existing] = await db
       .select()
@@ -125,10 +133,7 @@ router.post("/auth/verify-otp", async (req, res) => {
     }
 
     const token = signToken({ userId: user.id, phone: user.phone! });
-    res.json({
-      token,
-      user: { id: user.id, phone: user.phone, name: user.name },
-    });
+    res.json({ token, user: { id: user.id, phone: user.phone, name: user.name } });
   } catch (err) {
     req.log.error(err, "OTP verification failed");
     res.status(500).json({ error: "Internal server error" });

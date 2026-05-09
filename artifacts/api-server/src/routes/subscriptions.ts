@@ -82,11 +82,11 @@ router.post("/subscriptions/create-order", requireAuth, async (req, res) => {
   try {
     const { client, key_id } = getRazorpayKeys();
     const plan = parsed.data.plan;
-    const order = await client.orders.create({
+    const order = await (client.orders.create({
       amount: PLANS[plan].amount, currency: "INR",
       receipt: `storytime_${req.auth!.userId}_${Date.now()}`,
-      payment_capture: 1,
-    });
+      payment_capture: true,
+    }) as unknown as Promise<{ id: string; amount: number; currency: string }>);
     res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: key_id, plan });
   } catch (err) {
     req.log.error(err, "Failed to create Razorpay order");

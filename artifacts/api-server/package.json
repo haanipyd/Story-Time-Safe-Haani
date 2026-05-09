@@ -21,7 +21,6 @@
     "pino": "^9",
     "pino-http": "^10",
     "razorpay": "^2.9.6",
-    "twilio": "^6.0.2",
     "zod": "catalog:"
   },
   "devDependencies": {
