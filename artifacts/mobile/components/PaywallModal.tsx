@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { WebView, type WebViewNavigation } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Constants from "expo-constants";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 
@@ -30,7 +29,8 @@ const FEATURES = [
 ];
 
 function getApiUrl(): string {
-  return (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  return domain ? `https://${domain}` : "";
 }
 
 export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModalProps) {

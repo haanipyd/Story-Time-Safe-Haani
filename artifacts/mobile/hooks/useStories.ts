@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import Constants from "expo-constants";
 import { STORIES, type Story } from "@/data/stories";
 
-const API_URL: string = Constants.expoConfig?.extra?.apiUrl ?? "";
+const EXPO_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+const API_URL: string = EXPO_DOMAIN ? `https://${EXPO_DOMAIN}` : "";
 
 export interface RemoteStory extends Story {
   thumbnailUrl?: string | null;

@@ -333,8 +333,8 @@ export default function SettingsScreen() {
                       style: "destructive",
                       onPress: async () => {
                         try {
-                          const { default: Constants } = await import("expo-constants");
-                          const base = (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+                          const domain = process.env.EXPO_PUBLIC_DOMAIN;
+                          const base = domain ? `https://${domain}` : "";
                           await fetch(`${base}/api/subscriptions/cancel`, {
                             method: "POST",
                             headers: { Authorization: `Bearer ${token ?? ""}` },

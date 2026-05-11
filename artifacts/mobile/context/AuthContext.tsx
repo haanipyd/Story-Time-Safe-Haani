@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from "expo-constants";
 import React, {
   createContext,
   useCallback,
@@ -44,7 +43,8 @@ const AUTH_STORAGE_KEY = "storytime_auth_v2";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function getApiUrl(): string {
-  return (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? "";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  return domain ? `https://${domain}` : "";
 }
 
 async function apiFetch(
