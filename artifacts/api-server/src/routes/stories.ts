@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, storiesTable } from "@workspace/db";
 import {
   CreateStoryBody,
@@ -8,6 +8,7 @@ import {
   GetStoryParams,
   DeleteStoryParams,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
@@ -25,7 +26,7 @@ router.get("/stories", async (req, res) => {
   }
 });
 
-router.post("/stories", async (req, res) => {
+router.post("/stories", requireAuth, async (req, res) => {
   const parsed = CreateStoryBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -56,7 +57,7 @@ router.get("/stories/:id", async (req, res) => {
   const [story] = await db
     .select()
     .from(storiesTable)
-    .where(eq(storiesTable.id, id));
+    .where(and(eq(storiesTable.id, id), eq(storiesTable.published, true)));
   if (!story) {
     res.status(404).json({ error: "Story not found" });
     return;
@@ -64,7 +65,7 @@ router.get("/stories/:id", async (req, res) => {
   res.json(story);
 });
 
-router.put("/stories/:id", async (req, res) => {
+router.put("/stories/:id", requireAuth, async (req, res) => {
   const { id } = UpdateStoryParams.parse(req.params);
   const parsed = UpdateStoryBody.safeParse(req.body);
   if (!parsed.success) {
@@ -88,7 +89,7 @@ router.put("/stories/:id", async (req, res) => {
   }
 });
 
-router.delete("/stories/:id", async (req, res) => {
+router.delete("/stories/:id", requireAuth, async (req, res) => {
   const { id } = DeleteStoryParams.parse(req.params);
   const [story] = await db
     .delete(storiesTable)

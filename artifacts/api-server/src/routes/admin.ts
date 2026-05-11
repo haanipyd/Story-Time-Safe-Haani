@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db, storiesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { requireAdminAuth, setAdminCookie, clearAdminCookie } from "../middleware/auth";
 
 const router: IRouter = Router();
 

@@ -30,6 +30,7 @@ app.use(
   }),
 );
 app.use(cors());
+app.use(cookieParser(process.env["SESSION_SECRET"] ?? "fallback-secret"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

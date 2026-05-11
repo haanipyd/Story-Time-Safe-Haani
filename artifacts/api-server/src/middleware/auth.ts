@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+const ADMIN_COOKIE = "admin_session";
+const ADMIN_COOKIE_VALUE = "authenticated";
+
 export interface AuthPayload {
   userId: string;
   phone: string;
@@ -46,4 +49,35 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
   req.auth = payload;
   next();
+}
+
+export function setAdminCookie(res: Response): void {
+  res.cookie(ADMIN_COOKIE, ADMIN_COOKIE_VALUE, {
+    signed: true,
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 8 * 60 * 60 * 1000,
+  });
+}
+
+export function clearAdminCookie(res: Response): void {
+  res.clearCookie(ADMIN_COOKIE);
+}
+
+export function requireAdminAuth(req: Request, res: Response, next: NextFunction): void {
+  const signedCookies = (req as Request & { signedCookies: Record<string, string | false> }).signedCookies;
+  if (signedCookies[ADMIN_COOKIE] === ADMIN_COOKIE_VALUE) {
+    next();
+    return;
+  }
+  const header = req.headers["authorization"];
+  if (header?.startsWith("Bearer ")) {
+    const payload = verifyToken(header.slice(7));
+    if (payload) {
+      req.auth = payload;
+      next();
+      return;
+    }
+  }
+  res.redirect("/api/admin/login");
 }
