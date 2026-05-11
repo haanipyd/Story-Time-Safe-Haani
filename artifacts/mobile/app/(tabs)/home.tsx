@@ -118,47 +118,57 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
+
+      {/* Fixed header — sits above the scroll view */}
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: topPadding + 12,
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        <View>
+          <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+            Hello!
+          </Text>
+          <Text style={[styles.title, { color: colors.navy }]}>
+            {name}&apos;s Stories
+          </Text>
+        </View>
+        <View style={styles.headerBtns}>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings")}
+            style={[
+              styles.gearBtn,
+              { backgroundColor: isPremium ? colors.coral + "22" : colors.muted },
+            ]}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={isPremium ? "star" : "person-circle-outline"}
+              size={20}
+              color={isPremium ? colors.coral : colors.navy}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings")}
+            style={[styles.gearBtn, { backgroundColor: colors.muted }]}
+            hitSlop={8}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.navy} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: topPadding + 16, paddingBottom: insets.bottom + 90 },
+          { paddingTop: 12, paddingBottom: insets.bottom + 90 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
-              Hello!
-            </Text>
-            <Text style={[styles.title, { color: colors.navy }]}>
-              {name}&apos;s Stories
-            </Text>
-          </View>
-          <View style={styles.headerBtns}>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/settings")}
-              style={[
-                styles.gearBtn,
-                { backgroundColor: isPremium ? colors.coral + "22" : colors.muted },
-              ]}
-              hitSlop={8}
-            >
-              <Ionicons
-                name={isPremium ? "star" : "person-circle-outline"}
-                size={20}
-                color={isPremium ? colors.coral : colors.navy}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/settings")}
-              style={[styles.gearBtn, { backgroundColor: colors.muted }]}
-              hitSlop={8}
-            >
-              <Ionicons name="settings-outline" size={20} color={colors.navy} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {curated.featured && (
           <View style={styles.featuredSection}>
             <View style={styles.featuredLabel}>
@@ -252,7 +262,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    marginBottom: 20,
+    paddingBottom: 14,
+    zIndex: 10,
   },
   greeting: {
     fontSize: 14,
