@@ -7,6 +7,8 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+app.set("trust proxy", 1);
+
 const SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 app.use(cookieParser(SESSION_SECRET));
 

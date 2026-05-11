@@ -30,7 +30,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   isLoggedIn: boolean;
   isPremium: boolean;
-  sendOtp: (phone: string) => Promise<{ error?: string; devOtp?: string }>;
+  sendOtp: (phone: string) => Promise<{ error?: string; devOtp?: string | null }>;
   verifyOtp: (phone: string, otp: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.token, refreshSubscriptionWithToken]);
 
   const sendOtp = useCallback(
-    async (phone: string): Promise<{ error?: string; devOtp?: string }> => {
+    async (phone: string): Promise<{ error?: string; devOtp?: string | null }> => {
       try {
         const res = await apiFetch("/auth/send-otp", {
           method: "POST",
@@ -116,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         const data = await res.json() as { error?: string; devOtp?: string };
         if (!res.ok) return { error: data.error ?? "Failed to send OTP" };
-        return { devOtp: data.devOtp };
+        const devOtp = __DEV__ ? (data.devOtp ?? null) : null;
+        return { devOtp };
       } catch {
         return { error: "Could not connect to server" };
       }
