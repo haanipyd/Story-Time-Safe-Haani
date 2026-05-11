@@ -467,7 +467,7 @@ router.post("/admin/stories", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/stories/:id", requireAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const b = req.body;
   try {
     await db
@@ -495,7 +495,7 @@ router.post("/admin/stories/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/admin/stories/:id", requireAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   await db.delete(storiesTable).where(eq(storiesTable.id, id));
   res.status(204).send();
 });
