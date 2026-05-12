@@ -5,6 +5,7 @@ import {
   Nunito_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/nunito";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -84,6 +85,8 @@ export default function RootLayout() {
     isWeb
       ? {}
       : {
+          ...Ionicons.font,
+          ...Feather.font,
           Nunito_400Regular,
           Nunito_600SemiBold,
           Nunito_700Bold,
