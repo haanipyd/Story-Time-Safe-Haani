@@ -3,9 +3,8 @@ import {
   Nunito_600SemiBold,
   Nunito_700Bold,
   Nunito_800ExtraBold,
-  useFonts,
 } from "@expo-google-fonts/nunito";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { useFonts } from "expo-font";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -85,8 +84,12 @@ export default function RootLayout() {
     isWeb
       ? {}
       : {
-          ...Ionicons.font,
-          ...Feather.font,
+          // Icon fonts — keys must match font family names used internally by @expo/vector-icons
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          ionicons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"),
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          feather: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf"),
+          // App fonts
           Nunito_400Regular,
           Nunito_600SemiBold,
           Nunito_700Bold,
