@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { db, subscriptionsTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireAuth } from "../middleware/auth";
 
@@ -27,10 +27,39 @@ function generateId(): string {
 
 const PLANS = {
   monthly: { amount: 19900, label: "₹199 / month" },
-  yearly: { amount: 19900, label: "₹199 / month" },
+  yearly: { amount: 199900, label: "₹1999 / year" },
 } as const;
 
-async function saveSubscription(userId: string, plan: "monthly" | "yearly", orderId: string, paymentId: string) {
+type Plan = "monthly" | "yearly";
+
+interface RazorpayOrderData {
+  notes: { plan?: string; userId?: string };
+  receipt?: string;
+  amount?: number;
+}
+
+async function fetchOrderData(orderId: string): Promise<RazorpayOrderData | null> {
+  const res = await fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
+    headers: { Authorization: rzpAuth() },
+  });
+  if (!res.ok) return null;
+  const order = await res.json() as { notes?: { plan?: string; userId?: string }; receipt?: string; amount?: number };
+  return { notes: order.notes ?? {}, receipt: order.receipt, amount: order.amount };
+}
+
+async function assertPaymentNotRedeemed(orderId: string, paymentId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: subscriptionsTable.id })
+    .from(subscriptionsTable)
+    .where(or(
+      eq(subscriptionsTable.razorpayOrderId, orderId),
+      eq(subscriptionsTable.razorpayPaymentId, paymentId),
+    ))
+    .limit(1);
+  return rows.length === 0;
+}
+
+async function saveSubscription(userId: string, plan: Plan, orderId: string, paymentId: string) {
   const periodEnd = new Date();
   if (plan === "yearly") periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   else periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -82,10 +111,12 @@ router.post("/subscriptions/create-order", requireAuth, async (req, res) => {
   try {
     const { client, key_id } = getRazorpayKeys();
     const plan = parsed.data.plan;
+    const userId = req.auth!.userId;
     const order = await (client.orders.create({
       amount: PLANS[plan].amount, currency: "INR",
-      receipt: `storytime_${req.auth!.userId}_${Date.now()}`,
+      receipt: `storytime_${userId}_${Date.now()}`,
       payment_capture: true,
+      notes: { plan, userId },
     }) as unknown as Promise<{ id: string; amount: number; currency: string }>);
     res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: key_id, plan });
   } catch (err) {
@@ -97,14 +128,13 @@ router.post("/subscriptions/create-order", requireAuth, async (req, res) => {
 router.post("/subscriptions/create-upi-intent", requireAuth, async (req, res) => {
   const schema = z.object({
     orderId: z.string(),
-    plan: z.enum(["monthly", "yearly"]),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
-  const { orderId, plan } = parsed.data;
+  const { orderId } = parsed.data;
   const key_id = process.env["RAZORPAY_KEY_ID"];
   const key_secret = process.env["RAZORPAY_KEY_SECRET"];
   if (!key_id || !key_secret) {
@@ -118,9 +148,14 @@ router.post("/subscriptions/create-upi-intent", requireAuth, async (req, res) =>
     const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
       headers: { Authorization: auth },
     });
-    const order = await orderRes.json() as { id?: string; amount?: number; currency?: string };
+    const order = await orderRes.json() as { id?: string; amount?: number; currency?: string; notes?: { plan?: string; userId?: string } };
     if (!orderRes.ok || !order.id) {
       res.status(400).json({ error: "Invalid order ID" });
+      return;
+    }
+
+    if (order.notes?.userId !== req.auth!.userId) {
+      res.status(403).json({ error: "This order does not belong to your account" });
       return;
     }
 
@@ -160,6 +195,7 @@ router.post("/subscriptions/create-upi-intent", requireAuth, async (req, res) =>
       return;
     }
 
+    const plan = (order.notes?.plan === "yearly" ? "yearly" : "monthly") as Plan;
     req.log.info({ paymentId, plan }, "UPI intent created");
     res.json({ paymentId, intentUrl, plan });
   } catch (err) {
@@ -192,14 +228,13 @@ router.post("/subscriptions/confirm-upi", requireAuth, async (req, res) => {
   const schema = z.object({
     paymentId: z.string(),
     orderId: z.string(),
-    plan: z.enum(["monthly", "yearly"]),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
-  const { paymentId, orderId, plan } = parsed.data;
+  const { paymentId, orderId } = parsed.data;
   const key_id = process.env["RAZORPAY_KEY_ID"];
   const key_secret = process.env["RAZORPAY_KEY_SECRET"];
   if (!key_id || !key_secret) {
@@ -207,6 +242,29 @@ router.post("/subscriptions/confirm-upi", requireAuth, async (req, res) => {
     return;
   }
   try {
+    const orderData = await fetchOrderData(orderId);
+    if (!orderData) {
+      res.status(400).json({ error: "Invalid order ID" });
+      return;
+    }
+    if (orderData.notes.userId !== req.auth!.userId) {
+      res.status(403).json({ error: "This order does not belong to your account" });
+      return;
+    }
+    const plan = (orderData.notes.plan === "yearly" ? "yearly" : "monthly") as Plan;
+    const expectedAmount = PLANS[plan].amount;
+    if (orderData.amount !== expectedAmount) {
+      req.log.warn({ orderId, plan, expected: expectedAmount, actual: orderData.amount }, "Order amount does not match plan");
+      res.status(400).json({ error: "Order amount does not match the selected plan" });
+      return;
+    }
+
+    const notRedeemed = await assertPaymentNotRedeemed(orderId, paymentId);
+    if (!notRedeemed) {
+      res.status(409).json({ error: "This payment has already been redeemed" });
+      return;
+    }
+
     const payRes = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
       headers: { Authorization: rzpAuth() },
     });
@@ -222,6 +280,7 @@ router.post("/subscriptions/confirm-upi", requireAuth, async (req, res) => {
     }
 
     await saveSubscription(req.auth!.userId, plan, orderId, paymentId);
+
     req.log.info({ paymentId, plan }, "UPI payment confirmed and subscription saved");
     res.json({ ok: true });
   } catch (err) {
@@ -234,7 +293,6 @@ const verifySchema = z.object({
   razorpay_payment_id: z.string(),
   razorpay_order_id: z.string(),
   razorpay_signature: z.string(),
-  plan: z.enum(["monthly", "yearly"]).optional(),
 });
 
 router.post("/subscriptions/verify", requireAuth, async (req, res) => {
@@ -243,7 +301,7 @@ router.post("/subscriptions/verify", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid payment data" });
     return;
   }
-  const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan = "monthly" } = parsed.data;
+  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = parsed.data;
   const key_secret = process.env["RAZORPAY_KEY_SECRET"];
   if (!key_secret) {
     res.status(500).json({ error: "Payment service not configured" });
@@ -255,7 +313,31 @@ router.post("/subscriptions/verify", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Payment signature verification failed" });
     return;
   }
+
   try {
+    const orderData = await fetchOrderData(razorpay_order_id);
+    if (!orderData) {
+      res.status(400).json({ error: "Could not retrieve order details" });
+      return;
+    }
+    if (orderData.notes.userId !== req.auth!.userId) {
+      res.status(403).json({ error: "This payment does not belong to your account" });
+      return;
+    }
+    const plan = (orderData.notes.plan === "yearly" ? "yearly" : "monthly") as Plan;
+    const expectedAmount = PLANS[plan].amount;
+    if (orderData.amount !== expectedAmount) {
+      req.log.warn({ orderId: razorpay_order_id, plan, expected: expectedAmount, actual: orderData.amount }, "Order amount does not match plan");
+      res.status(400).json({ error: "Order amount does not match the selected plan" });
+      return;
+    }
+
+    const notRedeemed = await assertPaymentNotRedeemed(razorpay_order_id, razorpay_payment_id);
+    if (!notRedeemed) {
+      res.status(409).json({ error: "This payment has already been redeemed" });
+      return;
+    }
+
     await saveSubscription(req.auth!.userId, plan, razorpay_order_id, razorpay_payment_id);
     res.json({ ok: true });
   } catch (err) {
@@ -325,8 +407,8 @@ router.get("/subscriptions/checkout", async (req, res) => {
     <h1>Storytime Premium</h1>
     <p>Unlimited stories for your little one.</p>
     <div class="plan">
-      <div class="plan-name">Monthly Plan</div>
-      <div class="plan-price">₹199 / month</div>
+      <div class="plan-name">${planLabel}</div>
+      <div class="plan-price">${planLabel}</div>
     </div>
     <div class="upi-logos">🟦 Google Pay &nbsp;·&nbsp; 🟣 PhonePe &nbsp;·&nbsp; 🔵 Paytm &nbsp;·&nbsp; 💳 Card</div>
     <button id="payBtn" onclick="startPayment()">Pay Now</button>
@@ -343,7 +425,7 @@ router.get("/subscriptions/checkout", async (req, res) => {
         amount: '${amount}',
         currency: '${currency}',
         name: 'Storytime',
-        description: 'Premium — ₹199/month',
+        description: 'Premium — ${planLabel}',
         order_id: '${orderId}',
         prefill: {
           contact: '${userPhone}',
@@ -371,7 +453,7 @@ router.get("/subscriptions/checkout", async (req, res) => {
         },
         theme: { color: '#E8826B' },
         handler: function(r) {
-          window.location.href = 'storytime://payment-success?paymentId=' + encodeURIComponent(r.razorpay_payment_id) + '&orderId=' + encodeURIComponent(r.razorpay_order_id) + '&signature=' + encodeURIComponent(r.razorpay_signature) + '&plan=monthly';
+          window.location.href = 'storytime://payment-success?paymentId=' + encodeURIComponent(r.razorpay_payment_id) + '&orderId=' + encodeURIComponent(r.razorpay_order_id) + '&signature=' + encodeURIComponent(r.razorpay_signature);
         },
         modal: {
           ondismiss: function() {
