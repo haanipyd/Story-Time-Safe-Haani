@@ -1,24 +1,40 @@
-import { pgTable, text, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  index,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
-export const subscriptionsTable = pgTable("subscriptions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
-  status: text("status").notNull().default("inactive"),
-  plan: text("plan").notNull().default("monthly"),
-  razorpayOrderId: text("razorpay_order_id"),
-  razorpayPaymentId: text("razorpay_payment_id"),
-  razorpaySubscriptionId: text("razorpay_subscription_id"),
-  currentPeriodEnd: timestamp("current_period_end"),
-  cancelledAt: timestamp("cancelled_at"),
-  active: boolean("active").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex("subscriptions_razorpay_order_id_idx").on(table.razorpayOrderId),
-  uniqueIndex("subscriptions_razorpay_payment_id_idx").on(table.razorpayPaymentId),
-]);
+export const subscriptionsTable = pgTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    state: text("state").notNull().default("free"),
+    plan: text("plan").notNull().default("annual"),
+    trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    currentPeriodStart: timestamp("current_period_start", {
+      withTimezone: true,
+    }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    razorpaySubscriptionId: text("razorpay_subscription_id").unique(),
+    razorpayCustomerId: text("razorpay_customer_id"),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("subscriptions_user_id_idx").on(t.userId),
+    index("subscriptions_rzp_sub_idx").on(t.razorpaySubscriptionId),
+  ],
+);
 
 export type DbSubscription = typeof subscriptionsTable.$inferSelect;
