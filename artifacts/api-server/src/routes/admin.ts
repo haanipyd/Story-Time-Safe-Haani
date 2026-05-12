@@ -75,11 +75,11 @@ function adminPage(stories: typeof storiesTable.$inferSelect[], message?: string
       <td>${s.id}</td>
       <td>${s.title}</td>
       <td>${s.category}</td>
-      <td>${s.duration}m</td>
+      <td>${s.durationMin}m</td>
       <td>${s.ageMin}–${s.ageMax}</td>
       <td>${s.audioUrl ? `<a href="${s.audioUrl}" target="_blank">Audio</a>` : "—"}</td>
       <td>${s.thumbnailUrl ? `<img src="${s.thumbnailUrl}" width="40" height="40" style="object-fit:cover;border-radius:4px">` : "—"}</td>
-      <td>${s.published ? "✅" : "❌"}</td>
+      <td>${s.isActive ? "✅" : "❌"}</td>
       <td>
         <button onclick="editStory(${JSON.stringify(JSON.stringify(s))})" style="padding:4px 10px;background:#2D3E5E;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px">Edit</button>
         <button onclick="deleteStory('${s.id}','${s.title.replace(/'/g, "\\'")}')" style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;margin-left:4px">Delete</button>
@@ -300,14 +300,14 @@ function editStory(jsonStr) {
   const s = JSON.parse(jsonStr);
   document.getElementById('e_title').value = s.title;
   document.getElementById('e_category').value = s.category;
-  document.getElementById('e_duration').value = s.duration;
+  document.getElementById('e_duration').value = s.durationMin;
   document.getElementById('e_ageMin').value = s.ageMin;
   document.getElementById('e_ageMax').value = s.ageMax;
   document.getElementById('e_description').value = s.description;
   document.getElementById('e_thumbnailUrl').value = s.thumbnailUrl || '';
   document.getElementById('e_audioUrl').value = s.audioUrl || '';
   document.getElementById('e_videoUrl').value = s.videoUrl || '';
-  document.getElementById('e_published').checked = s.published;
+  document.getElementById('e_published').checked = s.isActive;
   document.getElementById('editForm').action = '/api/admin/stories/' + s.id;
   document.getElementById('editOverlay').classList.add('open');
 }
@@ -400,7 +400,7 @@ router.get("/admin", requireAdmin, async (req, res) => {
   const stories = await db
     .select()
     .from(storiesTable)
-    .orderBy(storiesTable.createdAt);
+    .orderBy(storiesTable.publishedAt);
   res.setHeader("Content-Type", "text/html");
   res.send(adminPage(stories, req.query.msg as string | undefined));
 });
@@ -423,14 +423,13 @@ router.post("/admin/stories/bulk", requireAdmin, async (req, res) => {
         id: String(s.id),
         title: String(s.title),
         category: String(s.category),
-        duration: Number(s.duration),
+        durationMin: Number(s.duration ?? (s as any).durationMin ?? 5),
         ageMin: Number(s.ageMin),
         ageMax: Number(s.ageMax),
         description: String(s.description),
-        thumbnailUrl: normalizeMediaUrl(s.thumbnailUrl as string | null),
-        audioUrl: normalizeMediaUrl(s.audioUrl as string | null),
-        videoUrl: normalizeMediaUrl(s.videoUrl as string | null),
-        published: s.published !== false,
+        thumbnailUrl: normalizeMediaUrl(s.thumbnailUrl as string | null) ?? "",
+        audioUrl: normalizeMediaUrl(s.audioUrl as string | null) ?? "",
+        isActive: s.published !== false,
       }).onConflictDoNothing();
       inserted++;
     } catch (err) {
@@ -450,14 +449,13 @@ router.post("/admin/stories", requireAdmin, async (req, res) => {
       id: b.id,
       title: b.title,
       category: b.category,
-      duration: parseInt(b.duration, 10),
+      durationMin: parseInt(b.duration, 10),
       ageMin: parseInt(b.ageMin, 10),
       ageMax: parseInt(b.ageMax, 10),
       description: b.description,
-      thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl),
-      audioUrl: normalizeMediaUrl(b.audioUrl),
-      videoUrl: normalizeMediaUrl(b.videoUrl),
-      published: b.published === "true",
+      thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? "",
+      audioUrl: normalizeMediaUrl(b.audioUrl) ?? "",
+      isActive: b.published === "true",
     });
     res.redirect("/api/admin?msg=Story+added+successfully");
   } catch (err: unknown) {
@@ -476,15 +474,13 @@ router.post("/admin/stories/:id", requireAdmin, async (req, res) => {
       .set({
         title: b.title,
         category: b.category,
-        duration: parseInt(b.duration, 10),
+        durationMin: parseInt(b.duration, 10),
         ageMin: parseInt(b.ageMin, 10),
         ageMax: parseInt(b.ageMax, 10),
         description: b.description,
-        thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl),
-        audioUrl: normalizeMediaUrl(b.audioUrl),
-        videoUrl: normalizeMediaUrl(b.videoUrl),
-        published: b.published === "true",
-        updatedAt: new Date(),
+        thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? undefined,
+        audioUrl: normalizeMediaUrl(b.audioUrl) ?? undefined,
+        isActive: b.published === "true",
       })
       .where(eq(storiesTable.id, id));
     res.redirect("/api/admin?msg=Story+updated+successfully");

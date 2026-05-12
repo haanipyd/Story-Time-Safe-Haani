@@ -285,7 +285,7 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Row label="Mobile" colors={colors}>
             <Text style={[styles.valueText, { color: colors.navy }]} numberOfLines={1}>
-              {user?.phone ?? ""}
+              {user?.phone_number ?? ""}
             </Text>
           </Row>
           <Divider colors={colors} />
@@ -308,12 +308,12 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </Row>
-            {subscription.currentPeriodEnd && (
+            {subscription.current_period_end && (
               <>
                 <Divider colors={colors} />
                 <Row label="Renews on" colors={colors}>
                   <Text style={[styles.valueText, { color: colors.mutedForeground }]}>
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-IN", {
+                    {new Date(subscription.current_period_end).toLocaleDateString("en-IN", {
                       day: "numeric", month: "short", year: "numeric",
                     })}
                   </Text>

@@ -56,10 +56,11 @@ router.patch("/children/:id", requireAuth, async (req, res) => {
   const userId = req.auth!.sub;
 
   try {
+    const childId = String(id);
     const [existing] = await db
       .select()
       .from(childrenTable)
-      .where(and(eq(childrenTable.id, id), eq(childrenTable.userId, userId)))
+      .where(and(eq(childrenTable.id, childId), eq(childrenTable.userId, userId)))
       .limit(1);
 
     if (!existing) {
@@ -70,7 +71,7 @@ router.patch("/children/:id", requireAuth, async (req, res) => {
     const [updated] = await db
       .update(childrenTable)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(childrenTable.id, id), eq(childrenTable.userId, userId)))
+      .where(and(eq(childrenTable.id, childId), eq(childrenTable.userId, userId)))
       .returning();
 
     res.json(updated);

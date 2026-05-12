@@ -60,4 +60,3 @@ export function thumbnailStorageKey(storyId: string): string {
   return `thumbnails/stories/${storyId}.webp`;
 }
 
-void ttlSeconds; // suppress unused warning until real impl

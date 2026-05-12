@@ -36,7 +36,7 @@ function getApiUrl(): string {
 export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModalProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { token, unlockWithRazorpay } = useAuth();
+  const { token, apiFetch, refreshSubscription } = useAuth();
 
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,55 +51,46 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
   const handleSubscribeTap = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${getApiUrl()}/api/subscriptions/create-order`, {
+      const res = await apiFetch("/subscription/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ plan: "monthly" }),
+        body: JSON.stringify({ plan: "annual" }),
       });
       const data = await res.json() as {
-        orderId?: string; keyId?: string; amount?: number; currency?: string; error?: string;
+        short_url?: string;
+        razorpay_subscription_id?: string;
+        error?: { message?: string } | string;
       };
-      if (!res.ok || !data.orderId) {
-        Alert.alert("Payment unavailable", data.error ?? "Could not start payment. Please try again.");
+      if (!res.ok || !data.short_url) {
+        const msg = typeof data.error === "object" ? data.error?.message : data.error;
+        Alert.alert("Payment unavailable", msg ?? "Could not start payment. Please try again.");
         setLoading(false);
         return;
       }
-      const base = getApiUrl();
-      const url =
-        `${base}/api/subscriptions/checkout` +
-        `?orderId=${encodeURIComponent(data.orderId)}` +
-        `&amount=${encodeURIComponent(String(data.amount))}` +
-        `&currency=${encodeURIComponent(data.currency ?? "INR")}` +
-        `&keyId=${encodeURIComponent(data.keyId ?? "")}` +
-        `&plan=monthly` +
-        `&token=${encodeURIComponent(token ?? "")}`;
-      setCheckoutUrl(url);
+      setCheckoutUrl(data.short_url);
     } catch {
       Alert.alert("Error", "Could not connect to payment service.");
     }
     setLoading(false);
-  }, [token]);
+  }, [apiFetch]);
 
   const handleWebViewNav = useCallback(async (state: WebViewNavigation) => {
     const url = state.url;
-    if (url.startsWith("storytime://payment-success")) {
+    if (
+      url.includes("razorpay.com/payment/success") ||
+      url.includes("razorpay.com/payment/done") ||
+      url.startsWith("storytime://payment-success")
+    ) {
       setCheckoutUrl(null);
-      const p = new URLSearchParams(url.split("?")[1] ?? "");
-      const result = await unlockWithRazorpay(
-        p.get("paymentId") ?? "",
-        p.get("orderId") ?? "",
-        p.get("signature") ?? "",
-      );
-      if (result.error) {
-        Alert.alert("Verification failed", result.error);
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        onUnlock();
-      }
-    } else if (url.startsWith("storytime://payment-cancelled")) {
+      await refreshSubscription();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onUnlock();
+    } else if (
+      url.includes("razorpay.com/payment/cancel") ||
+      url.startsWith("storytime://payment-cancelled")
+    ) {
       setCheckoutUrl(null);
     }
-  }, [unlockWithRazorpay, onUnlock]);
+  }, [refreshSubscription, onUnlock]);
 
   const handleClose = useCallback(() => {
     setCheckoutUrl(null);

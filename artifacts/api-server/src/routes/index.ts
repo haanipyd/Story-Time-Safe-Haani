@@ -4,13 +4,25 @@ import storiesRouter from "./stories";
 import adminRouter from "./admin";
 import authRouter from "./auth";
 import subscriptionsRouter from "./subscriptions";
+import childrenRouter from "./children";
+import listeningRouter from "./listening";
+import dashboardRouter from "./dashboard";
+import pushRouter from "./push";
+import webhooksRouter from "./webhooks";
+import usersRouter from "./users";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(storiesRouter);
-router.use(adminRouter);
 router.use(authRouter);
+router.use(storiesRouter);
+router.use(childrenRouter);
+router.use(listeningRouter);
+router.use(dashboardRouter);
+router.use(pushRouter);
+router.use(webhooksRouter);
 router.use(subscriptionsRouter);
+router.use(usersRouter);
+router.use(adminRouter);
 
 export default router;
