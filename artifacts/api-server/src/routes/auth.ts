@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import bcrypt from "bcryptjs";
 import { db, usersTable, otpRequestsTable, refreshTokensTable, subscriptionsTable, childrenTable } from "@workspace/db";
@@ -19,23 +19,51 @@ const OTP_BCRYPT_COST = 10;
 const MAX_OTP_ATTEMPTS = 5;
 const MAX_OTP_PER_PHONE_PER_HOUR = 3;
 
+// ── Validation schemas (strict — reject unknown fields) ─────────────────────
 const phoneSchema = z
   .string()
   .regex(/^\+91[6-9]\d{9}$/, "Phone must be +91 followed by 10 digits starting 6-9");
+
+const requestOtpSchema = z
+  .object({ phone_number: phoneSchema })
+  .strict();
+
+const verifyOtpSchema = z
+  .object({
+    phone_number: phoneSchema,
+    otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
+    request_id: z.string().uuid("request_id must be a valid UUID"),
+  })
+  .strict();
+
+const refreshSchema = z
+  .object({ refresh_token: z.string().min(1).max(256) })
+  .strict();
+
+// ── Per-IP rate limiters ─────────────────────────────────────────────────────
+const keyGen = (req: any) => {
+  const forwarded = req.headers["x-forwarded-for"];
+  const first = Array.isArray(forwarded)
+    ? forwarded[0]
+    : (forwarded ?? "").split(",")[0];
+  return (first ?? req.ip ?? "unknown").trim();
+};
 
 const requestOtpIpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  keyGenerator: keyGen,
   message: { error: { code: "RATE_LIMIT", message: "Too many OTP requests from this IP. Try again later." } },
 });
 
 const verifyOtpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 60 * 60 * 1000,
   limit: 20,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+  keyGenerator: keyGen,
   message: { error: { code: "RATE_LIMIT", message: "Too many verification attempts. Try again later." } },
 });
 
@@ -78,252 +106,287 @@ async function getSubState(userId: string): Promise<string> {
 
 async function issueTokens(
   userId: string,
-  phone: string,
-  childId: string | null,
-  deviceInfo?: string,
-): Promise<{ access_token: string; refresh_token: string }> {
+  phoneNumber: string,
+  res: Response,
+): Promise<void> {
+  const [child] = await db
+    .select({ id: childrenTable.id })
+    .from(childrenTable)
+    .where(eq(childrenTable.userId, userId))
+    .orderBy(desc(childrenTable.createdAt))
+    .limit(1);
+
+  const [user] = await db
+    .select({ currentChildId: usersTable.currentChildId })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+
+  const childId = user?.currentChildId ?? child?.id ?? null;
   const subState = await getSubState(userId);
-  const access_token = signAccessToken({
+
+  const accessToken = signAccessToken({
     sub: userId,
-    phone,
+    phone: phoneNumber,
     child_id: childId,
     sub_state: subState,
   });
-  const rawRefresh = generateRefreshToken();
-  const tokenHash = hashToken(rawRefresh);
+
+  const refreshToken = generateRefreshToken();
+  const hashedToken = hashToken(refreshToken);
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
   await db.insert(refreshTokensTable).values({
     userId,
-    tokenHash,
+    tokenHash: hashedToken,
     expiresAt,
-    deviceInfo: deviceInfo ?? null,
   });
-  return { access_token, refresh_token: rawRefresh };
+
+  res.json({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: 15 * 60,
+    child_id: childId,
+    sub_state: subState,
+  });
 }
 
-const requestOtpSchema = z.object({
-  phone_number: phoneSchema.optional(),
-  phone: phoneSchema.optional(),
-});
-
-async function handleRequestOtp(req: any, res: any): Promise<void> {
+// ── POST /auth/request-otp ──────────────────────────────────────────────────
+router.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
   const parsed = requestOtpSchema.safeParse(req.body);
-  const phone = parsed.success ? (parsed.data.phone_number ?? parsed.data.phone) : undefined;
-  if (!phone) {
-    res.status(400).json({ error: { code: "INVALID_PHONE", message: "phone_number must be +91 followed by 10 digits (starting 6-9)" } });
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    res.status(400).json({
+      error: { code: "validation_error", message: issue?.message ?? "Invalid request", field: issue?.path[0] ?? "phone_number" },
+    });
     return;
   }
+  const { phone_number } = parsed.data;
 
-  const hasMSG91 = !!process.env["MSG91_AUTH_KEY"] && !!process.env["MSG91_TEMPLATE_ID"];
-  if (process.env["NODE_ENV"] === "production" && !hasMSG91) {
-    req.log.error("MSG91 not configured in production");
-    res.status(503).json({ error: { code: "SERVICE_UNAVAILABLE", message: "SMS service temporarily unavailable" } });
-    return;
-  }
-
+  // Per-phone rate limit: 3 OTPs per hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const recentOtps = await db
+  const recentCount = await db
     .select({ id: otpRequestsTable.id })
     .from(otpRequestsTable)
-    .where(and(eq(otpRequestsTable.phoneNumber, phone), gt(otpRequestsTable.createdAt, oneHourAgo)));
+    .where(
+      and(
+        eq(otpRequestsTable.phoneNumber, phone_number),
+        gt(otpRequestsTable.createdAt, oneHourAgo),
+      ),
+    );
 
-  if (recentOtps.length >= MAX_OTP_PER_PHONE_PER_HOUR) {
-    req.log.warn({ phone: maskPhone(phone) }, "Phone OTP rate limit exceeded");
-    res.status(429).json({ error: { code: "RATE_LIMIT", message: "Too many OTP requests for this number. Please wait before requesting again." } });
+  if (recentCount.length >= MAX_OTP_PER_PHONE_PER_HOUR) {
+    res.status(429).json({
+      error: {
+        code: "OTP_RATE_LIMIT",
+        message: `Maximum ${MAX_OTP_PER_PHONE_PER_HOUR} OTP requests per hour. Please wait.`,
+        field: "phone_number",
+      },
+    });
     return;
   }
 
   const otp = generateOtp();
   const otpHash = await bcrypt.hash(otp, OTP_BCRYPT_COST);
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-  const ip = (req.ip ?? "unknown") as string;
 
-  const [record] = await db
+  const [otpRecord] = await db
     .insert(otpRequestsTable)
-    .values({ phoneNumber: phone, otpHash, expiresAt, ipAddress: ip })
+    .values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 })
     .returning({ id: otpRequestsTable.id });
 
-  req.log.info({ phone: maskPhone(phone) }, "OTP requested");
-
-  try {
-    if (hasMSG91) {
-      await sendOtpViaMSG91(phone, otp);
-      res.json({ success: true, request_id: record.id, expires_in: OTP_TTL_MINUTES * 60 });
-    } else {
-      req.log.warn({ phone: maskPhone(phone) }, "MSG91 not configured — dev mode OTP");
-      res.json({ success: true, request_id: record.id, expires_in: OTP_TTL_MINUTES * 60, devOtp: otp });
+  const hasMSG91 = !!(process.env["MSG91_AUTH_KEY"] && process.env["MSG91_TEMPLATE_ID"]);
+  if (hasMSG91) {
+    try {
+      await sendOtpViaMSG91(phone_number, otp);
+    } catch (err) {
+      req.log.error(err, "MSG91 OTP send failed");
+      res.status(503).json({
+        error: { code: "SMS_ERROR", message: "Could not send OTP. Please try again.", field: "phone_number" },
+      });
+      return;
     }
-  } catch (err) {
-    req.log.error(err, "MSG91 send failed");
-    res.status(500).json({ error: { code: "SMS_FAILED", message: "Failed to send OTP. Please try again." } });
-  }
-}
-
-router.post("/auth/request-otp", requestOtpIpLimiter, handleRequestOtp);
-router.post("/auth/send-otp", requestOtpIpLimiter, handleRequestOtp);
-
-const verifyOtpSchema = z.object({
-  phone_number: phoneSchema.optional(),
-  phone: phoneSchema.optional(),
-  otp: z.string().length(6).regex(/^\d{6}$/),
-  device_info: z.string().max(200).optional(),
-});
-
-router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
-  const parsed = verifyOtpSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "Invalid request body" } });
-    return;
-  }
-  const phone = (parsed.data.phone_number ?? parsed.data.phone);
-  if (!phone) {
-    res.status(400).json({ error: { code: "INVALID_PHONE", message: "phone_number is required" } });
-    return;
-  }
-  const { otp, device_info } = parsed.data;
-  const now = new Date();
-
-  const [record] = await db
-    .select()
-    .from(otpRequestsTable)
-    .where(and(
-      eq(otpRequestsTable.phoneNumber, phone),
-      eq(otpRequestsTable.used, false),
-      gt(otpRequestsTable.expiresAt, now),
-    ))
-    .orderBy(desc(otpRequestsTable.createdAt))
-    .limit(1);
-
-  if (!record) {
-    res.status(401).json({ error: { code: "INVALID_OTP", message: "Invalid or expired OTP. Please request a new one." } });
-    return;
   }
 
-  const newAttempts = (record.attempts ?? 0) + 1;
-  if (newAttempts > MAX_OTP_ATTEMPTS) {
-    await db.update(otpRequestsTable).set({ used: true }).where(eq(otpRequestsTable.id, record.id));
-    req.log.warn({ phone: maskPhone(phone) }, "OTP burned — max attempts exceeded");
-    res.status(401).json({ error: { code: "MAX_ATTEMPTS", message: "Too many incorrect attempts. Please request a new OTP." } });
-    return;
-  }
-
-  await db.update(otpRequestsTable).set({ attempts: newAttempts }).where(eq(otpRequestsTable.id, record.id));
-
-  const valid = await bcrypt.compare(otp, record.otpHash);
-  if (!valid) {
-    if (newAttempts >= MAX_OTP_ATTEMPTS) {
-      await db.update(otpRequestsTable).set({ used: true }).where(eq(otpRequestsTable.id, record.id));
-      res.status(401).json({ error: { code: "MAX_ATTEMPTS", message: "Too many incorrect attempts. Please request a new OTP." } });
-    } else {
-      res.status(401).json({ error: { code: "INVALID_OTP", message: "Incorrect OTP. Please try again." } });
-    }
-    return;
-  }
-
-  await db.update(otpRequestsTable).set({ used: true }).where(eq(otpRequestsTable.id, record.id));
-
-  let [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.phoneNumber, phone))
-    .limit(1);
-  const isNewUser = !user;
-
-  if (!user) {
-    const id = generateUserId();
-    [user] = await db.insert(usersTable).values({ id, phoneNumber: phone }).returning();
-  } else {
-    await db.update(usersTable).set({ lastLoginAt: now }).where(eq(usersTable.id, user.id));
-  }
-
-  const [child] = user.currentChildId
-    ? await db.select().from(childrenTable).where(eq(childrenTable.id, user.currentChildId)).limit(1)
-    : [];
-
-  const tokens = await issueTokens(user.id, phone, user.currentChildId ?? null, device_info);
-
-  req.log.info({ phone: maskPhone(phone), userId: user.id, isNewUser }, "OTP verified — tokens issued");
+  req.log.info({ phone: maskPhone(phone_number) }, "OTP issued");
 
   res.json({
-    ...tokens,
-    is_new_user: isNewUser,
-    ...(isNewUser ? {} : {
-      user: { id: user.id, phone_number: user.phoneNumber },
-      current_child: child ?? null,
-    }),
+    success: true,
+    request_id: otpRecord!.id,
+    expires_in: OTP_TTL_MINUTES * 60,
+    ...(process.env["NODE_ENV"] !== "production" ? { devOtp: otp } : {}),
   });
 });
 
-router.post("/auth/refresh", async (req, res) => {
-  const schema = z.object({ refresh_token: z.string() });
-  const parsed = schema.safeParse(req.body);
+// ── POST /auth/verify-otp ───────────────────────────────────────────────────
+router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
+  const parsed = verifyOtpSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "refresh_token is required" } });
+    const issue = parsed.error.issues[0];
+    res.status(400).json({
+      error: { code: "validation_error", message: issue?.message ?? "Invalid request", field: String(issue?.path[0] ?? "") },
+    });
     return;
   }
-  const tokenHash = hashToken(parsed.data.refresh_token);
-  const now = new Date();
+  const { phone_number, otp, request_id } = parsed.data;
 
-  const [record] = await db
+  const now = new Date();
+  const [otpRecord] = await db
     .select()
-    .from(refreshTokensTable)
-    .where(and(
-      eq(refreshTokensTable.tokenHash, tokenHash),
-      eq(refreshTokensTable.revoked, false),
-      gt(refreshTokensTable.expiresAt, now),
-    ))
+    .from(otpRequestsTable)
+    .where(
+      and(
+        eq(otpRequestsTable.id, request_id),
+        eq(otpRequestsTable.phoneNumber, phone_number),
+        gt(otpRequestsTable.expiresAt, now),
+      ),
+    )
     .limit(1);
 
-  if (!record) {
-    res.status(401).json({ error: { code: "INVALID_REFRESH_TOKEN", message: "Invalid or expired refresh token" } });
+  if (!otpRecord) {
+    res.status(400).json({
+      error: { code: "OTP_INVALID", message: "OTP not found or expired. Please request a new one.", field: "otp" },
+    });
     return;
   }
 
-  await db.update(refreshTokensTable).set({ revoked: true }).where(eq(refreshTokensTable.id, record.id));
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, record.userId)).limit(1);
-  if (!user || user.isDeleted) {
-    res.status(401).json({ error: { code: "USER_NOT_FOUND", message: "User account not found" } });
+  if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    res.status(400).json({
+      error: { code: "OTP_MAX_ATTEMPTS", message: "Too many incorrect attempts. Request a new OTP.", field: "otp" },
+    });
     return;
   }
 
-  const tokens = await issueTokens(user.id, user.phoneNumber, user.currentChildId ?? null, record.deviceInfo ?? undefined);
-  res.json(tokens);
-});
-
-router.post("/auth/logout", requireAuth, async (req, res) => {
-  const schema = z.object({ refresh_token: z.string().optional() });
-  const parsed = schema.safeParse(req.body);
-  if (parsed.success && parsed.data.refresh_token) {
-    const tokenHash = hashToken(parsed.data.refresh_token);
+  const isValid = await bcrypt.compare(otp, otpRecord.otpHash);
+  if (!isValid) {
     await db
-      .update(refreshTokensTable)
-      .set({ revoked: true })
-      .where(eq(refreshTokensTable.tokenHash, tokenHash));
+      .update(otpRequestsTable)
+      .set({ attempts: otpRecord.attempts + 1 })
+      .where(eq(otpRequestsTable.id, request_id));
+
+    res.status(400).json({
+      error: { code: "OTP_INVALID", message: "Incorrect OTP. Please try again.", field: "otp" },
+    });
+    return;
   }
-  req.log.info({ userId: req.auth!.sub }, "User logged out");
-  res.json({ ok: true });
+
+  // Consume OTP
+  await db.delete(otpRequestsTable).where(eq(otpRequestsTable.id, request_id));
+
+  // Upsert user
+  let userId: string;
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.phoneNumber, phone_number))
+    .limit(1);
+
+  if (existing) {
+    userId = existing.id;
+    await db
+      .update(usersTable)
+      .set({ lastLoginAt: now })
+      .where(eq(usersTable.id, userId));
+  } else {
+    userId = generateUserId();
+    await db.insert(usersTable).values({
+      id: userId,
+      phoneNumber: phone_number,
+      lastLoginAt: now,
+    });
+  }
+
+  req.log.info({ userId }, "User authenticated via OTP");
+  await issueTokens(userId, phone_number, res);
 });
 
-router.get("/auth/me", requireAuth, async (req, res) => {
+// ── POST /auth/refresh ──────────────────────────────────────────────────────
+router.post("/auth/refresh", async (req, res) => {
+  const parsed = refreshSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      error: { code: "validation_error", message: "refresh_token is required", field: "refresh_token" },
+    });
+    return;
+  }
+  const { refresh_token } = parsed.data;
+  const hashedToken = hashToken(refresh_token);
+  const now = new Date();
+
+  const [stored] = await db
+    .select()
+    .from(refreshTokensTable)
+    .where(
+      and(
+        eq(refreshTokensTable.tokenHash, hashedToken),
+        gt(refreshTokensTable.expiresAt, now),
+        eq(refreshTokensTable.revoked, false),
+      ),
+    )
+    .limit(1);
+
+  if (!stored) {
+    res.status(401).json({
+      error: { code: "REFRESH_INVALID", message: "Invalid or expired refresh token", field: "refresh_token" },
+    });
+    return;
+  }
+
+  // Rotate: revoke old token
+  await db
+    .update(refreshTokensTable)
+    .set({ revoked: true })
+    .where(eq(refreshTokensTable.id, stored.id));
+
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.id, req.auth!.sub))
+    .where(eq(usersTable.id, stored.userId))
     .limit(1);
+
   if (!user || user.isDeleted) {
-    res.status(404).json({ error: { code: "USER_NOT_FOUND", message: "User not found" } });
+    res.status(401).json({
+      error: { code: "USER_NOT_FOUND", message: "User account not found", field: "refresh_token" },
+    });
     return;
   }
-  const [child] = user.currentChildId
-    ? await db.select().from(childrenTable).where(eq(childrenTable.id, user.currentChildId)).limit(1)
-    : [];
+
+  await issueTokens(user.id, user.phoneNumber, res);
+});
+
+// ── POST /auth/logout ───────────────────────────────────────────────────────
+router.post("/auth/logout", requireAuth, async (req, res) => {
+  const parsed = refreshSchema.safeParse(req.body);
+  if (parsed.success) {
+    const hashedToken = hashToken(parsed.data.refresh_token);
+    await db
+      .update(refreshTokensTable)
+      .set({ revoked: true })
+      .where(eq(refreshTokensTable.tokenHash, hashedToken));
+  }
+  res.json({ ok: true });
+});
+
+// ── GET /auth/me ────────────────────────────────────────────────────────────
+router.get("/auth/me", requireAuth, async (req, res) => {
+  const userId = req.auth!.sub;
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+
+  if (!user || user.isDeleted) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "User not found" } });
+    return;
+  }
+
   res.json({
     id: user.id,
     phone_number: user.phoneNumber,
-    current_child: child ?? null,
+    current_child_id: user.currentChildId,
+    timezone: user.timezone,
     created_at: user.createdAt,
-    last_login_at: user.lastLoginAt,
   });
 });
 

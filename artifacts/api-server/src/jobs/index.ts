@@ -1,7 +1,36 @@
 import cron from "node-cron";
-import { db, childrenTable, storiesTable, dailyPicksTable, subscriptionsTable, usersTable } from "@workspace/db";
-import { and, eq, gte, ne, notInArray, sql } from "drizzle-orm";
+import {
+  db,
+  childrenTable,
+  storiesTable,
+  dailyPicksTable,
+  subscriptionsTable,
+  usersTable,
+  pushTokensTable,
+} from "@workspace/db";
+import { and, eq, gte, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import admin from "firebase-admin";
+
+// ── Firebase Admin init ──────────────────────────────────────────────────────
+let fcmReady = false;
+function initFCM(): void {
+  if (fcmReady) return;
+  const serviceAccount = process.env["FIREBASE_SERVICE_ACCOUNT_JSON"];
+  if (!serviceAccount) {
+    logger.warn("FIREBASE_SERVICE_ACCOUNT_JSON not set — push notifications disabled");
+    return;
+  }
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(serviceAccount) as admin.ServiceAccount),
+    });
+    fcmReady = true;
+    logger.info("Firebase Admin SDK initialized");
+  } catch (err) {
+    logger.error(err, "Failed to initialize Firebase Admin SDK");
+  }
+}
 
 export function startJobs(): void {
   if (process.env["NODE_ENV"] !== "production" && !process.env["RUN_JOBS"]) {
@@ -9,7 +38,9 @@ export function startJobs(): void {
     return;
   }
 
-  // daily_pick_generator — runs every hour
+  initFCM();
+
+  // daily_pick_generator — runs every hour at :00
   cron.schedule("0 * * * *", () => {
     dailyPickGenerator().catch((err) => logger.error(err, "daily_pick_generator failed"));
   });
@@ -19,9 +50,15 @@ export function startJobs(): void {
     subscriptionReconciler().catch((err) => logger.error(err, "subscription_reconciler failed"));
   });
 
+  // daily_push_sender — runs every hour at :00
+  cron.schedule("0 * * * *", () => {
+    dailyPushSender().catch((err) => logger.error(err, "daily_push_sender failed"));
+  });
+
   logger.info("Scheduled jobs started");
 }
 
+// ── daily_pick_generator ──────────────────────────────────────────────────────
 async function dailyPickGenerator(): Promise<void> {
   const today = new Date().toISOString().split("T")[0]!;
 
@@ -38,7 +75,6 @@ async function dailyPickGenerator(): Promise<void> {
 
   for (const child of children) {
     try {
-      // Check if pick already exists for today
       const [existing] = await db
         .select({ id: dailyPicksTable.id })
         .from(dailyPicksTable)
@@ -47,7 +83,6 @@ async function dailyPickGenerator(): Promise<void> {
 
       if (existing) continue;
 
-      // Get user's subscription state
       const [sub] = await db
         .select({ state: subscriptionsTable.state })
         .from(subscriptionsTable)
@@ -56,7 +91,6 @@ async function dailyPickGenerator(): Promise<void> {
 
       const isPremium = sub?.state === "active" || sub?.state === "trial";
 
-      // Stories played in last 30 days — avoid repeats
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const recentPlays = await db
         .select({ storyId: sql<string>`story_id` })
@@ -81,20 +115,20 @@ async function dailyPickGenerator(): Promise<void> {
       const candidates = await storyQuery;
       if (candidates.length === 0) continue;
 
-      // Prefer stories matching child preferences
-      const preferred = child.preferences.length > 0
-        ? await db
-            .select({ id: storiesTable.id })
-            .from(storiesTable)
-            .where(
-              and(
-                eq(storiesTable.isActive, true),
-                sql`category = ANY(${child.preferences}::text[])`,
-                sql`${storiesTable.ageMin} <= ${child.age} AND ${storiesTable.ageMax} >= ${child.age}`,
-              ),
-            )
-            .limit(20)
-        : [];
+      const preferred =
+        child.preferences.length > 0
+          ? await db
+              .select({ id: storiesTable.id })
+              .from(storiesTable)
+              .where(
+                and(
+                  eq(storiesTable.isActive, true),
+                  sql`category = ANY(${child.preferences}::text[])`,
+                  sql`${storiesTable.ageMin} <= ${child.age} AND ${storiesTable.ageMax} >= ${child.age}`,
+                ),
+              )
+              .limit(20)
+          : [];
 
       const pool = preferred.length > 0 ? preferred : candidates;
       const picked = pool[Math.floor(Math.random() * pool.length)]!;
@@ -111,19 +145,14 @@ async function dailyPickGenerator(): Promise<void> {
   }
 }
 
+// ── subscription_reconciler ───────────────────────────────────────────────────
 async function subscriptionReconciler(): Promise<void> {
   const now = new Date();
 
-  // Trial ended but state still 'trial'
   const expiredTrials = await db
     .select({ id: subscriptionsTable.id, razorpaySubscriptionId: subscriptionsTable.razorpaySubscriptionId })
     .from(subscriptionsTable)
-    .where(
-      and(
-        eq(subscriptionsTable.state, "trial"),
-        sql`${subscriptionsTable.trialEndsAt} < ${now}`,
-      ),
-    );
+    .where(and(eq(subscriptionsTable.state, "trial"), sql`${subscriptionsTable.trialEndsAt} < ${now}`));
 
   for (const sub of expiredTrials) {
     if (!sub.razorpaySubscriptionId) {
@@ -135,17 +164,25 @@ async function subscriptionReconciler(): Promise<void> {
     }
 
     try {
-      const auth = "Basic " + Buffer.from(
-        `${process.env["RAZORPAY_KEY_ID"] ?? ""}:${process.env["RAZORPAY_KEY_SECRET"] ?? ""}`,
-      ).toString("base64");
+      const auth =
+        "Basic " +
+        Buffer.from(
+          `${process.env["RAZORPAY_KEY_ID"] ?? ""}:${process.env["RAZORPAY_KEY_SECRET"] ?? ""}`,
+        ).toString("base64");
 
-      const res = await fetch(`https://api.razorpay.com/v1/subscriptions/${sub.razorpaySubscriptionId}`, {
-        headers: { Authorization: auth },
-      });
+      const res = await fetch(
+        `https://api.razorpay.com/v1/subscriptions/${sub.razorpaySubscriptionId}`,
+        { headers: { Authorization: auth } },
+      );
 
       if (res.ok) {
-        const data = await res.json() as { status?: string };
-        const newState = data.status === "active" ? "active" : data.status === "cancelled" ? "cancelled" : "expired";
+        const data = (await res.json()) as { status?: string };
+        const newState =
+          data.status === "active"
+            ? "active"
+            : data.status === "cancelled"
+              ? "cancelled"
+              : "expired";
         await db
           .update(subscriptionsTable)
           .set({ state: newState, updatedAt: now })
@@ -157,15 +194,11 @@ async function subscriptionReconciler(): Promise<void> {
     }
   }
 
-  // Active subscriptions past their period end
   const expiredActive = await db
     .select({ id: subscriptionsTable.id })
     .from(subscriptionsTable)
     .where(
-      and(
-        eq(subscriptionsTable.state, "active"),
-        sql`${subscriptionsTable.currentPeriodEnd} < ${now}`,
-      ),
+      and(eq(subscriptionsTable.state, "active"), sql`${subscriptionsTable.currentPeriodEnd} < ${now}`),
     );
 
   if (expiredActive.length > 0) {
@@ -173,11 +206,154 @@ async function subscriptionReconciler(): Promise<void> {
       .update(subscriptionsTable)
       .set({ state: "expired", updatedAt: now })
       .where(
-        and(
-          eq(subscriptionsTable.state, "active"),
-          sql`${subscriptionsTable.currentPeriodEnd} < ${now}`,
-        ),
+        and(eq(subscriptionsTable.state, "active"), sql`${subscriptionsTable.currentPeriodEnd} < ${now}`),
       );
     logger.info({ count: expiredActive.length }, "Expired active subscriptions updated");
+  }
+}
+
+// ── daily_push_sender ─────────────────────────────────────────────────────────
+// Sends a push notification to users whose local time is ~19:30 (7:30 PM).
+// Uses a 60-minute window to compensate for hourly scheduling.
+async function dailyPushSender(): Promise<void> {
+  if (!fcmReady) return;
+
+  const nowUtc = new Date();
+  const utcHour = nowUtc.getUTCHours();
+  const utcMinute = nowUtc.getUTCMinutes();
+  const utcOffsetMinutes = utcHour * 60 + utcMinute;
+
+  // Target: 19:30 local. Window: ±30 min from the start of this hour.
+  // i.e. users whose UTC offset makes local time 19:00–20:00.
+  const TARGET_LOCAL_MINUTES = 19 * 60 + 30;
+  const windowStart = TARGET_LOCAL_MINUTES - 30;
+  const windowEnd = TARGET_LOCAL_MINUTES + 30;
+
+  const today = nowUtc.toISOString().split("T")[0]!;
+
+  // Fetch all users who have a timezone set, push tokens, and a current child
+  const candidates = await db
+    .select({
+      userId: usersTable.id,
+      timezone: usersTable.timezone,
+      currentChildId: usersTable.currentChildId,
+    })
+    .from(usersTable)
+    .where(and(eq(usersTable.isDeleted, false), isNotNull(usersTable.currentChildId)));
+
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const user of candidates) {
+    try {
+      if (!user.currentChildId) { skipped++; continue; }
+
+      // Determine user's local time offset
+      const localOffsetMinutes = getTimezoneOffsetMinutes(user.timezone ?? "Asia/Kolkata", nowUtc);
+      const localMinutes = (utcOffsetMinutes + localOffsetMinutes + 1440) % 1440;
+
+      if (localMinutes < windowStart || localMinutes >= windowEnd) {
+        skipped++;
+        continue;
+      }
+
+      // Check if pick exists and push not yet sent today
+      const [pick] = await db
+        .select({ id: dailyPicksTable.id, storyId: dailyPicksTable.storyId, pushSentAt: dailyPicksTable.pushSentAt })
+        .from(dailyPicksTable)
+        .where(
+          and(
+            eq(dailyPicksTable.childId, user.currentChildId),
+            eq(dailyPicksTable.pickDate, today),
+            isNull(dailyPicksTable.pushSentAt),
+          ),
+        )
+        .limit(1);
+
+      if (!pick) { skipped++; continue; }
+
+      // Fetch story title
+      const [story] = await db
+        .select({ title: storiesTable.title })
+        .from(storiesTable)
+        .where(eq(storiesTable.id, pick.storyId))
+        .limit(1);
+
+      if (!story) { skipped++; continue; }
+
+      // Fetch child name
+      const [child] = await db
+        .select({ name: childrenTable.name })
+        .from(childrenTable)
+        .where(eq(childrenTable.id, user.currentChildId))
+        .limit(1);
+
+      // Fetch active push tokens
+      const tokens = await db
+        .select({ id: pushTokensTable.id, fcmToken: pushTokensTable.fcmToken })
+        .from(pushTokensTable)
+        .where(and(eq(pushTokensTable.userId, user.userId), eq(pushTokensTable.isActive, true)));
+
+      if (tokens.length === 0) { skipped++; continue; }
+
+      const title = `Today's story for ${child?.name ?? "your little one"} is ready 🌙`;
+      const body = story.title;
+      const data = { story_id: pick.storyId, deep_link: `storytime://story/${pick.storyId}` };
+
+      for (const token of tokens) {
+        try {
+          await admin.messaging().send({
+            token: token.fcmToken,
+            notification: { title, body },
+            data,
+            android: { priority: "normal" },
+            apns: { payload: { aps: { sound: "default" } } },
+          });
+        } catch (fcmErr: unknown) {
+          const fcmMsg = fcmErr instanceof Error ? fcmErr.message : String(fcmErr);
+          const isInvalid =
+            fcmMsg.includes("registration-token-not-registered") ||
+            fcmMsg.includes("invalid-registration-token");
+          if (isInvalid) {
+            await db
+              .update(pushTokensTable)
+              .set({ isActive: false, updatedAt: new Date() })
+              .where(eq(pushTokensTable.id, token.id));
+            logger.info({ tokenId: token.id }, "FCM token deactivated — no longer registered");
+          } else {
+            logger.warn({ fcmErr }, "FCM send error");
+          }
+        }
+      }
+
+      // Mark push as sent
+      await db
+        .update(dailyPicksTable)
+        .set({ pushSentAt: new Date() })
+        .where(eq(dailyPicksTable.id, pick.id));
+
+      sent++;
+    } catch (err) {
+      logger.error(err, `Push sender failed for user ${user.userId}`);
+      failed++;
+    }
+  }
+
+  logger.info({ sent, skipped, failed }, "daily_push_sender completed");
+}
+
+/**
+ * Returns the UTC offset in minutes for a given IANA timezone at a specific point in time.
+ * e.g. Asia/Kolkata → +330 (IST = UTC+5:30)
+ */
+function getTimezoneOffsetMinutes(tz: string, at: Date): number {
+  try {
+    // Format date in target timezone and in UTC, diff the hours
+    const local = new Date(at.toLocaleString("en-US", { timeZone: tz }));
+    const utc = new Date(at.toLocaleString("en-US", { timeZone: "UTC" }));
+    return Math.round((local.getTime() - utc.getTime()) / 60000);
+  } catch {
+    return 330; // Default IST
   }
 }

@@ -17,6 +17,8 @@ export const usersTable = pgTable(
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     currentChildId: text("current_child_id"),
     isDeleted: boolean("is_deleted").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    timezone: text("timezone").notNull().default("Asia/Kolkata"),
   },
   (t) => [index("users_phone_number_idx").on(t.phoneNumber)],
 );

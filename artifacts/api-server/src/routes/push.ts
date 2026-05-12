@@ -6,16 +6,32 @@ import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
-router.post("/push/register", requireAuth, async (req, res) => {
-  const schema = z.object({
-    fcm_token: z.string().min(1),
+const registerSchema = z
+  .object({
+    fcm_token: z.string().min(1, "fcm_token is required").max(4096, "fcm_token too long"),
     platform: z.enum(["android", "ios"]),
+  })
+  .strict();
+
+const unregisterSchema = z
+  .object({
+    fcm_token: z.string().min(1, "fcm_token is required").max(4096),
+  })
+  .strict();
+
+function validationError(issue: z.core.$ZodIssue | undefined, res: any): void {
+  res.status(400).json({
+    error: {
+      code: "validation_error",
+      message: issue?.message ?? "Invalid request",
+      field: String(issue?.path[0] ?? ""),
+    },
   });
-  const parsed = schema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "fcm_token and platform (android|ios) are required" } });
-    return;
-  }
+}
+
+router.post("/push/register", requireAuth, async (req, res) => {
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) { validationError(parsed.error.issues[0], res); return; }
   const userId = req.auth!.sub;
   const { fcm_token, platform } = parsed.data;
 
@@ -35,12 +51,8 @@ router.post("/push/register", requireAuth, async (req, res) => {
 });
 
 router.post("/push/unregister", requireAuth, async (req, res) => {
-  const schema = z.object({ fcm_token: z.string().min(1) });
-  const parsed = schema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "fcm_token is required" } });
-    return;
-  }
+  const parsed = unregisterSchema.safeParse(req.body);
+  if (!parsed.success) { validationError(parsed.error.issues[0], res); return; }
   const userId = req.auth!.sub;
   const { fcm_token } = parsed.data;
 

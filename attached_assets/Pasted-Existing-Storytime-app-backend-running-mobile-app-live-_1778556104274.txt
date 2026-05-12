@@ -1,0 +1,297 @@
+Existing Storytime app: backend running, mobile app live, 10 DB tables, auth + paywall + scheduled jobs functioning. The following audit gaps need to be closed in priority order. Cloudinary thumbnail integration is already done — DO NOT modify it. R2 audio storage code can be written using env vars (R2_ACCESS_KEY_ID etc) that may be empty for now — credentials will arrive later. Before modifying any existing file, read it first and ask before overwriting.
+
+══════════════════════════════════════════════════
+PRIORITY 1 — PAYMENT EVENTS TABLE + WEBHOOK IDEMPOTENCY
+══════════════════════════════════════════════════
+
+Add table:
+
+  CREATE TABLE payment_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
+    event_type VARCHAR(50) NOT NULL,
+    razorpay_event_id VARCHAR(100) UNIQUE NOT NULL,
+    razorpay_payment_id VARCHAR(100),
+    razorpay_subscription_id VARCHAR(100),
+    amount_paise INTEGER,
+    raw_payload JSONB NOT NULL,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processing_status VARCHAR(20) NOT NULL DEFAULT 'success'
+      CHECK (processing_status IN ('success', 'failed', 'skipped_duplicate')),
+    error_message TEXT
+  );
+  CREATE INDEX idx_payment_events_user ON payment_events(user_id);
+  CREATE INDEX idx_payment_events_subscription ON payment_events(subscription_id);
+  CREATE INDEX idx_payment_events_event_type ON payment_events(event_type);
+
+Update webhook handler `/api/webhooks/razorpay`:
+
+  1. Verify X-Razorpay-Signature using HMAC-SHA256 with RAZORPAY_WEBHOOK_SECRET. Reject 401 if invalid.
+  2. Parse event_id from payload.
+  3. BEGIN transaction.
+  4. INSERT INTO payment_events with razorpay_event_id (relies on UNIQUE constraint).
+     • If duplicate key error → log "duplicate_event", update existing row's processing_status='skipped_duplicate', commit, return 200.
+  5. If insert succeeds → process subscription state change based on event_type.
+     • subscription.activated → update subscriptions.state = 'trial' or 'active', set period dates
+     • subscription.charged → state='active', update current_period_end
+     • subscription.completed → state='expired'
+     • subscription.cancelled → state='cancelled', set cancelled_at
+     • payment.failed → log only, no state change (Razorpay retries automatically)
+  6. COMMIT transaction.
+  7. On any unexpected error: catch, set processing_status='failed', error_message=<stack>, COMMIT (so we don't reprocess), return 200 to Razorpay to prevent retry storm. Alert via Sentry (see Priority 7).
+  8. ALWAYS return 200 unless signature invalid.
+
+══════════════════════════════════════════════════
+PRIORITY 2 — CONTINUE LISTENING HOME SECTION
+══════════════════════════════════════════════════
+
+Update GET /api/stories/home response shape to include continue_listening as the second section after today_pick:
+
+  {
+    today_pick: <story>,
+    continue_listening: [<stories>],   // NEW
+    new: [...],
+    trending: [...],
+    favorites: [...],
+    quick_listens: [...],
+    bedtime: [...],
+    age_matched: [...]
+  }
+
+Query logic for continue_listening:
+  SELECT s.*, csp.percent_completed, csp.updated_at
+  FROM child_story_progress csp
+  JOIN stories s ON s.id = csp.story_id
+  WHERE csp.child_id = $1
+    AND csp.percent_completed BETWEEN 5 AND 95
+    AND s.is_active = TRUE
+  ORDER BY csp.updated_at DESC
+  LIMIT 8;
+
+Rules:
+  • If result is empty, omit the section from the response entirely (frontend should not render an empty row)
+  • Apply the same is_free / subscription_state check — return audio_url as null for locked stories
+  • Include percent_completed in each story object so frontend can render a progress bar overlay on the card
+
+══════════════════════════════════════════════════
+PRIORITY 3 — DAILY PUSH SENDER SCHEDULED JOB
+══════════════════════════════════════════════════
+
+Add new scheduled job: daily_push_sender
+
+Configuration:
+  • Runs every hour at :00 (via same cron infra as existing jobs)
+  • Enabled via RUN_JOBS=1 (same flag as existing)
+
+Logic per run:
+  1. Determine current UTC time. Identify which IANA timezones are at 19:30 (7:30 PM) local right now (give a 60-minute window to catch any).
+  2. Query users where:
+     • user has at least one active push_token (is_active=TRUE)
+     • user has a current_child_id set
+     • user has not received the daily push for today (track via a new daily_push_log table OR via a sent_today flag on daily_picks — preferred: add a column to daily_picks called push_sent_at TIMESTAMPTZ)
+     • user timezone matches the current 7:30 PM window
+       → Need user timezone field. ADD COLUMN: users.timezone VARCHAR(50) NOT NULL DEFAULT 'Asia/Kolkata'
+  3. For each matching user:
+     • Lookup today's daily_pick for their current child
+     • If no daily_pick exists for today, skip
+     • Send via FCM to all active push_tokens for the user:
+         - title: "Today's story for [Name] is ready 🌙"
+         - body: "<story title>"
+         - data: { story_id: "<id>", deep_link: "storytime://story/<id>" }
+     • Mark daily_picks.push_sent_at = NOW()
+  4. Handle FCM token errors: if FCM returns "NotRegistered" or "InvalidRegistration", mark push_token.is_active = FALSE
+  5. Log summary: { sent: X, skipped: Y, failed: Z }
+
+Migration:
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(50) NOT NULL DEFAULT 'Asia/Kolkata';
+  ALTER TABLE daily_picks ADD COLUMN IF NOT EXISTS push_sent_at TIMESTAMPTZ;
+
+══════════════════════════════════════════════════
+PRIORITY 4 — PER-IP RATE LIMITING + CORS + HSTS
+══════════════════════════════════════════════════
+
+Rate limiting:
+  • Install express-rate-limit (or framework equivalent)
+  • Default per-IP limit: 100 req/min on /api/* (excluding /api/healthz and /api/webhooks/*)
+  • Stricter limit on /api/auth/request-otp: 10 req/hour per IP
+  • Stricter limit on /api/auth/verify-otp: 20 req/hour per IP
+  • Storage: in-memory store is fine for single-instance Replit deployment. If multi-instance later, swap to Redis.
+  • Return 429 with Retry-After header on limit exceeded
+  • Key extraction: use X-Forwarded-For first hop (Replit terminates TLS upstream); never trust the rest of the chain
+
+CORS:
+  • Use cors middleware
+  • Whitelist origins: APP_BASE_URL env var (single domain), plus localhost during dev
+  • Allowed methods: GET, POST, PATCH, DELETE
+  • Allowed headers: Content-Type, Authorization
+  • Credentials: false (we use bearer tokens, not cookies)
+  • Reject all other origins with no CORS headers
+
+HSTS + security headers:
+  • Install helmet middleware
+  • Strict-Transport-Security: max-age=31536000; includeSubDomains
+  • X-Content-Type-Options: nosniff
+  • X-Frame-Options: DENY
+  • Referrer-Policy: no-referrer
+  • Disable X-Powered-By header
+
+══════════════════════════════════════════════════
+PRIORITY 5 — INPUT VALIDATION HARDENING
+══════════════════════════════════════════════════
+
+Audit every POST and PATCH endpoint. Wrap request body parsing with Zod (recommended for TS) or Joi schemas.
+
+Rules:
+  • Strict mode: schema.strict() / .unknown(false) — reject any extra fields with 400
+  • Phone number: regex ^\+91[6-9]\d{9}$
+  • OTP: regex ^\d{6}$
+  • UUID: regex /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  • Name (child): 1-50 chars, no HTML/script tags, trim whitespace
+  • Age: integer 1-5
+  • Preferences: array of 3-10 strings from the fixed category enum
+  • Story ID: regex ^s\d{1,5}$
+  • Subscription plan: enum ['annual']
+  • All strings: max length explicit on every field
+
+For every endpoint, return 400 with structured error on validation failure:
+  { error: { code: "validation_error", message: "<reason>", field: "<field_name>" } }
+
+══════════════════════════════════════════════════
+PRIORITY 6 — DPDP ACT COMPLIANCE ENDPOINTS
+══════════════════════════════════════════════════
+
+Add two endpoints:
+
+DELETE /api/users/me  (auth required)
+  • Sets users.is_deleted = TRUE, users.phone_number = '+91XXXXXXXXXX' (anonymized), users.deleted_at = NOW()
+    → Add column: ALTER TABLE users ADD COLUMN deleted_at TIMESTAMPTZ;
+  • Revokes all refresh_tokens for the user (set revoked=TRUE)
+  • Marks all push_tokens for the user as is_active=FALSE
+  • Cancels active Razorpay subscription if any (call Razorpay API)
+  • Returns 200 with { deleted: true }
+  • Add scheduled job: hard_delete_purged_users — runs daily, finds users where deleted_at < NOW() - INTERVAL '30 days' and DELETE CASCADE removes them. Children, listening events, all cascade.
+
+GET /api/users/me/export  (auth required)
+  • Returns full JSON with:
+    {
+      user: { phone_number, created_at, timezone },
+      children: [ ... ],
+      listening_events: [ ... ],
+      subscriptions: [ ... ],
+      payment_events: [ ... ]  // sanitized — strip raw_payload
+    }
+  • Set Content-Disposition: attachment; filename="storytime-export-<userid>-<date>.json"
+  • Rate limit: 1 export per user per 24 hours
+
+Both endpoints documented in app settings → "Privacy & Data" link.
+
+══════════════════════════════════════════════════
+PRIORITY 7 — ERROR MONITORING (SENTRY)
+══════════════════════════════════════════════════
+
+  • Sign up at sentry.io (free tier), create a Node.js project
+  • Install @sentry/node
+  • Initialize at server boot with SENTRY_DSN env var
+  • Capture all unhandled exceptions
+  • Add manual capture in webhook handler error path (Priority 1)
+  • Add manual capture in scheduled job failures
+  • Configure sampleRate: 1.0 for errors, tracesSampleRate: 0.1 for performance
+  • Exclude noisy errors: 401, 404, 429 should NOT go to Sentry
+
+══════════════════════════════════════════════════
+PRIORITY 8 — MIGRATION SYSTEM
+══════════════════════════════════════════════════
+
+Check if current 10 tables were created via a migration tool. If they were created by hand or via init script:
+  • Install Drizzle ORM with drizzle-kit (or Prisma if preferred — pick one and document)
+  • Generate baseline migration from current schema
+  • All future schema changes (including the new tables/columns from Priorities 1, 3, 6 above) must be done via numbered migration files
+  • Add npm run migrate command
+  • Run migrations automatically on server start via a startup script (idempotent — only applies new ones)
+
+If migrations are already in place: just add new migration files for the columns/tables added in this batch.
+
+══════════════════════════════════════════════════
+PRIORITY 9 — FRONTEND PLAYER HARDENING
+══════════════════════════════════════════════════
+
+Update mobile app player screen. Use react-native-track-player (if React Native) or equivalent platform-native solution.
+
+1. Background audio:
+   • iOS: add UIBackgroundModes = ["audio"] to Info.plist
+   • Android: add foreground service permission + media playback service in AndroidManifest.xml
+   • Verify: lock phone with audio playing → audio continues
+
+2. Lock screen + Bluetooth + media controls:
+   • Set up MediaSession (Android) and MPNowPlayingInfoCenter + MPRemoteCommandCenter (iOS)
+   • Display: story title, child profile name, story thumbnail (use Cloudinary URL with w_400 transform)
+   • Functional buttons: play, pause. NO next/previous (we don't auto-advance).
+
+3. Audio interruption handling:
+   • iOS: register for AVAudioSessionInterruptionNotification
+   • Android: register for OnAudioFocusChangeListener
+   • On interruption begin (phone call, navigation prompt, alarm): pause playback, store position
+   • On interruption end: resume playback from stored position automatically
+   • Test scenarios: incoming phone call, Siri/Google Assistant, navigation directions
+
+4. Sleep timer:
+   • Prominent button in player UI, top-right
+   • One tap cycles: Off → 15 min → 30 min → 60 min → Off
+   • Visual state indicator (e.g., button shows "15m" when set)
+   • When timer fires: fade audio over 10 seconds, then stop and exit player back to home
+
+5. Progress reporting:
+   • Every 30 seconds during playback AND on pause/stop/end: PATCH /api/listening/:event_id/progress with seconds_listened, percent_completed
+   • On story end (100% complete): include completed=true; return to home screen, do NOT auto-play next
+
+6. Remove if present:
+   • Any auto-play next functionality
+   • Scrubbing on the progress bar (touch should not seek)
+
+══════════════════════════════════════════════════
+PRIORITY 10 — FRONTEND OFFLINE AUDIO CACHING
+══════════════════════════════════════════════════
+
+Implement a local audio cache layer in the mobile app.
+
+Cache behavior:
+  • Cache directory: <app cache dir>/audio_cache/
+  • Cache key: story_id
+  • Max size: 500MB total
+  • Eviction policy: LRU (least recently played first)
+  • Persistence: cache index stored in AsyncStorage (or SQLite) — survives app restart
+
+Cache flow:
+  1. User taps story → check local cache for story_id
+  2. If cached → play from local file path directly (no network call)
+  3. If not cached → call /api/stories/:id/stream-url → start streaming playback immediately → in background, download full file to cache directory → update cache index with file path, size, last_played_at
+  4. Mark cards in UI with a small downloaded checkmark icon when cached
+
+Free user behavior:
+  • On first successful login, auto-download all 8 free stories to cache (background, with progress indicator in settings)
+  • Free stories are NEVER evicted from cache (pinned)
+  • Paid users: pre-download is opt-in, in settings
+
+Offline mode:
+  • Detect connectivity changes via NetInfo
+  • When offline: cached stories remain tappable, non-cached stories greyed out with "No internet" hint badge
+  • Auth: if access token expires offline, allow cached playback to continue; require refresh on next online session
+
+Storage management screen (in settings):
+  • Show "X MB used of 500 MB"
+  • List cached stories with delete buttons
+  • "Clear all cache" button (does not delete free pinned stories)
+
+══════════════════════════════════════════════════
+ORDER OF WORK + CONFIRMATION RULE
+══════════════════════════════════════════════════
+
+Execute in numerical priority order (1 → 10). After each priority, report:
+  • What was changed
+  • Any conflicts with existing code and how resolved
+  • Tests/sanity checks performed
+
+Hold for confirmation between Priorities 5 and 6 (DPDP endpoints touch user deletion which is destructive — I want to review schema first).
+
+Do NOT touch: Cloudinary integration, existing R2 signed URL utility (if present), existing auth flow logic.

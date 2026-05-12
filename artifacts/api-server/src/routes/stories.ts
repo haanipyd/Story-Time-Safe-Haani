@@ -98,12 +98,13 @@ router.get("/stories/home", requireAuth, async (req, res) => {
             eq(listeningEventsTable.childId, childId),
             eq(listeningEventsTable.completed, false),
             gte(listeningEventsTable.percentCompleted, 5),
+            lte(listeningEventsTable.percentCompleted, 95),
             eq(storiesTable.isActive, true),
             gte(listeningEventsTable.startedAt, sevenDaysAgo),
           ),
         )
         .orderBy(desc(listeningEventsTable.startedAt))
-        .limit(5),
+        .limit(8),
 
       db
         .select()
@@ -139,20 +140,26 @@ router.get("/stories/home", requireAuth, async (req, res) => {
 
   const mask = (s: DbStory) => maskAudio(s, isFreeUser);
 
-  const result = {
+  const continueListening = continueRows.map((r) => ({
+    ...mask(r.story),
+    percent_completed: r.pct,
+  }));
+
+  const result: Record<string, unknown> = {
     today_pick: todayPickRows[0]?.story ? mask(todayPickRows[0].story) : null,
-    continue_listening: continueRows.map((r) => mask(r.story)),
+    ...(continueListening.length > 0 ? { continue_listening: continueListening } : {}),
+    new: ageRows.slice(0, 8).map(mask),
+    trending: ageRows.map(mask),
     favorites: favRows.map(mask),
     quick_listens: quickRows.map(mask),
     bedtime: bedtimeRows.map(mask),
-    more_like_this: [] as DbStory[],
     age_matched: ageRows.map(mask),
   };
 
   const hour = new Date().getHours();
   if (hour >= 18) {
-    const { bedtime, today_pick, ...rest } = result;
-    res.json({ today_pick, bedtime, ...rest });
+    const { bedtime, today_pick, continue_listening, ...rest } = result;
+    res.json({ today_pick, ...(continue_listening ? { continue_listening } : {}), bedtime, ...rest });
     return;
   }
 

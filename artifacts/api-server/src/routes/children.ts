@@ -11,20 +11,49 @@ const VALID_CATEGORIES = [
   "learning", "yoga", "nature", "funny", "classic",
 ] as const;
 
-const childCreateSchema = z.object({
-  name: z.string().min(1).max(50),
-  age: z.number().int().min(1).max(5),
-  preferences: z.array(z.enum(VALID_CATEGORIES)).min(1),
-});
+const NAME_REGEX = /^[^<>'"&]+$/;
 
-const childUpdateSchema = childCreateSchema.partial();
+const childCreateSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, "Name is required")
+      .max(50, "Name must be 50 characters or fewer")
+      .regex(NAME_REGEX, "Name contains invalid characters"),
+    age: z.number().int("Age must be an integer").min(1, "Minimum age is 1").max(5, "Maximum age is 5"),
+    preferences: z
+      .array(z.enum(VALID_CATEGORIES))
+      .min(3, "Please select at least 3 categories")
+      .max(10, "Maximum 10 categories"),
+  })
+  .strict();
+
+const childUpdateSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(50)
+      .regex(NAME_REGEX, "Name contains invalid characters")
+      .optional(),
+    age: z.number().int().min(1).max(5).optional(),
+    preferences: z.array(z.enum(VALID_CATEGORIES)).min(3).max(10).optional(),
+  })
+  .strict();
+
+function validationError(issue: z.core.$ZodIssue | undefined, res: any): void {
+  res.status(400).json({
+    error: {
+      code: "validation_error",
+      message: issue?.message ?? "Invalid request",
+      field: String(issue?.path[0] ?? ""),
+    },
+  });
+}
 
 router.post("/children", requireAuth, async (req, res) => {
   const parsed = childCreateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues[0]?.message ?? "Invalid request" } });
-    return;
-  }
+  if (!parsed.success) { validationError(parsed.error.issues[0], res); return; }
   const userId = req.auth!.sub;
   const { name, age, preferences } = parsed.data;
 
@@ -47,16 +76,12 @@ router.post("/children", requireAuth, async (req, res) => {
 });
 
 router.patch("/children/:id", requireAuth, async (req, res) => {
-  const { id } = req.params;
+  const childId = String(req.params["id"]);
   const parsed = childUpdateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: parsed.error.issues[0]?.message ?? "Invalid request" } });
-    return;
-  }
+  if (!parsed.success) { validationError(parsed.error.issues[0], res); return; }
   const userId = req.auth!.sub;
 
   try {
-    const childId = String(id);
     const [existing] = await db
       .select()
       .from(childrenTable)

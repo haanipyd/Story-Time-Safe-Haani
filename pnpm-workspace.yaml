@@ -43,6 +43,7 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  drizzle-orm>@opentelemetry/api: '-'
   fast-uri: 3.1.2
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@expo/cli>brace-expansion': 2.0.3

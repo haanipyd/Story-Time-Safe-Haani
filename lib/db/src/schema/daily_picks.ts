@@ -21,6 +21,7 @@ export const dailyPicksTable = pgTable(
       .notNull()
       .references(() => storiesTable.id),
     pickDate: date("pick_date").notNull(),
+    pushSentAt: timestamp("push_sent_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
