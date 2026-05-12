@@ -1,0 +1,558 @@
+═══════════════════════════════════════════════════════
+PHASE 1 — DATABASE SCHEMA
+═══════════════════════════════════════════════════════
+
+Use PostgreSQL. Create the following tables with exact column types, constraints, and indexes. If the project doesn't have a Postgres database connected, set one up first.
+
+──────────────────────────────────────────
+TABLE: users
+──────────────────────────────────────────
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  phone_number    VARCHAR(13) UNIQUE NOT NULL  (format: +91XXXXXXXXXX)
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  last_login_at   TIMESTAMPTZ
+  current_child_id UUID REFERENCES children(id) (nullable)
+  is_deleted      BOOLEAN NOT NULL DEFAULT FALSE
+
+  INDEX on phone_number
+
+──────────────────────────────────────────
+TABLE: children
+──────────────────────────────────────────
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  name            VARCHAR(50) NOT NULL
+  age             SMALLINT NOT NULL CHECK (age BETWEEN 1 AND 5)
+  preferences     TEXT[] NOT NULL  (array of category IDs)
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  INDEX on user_id
+
+──────────────────────────────────────────
+TABLE: stories
+──────────────────────────────────────────
+  id              VARCHAR(10) PRIMARY KEY  (e.g., 's21')
+  title           VARCHAR(100) NOT NULL
+  category        VARCHAR(20) NOT NULL CHECK (category IN ('bedtime','adventure','animal','songs','mythology','learning','yoga','nature','funny','classic'))
+  duration_min    SMALLINT NOT NULL CHECK (duration_min BETWEEN 3 AND 12)
+  age_min         SMALLINT NOT NULL CHECK (age_min BETWEEN 1 AND 5)
+  age_max         SMALLINT NOT NULL CHECK (age_max BETWEEN 1 AND 5)
+  description     VARCHAR(300) NOT NULL
+  audio_url       TEXT NOT NULL  (storage key, not public URL)
+  thumbnail_url   TEXT NOT NULL  (storage key)
+  is_free         BOOLEAN NOT NULL DEFAULT FALSE
+  play_count      INTEGER NOT NULL DEFAULT 0
+  published_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE
+
+  CHECK (age_max >= age_min)
+  INDEX on (category, is_active)
+  INDEX on (is_free, is_active)
+
+──────────────────────────────────────────
+TABLE: listening_events
+──────────────────────────────────────────
+  id                 BIGSERIAL PRIMARY KEY
+  child_id           UUID NOT NULL REFERENCES children(id) ON DELETE CASCADE
+  user_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  story_id           VARCHAR(10) NOT NULL REFERENCES stories(id)
+  started_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  ended_at           TIMESTAMPTZ
+  seconds_listened   INTEGER NOT NULL DEFAULT 0
+  percent_completed  SMALLINT NOT NULL DEFAULT 0 CHECK (percent_completed BETWEEN 0 AND 100)
+  completed          BOOLEAN NOT NULL DEFAULT FALSE
+
+  INDEX on (child_id, started_at DESC)
+  INDEX on (story_id)
+
+──────────────────────────────────────────
+TABLE: subscriptions
+──────────────────────────────────────────
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  user_id                  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  state                    VARCHAR(20) NOT NULL CHECK (state IN ('free','trial','active','expired','cancelled'))
+  plan                     VARCHAR(20) NOT NULL DEFAULT 'annual'
+  trial_started_at         TIMESTAMPTZ
+  trial_ends_at            TIMESTAMPTZ
+  current_period_start     TIMESTAMPTZ
+  current_period_end       TIMESTAMPTZ
+  razorpay_subscription_id VARCHAR(100) UNIQUE
+  razorpay_customer_id     VARCHAR(100)
+  cancelled_at             TIMESTAMPTZ
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  INDEX on user_id
+  INDEX on razorpay_subscription_id
+
+──────────────────────────────────────────
+TABLE: daily_picks
+──────────────────────────────────────────
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  child_id    UUID NOT NULL REFERENCES children(id) ON DELETE CASCADE
+  story_id    VARCHAR(10) NOT NULL REFERENCES stories(id)
+  pick_date   DATE NOT NULL
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  UNIQUE (child_id, pick_date)
+  INDEX on (child_id, pick_date DESC)
+
+──────────────────────────────────────────
+TABLE: otp_requests
+──────────────────────────────────────────
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  phone_number    VARCHAR(13) NOT NULL
+  otp_hash        VARCHAR(255) NOT NULL  (bcrypt hash of OTP, NEVER store plaintext)
+  attempts        SMALLINT NOT NULL DEFAULT 0
+  expires_at      TIMESTAMPTZ NOT NULL  (5 minutes from creation)
+  used            BOOLEAN NOT NULL DEFAULT FALSE
+  ip_address      VARCHAR(45)
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  INDEX on (phone_number, created_at DESC)
+
+──────────────────────────────────────────
+TABLE: refresh_tokens
+──────────────────────────────────────────
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  token_hash  VARCHAR(255) UNIQUE NOT NULL
+  expires_at  TIMESTAMPTZ NOT NULL  (30 days from creation)
+  revoked     BOOLEAN NOT NULL DEFAULT FALSE
+  device_info VARCHAR(200)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  INDEX on user_id
+  INDEX on token_hash
+
+──────────────────────────────────────────
+TABLE: push_tokens
+──────────────────────────────────────────
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  fcm_token   TEXT NOT NULL
+  platform    VARCHAR(10) NOT NULL CHECK (platform IN ('android','ios'))
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  UNIQUE (user_id, fcm_token)
+
+──────────────────────────────────────────
+TABLE: payment_events
+──────────────────────────────────────────
+  id                    BIGSERIAL PRIMARY KEY
+  user_id               UUID REFERENCES users(id) ON DELETE SET NULL
+  subscription_id       UUID REFERENCES subscriptions(id) ON DELETE SET NULL
+  event_type            VARCHAR(50) NOT NULL  (e.g., 'subscription.activated', 'payment.failed')
+  razorpay_event_id     VARCHAR(100) UNIQUE
+  amount_paise          INTEGER
+  raw_payload           JSONB NOT NULL
+  processed_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+  INDEX on user_id
+  INDEX on event_type
+
+══════════════════════════════════════════════════════
+PHASE 2 — AUTHENTICATION
+══════════════════════════════════════════════════════
+
+Implement Indian phone number + OTP authentication. Use MSG91 as the SMS provider (or any equivalent — Twilio is too expensive for India). Store MSG91 API key in environment variables, never in code.
+
+──────────────────────────────
+AUTH FLOW
+──────────────────────────────
+
+1. POST /api/auth/request-otp
+   - Body: { phone_number: "+91XXXXXXXXXX" }
+   - Validate format strictly: must start with +91, exactly 10 digits after
+   - Rate limit: max 3 OTP requests per phone per hour, max 10 per IP per hour
+   - Generate 6-digit numeric OTP
+   - Hash OTP with bcrypt before storing in otp_requests
+   - Send OTP via MSG91 with template approved for transactional use
+   - Return: { success: true, request_id: <uuid>, expires_in: 300 }
+   - Never echo the OTP in the response
+
+2. POST /api/auth/verify-otp
+   - Body: { phone_number, otp, device_info? }
+   - Look up most recent unused, non-expired OTP for that phone
+   - Increment attempts counter. If attempts > 5, mark all OTPs for that phone as used and return generic error
+   - Compare provided OTP against stored bcrypt hash
+   - On success:
+     • Mark OTP as used
+     • Find or create user record
+     • If new user → return { is_new_user: true, access_token, refresh_token }
+     • If existing user → update last_login_at, return { is_new_user: false, access_token, refresh_token, user, current_child }
+   - JWT access_token expires in 15 minutes
+   - Refresh token expires in 30 days, stored hashed in refresh_tokens table
+
+3. POST /api/auth/refresh
+   - Body: { refresh_token }
+   - Look up token by hash, validate not expired and not revoked
+   - Issue new access_token (15 min)
+   - Rotate refresh token (revoke old, issue new) — defense against token theft
+
+4. POST /api/auth/logout
+   - Auth required
+   - Revoke the refresh token from request
+   - Mark current FCM push token as inactive
+
+──────────────────────────────
+JWT STRUCTURE
+──────────────────────────────
+
+Access token payload:
+{
+  sub: <user_id>,
+  phone: <phone_number>,
+  child_id: <current_child_id or null>,
+  sub_state: <subscription state>,
+  iat, exp
+}
+
+Sign with HS256 using a strong secret stored in environment variable JWT_SECRET (min 64 chars). Rotate annually.
+
+══════════════════════════════════════════════════════
+PHASE 3 — BACKEND API ENDPOINTS
+══════════════════════════════════════════════════════
+
+All endpoints below require Authorization: Bearer <access_token> unless marked PUBLIC.
+All responses are JSON. All errors return { error: { code, message } } with appropriate HTTP status.
+
+──────────────────────────────
+CHILD PROFILE
+──────────────────────────────
+
+POST /api/children
+  Body: { name, age, preferences: [category_ids] }
+  Validates: name 1-50 chars, age 1-5, preferences ≥3 categories from valid list
+  Creates child, sets users.current_child_id
+  Returns created child
+
+PATCH /api/children/:id
+  Body: any subset of { name, age, preferences }
+  Owner-only (child.user_id must equal token user_id) — enforce server-side
+
+GET /api/children/me/current
+  Returns current child profile for authenticated user
+
+──────────────────────────────
+STORIES
+──────────────────────────────
+
+GET /api/stories/home
+  Returns the entire structured home feed in one response:
+  {
+    today_pick: <story object>,
+    continue_listening: [<stories>],
+    favorites: [<stories>],          // matching child preferences
+    quick_listens: [<stories>],       // duration ≤ 5 min
+    bedtime: [<stories>],             // category=bedtime
+    more_like_this: [<stories>],      // adjacent categories
+    age_matched: [<stories>]          // sorted by play_count
+  }
+  All story objects include is_free flag and audio_url is null if user is on free plan and story is_free=false (force paywall trigger client-side based on null url)
+  After 6 PM local server time, reorder so bedtime appears second
+
+GET /api/stories/:id/stream-url
+  Returns: { audio_url: <signed_url>, expires_at }
+  Server checks: if story.is_free=false AND user.subscription_state IN ('free','expired'), return 402 Payment Required
+  Otherwise generate a signed URL valid for 1 hour, return it
+  This is the ONLY way to get a playable audio URL — never return raw URLs from any other endpoint
+
+GET /api/stories/categories/:category
+  Returns all stories in category, filtered by user's child age range
+
+POST /api/listening/start
+  Body: { story_id }
+  Creates listening_event with started_at=NOW(), returns event_id
+
+PATCH /api/listening/:event_id/progress
+  Body: { seconds_listened, percent_completed, completed }
+  Updates event. Called every 30 seconds during playback and on completion.
+  If completed=true, set ended_at=NOW() and increment stories.play_count
+
+──────────────────────────────
+SUBSCRIPTIONS
+──────────────────────────────
+
+GET /api/subscription/me
+  Returns current subscription record for user (free state if none exists)
+
+POST /api/subscription/create
+  Body: { plan: 'annual' }
+  Creates Razorpay subscription with trial:
+    • Trial period: 7 days
+    • Trial amount: ₹2
+    • Post-trial: ₹599/year recurring
+    • UPI Autopay mandate, card mandate fallback
+  Returns: { subscription_id, razorpay_subscription_id, short_url } — short_url is Razorpay's checkout page, opened in app via in-app browser
+
+POST /api/subscription/cancel
+  Cancels Razorpay subscription, sets cancelled_at, state remains 'active' until current_period_end then moves to 'expired'
+
+POST /api/webhooks/razorpay  [PUBLIC but signature-verified]
+  Razorpay sends events here. MUST verify X-Razorpay-Signature header using HMAC-SHA256 with webhook secret.
+  Handle events:
+    • subscription.activated → set state='trial' or 'active', set period dates
+    • subscription.charged → update current_period_end, ensure state='active'
+    • subscription.completed → state='expired'
+    • subscription.cancelled → state='cancelled'
+    • payment.failed → log to payment_events, do not auto-expire (Razorpay retries)
+  Idempotency: check razorpay_event_id in payment_events before processing. Always write to payment_events first.
+  Return 200 even on processing errors to avoid Razorpay retry storms; queue retries internally.
+
+──────────────────────────────
+DASHBOARD
+──────────────────────────────
+
+GET /api/dashboard/week
+  Returns:
+  {
+    stories_listened: <count of distinct stories with percent_completed > 50% in last 7 days>,
+    total_minutes: <sum of seconds_listened in last 7 days / 60>,
+    daily_minutes: [<7 day array of minutes per day>]
+  }
+
+──────────────────────────────
+PUSH NOTIFICATIONS
+──────────────────────────────
+
+POST /api/push/register
+  Body: { fcm_token, platform }
+  Upsert into push_tokens
+
+POST /api/push/unregister
+  Body: { fcm_token }
+  Set is_active=false
+
+══════════════════════════════════════════════════════
+PHASE 4 — SCHEDULED JOBS
+══════════════════════════════════════════════════════
+
+──────────────────────────────
+JOB: daily_pick_generator
+──────────────────────────────
+Runs hourly. For each timezone, when local time crosses midnight:
+  • For each active child profile, pick one story:
+    – Free users: rotate through the 8 free stories
+    – Trial/active users: pick from full catalog
+    – Must match age range, ≥1 preference category, not played in last 30 days
+    – Insert into daily_picks for today's date
+  • Idempotent: UNIQUE constraint on (child_id, pick_date) prevents duplicates
+
+──────────────────────────────
+JOB: daily_push_sender
+──────────────────────────────
+Runs hourly. When local time crosses 7:30 PM for a timezone:
+  • For each active user with a child and registered FCM token:
+    – Lookup today's daily_pick for their current child
+    – Send via FCM: title "Today's story for [Name] is ready 🌙", body=story title
+    – Deep link: storytime://story/<id>
+  • Skip if user has no FCM token or has logged out in last 7 days
+
+──────────────────────────────
+JOB: subscription_state_reconciler
+──────────────────────────────
+Runs every 4 hours:
+  • Find subscriptions where trial_ends_at < NOW() and state='trial' — should be moving to 'active' but Razorpay webhook may have failed; reconcile via Razorpay API
+  • Find subscriptions where current_period_end < NOW() and state='active' — should be 'expired'; reconcile
+
+══════════════════════════════════════════════════════
+PHASE 5 — AUDIO STORAGE & SIGNED URLs
+══════════════════════════════════════════════════════
+
+Use S3-compatible object storage. Recommended: Cloudflare R2 (free egress, cheap, India-friendly) or AWS S3 with CloudFront. Configure in env vars: STORAGE_BUCKET, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, STORAGE_ENDPOINT.
+
+Storage layout:
+  /audio/stories/<story_id>.m4a
+  /thumbnails/stories/<story_id>.webp
+
+Rules:
+  • Bucket is PRIVATE. No public read access.
+  • Audio URLs must NEVER be returned to the client unsigned
+  • Signed URLs generated server-side, expire in 1 hour
+  • Thumbnails can be served via signed URLs OR via a public CDN with random hash filenames (less critical to gate)
+  • Implement a single utility: generate_signed_url(storage_key, ttl_seconds=3600)
+
+══════════════════════════════════════════════════════
+PHASE 6 — SECURITY REQUIREMENTS
+══════════════════════════════════════════════════════
+
+All of the following are non-negotiable. Implement and verify each.
+
+1. SECRETS MANAGEMENT
+   • All secrets in environment variables: JWT_SECRET, MSG91_API_KEY, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET, STORAGE_SECRET_KEY, DATABASE_URL, FCM_SERVER_KEY
+   • Never commit secrets to repo. Add .env to .gitignore.
+   • Never log secrets, OTPs, or full JWT tokens.
+
+2. INPUT VALIDATION
+   • All API inputs validated server-side with strict schemas (use Zod, Joi, or Pydantic depending on stack)
+   • Reject any request with extra unexpected fields
+   • Phone number regex: ^\+91[6-9]\d{9}$ (Indian mobile)
+   • Sanitize all string inputs (no HTML, no SQL injection vectors — use parameterized queries always)
+
+3. AUTHENTICATION HARDENING
+   • Bcrypt cost factor ≥ 10 for OTP hashing
+   • OTP attempts capped at 5 per OTP, then OTP is burned
+   • OTP request rate limit: 3 per phone per hour, 10 per IP per hour
+   • OTP expires in 5 minutes
+   • Refresh tokens rotated on every use (one-time use)
+   • Revoke all refresh tokens for a user on logout-all or password reset
+
+4. AUTHORIZATION
+   • Every endpoint validates that the resource being accessed belongs to the authenticated user
+   • Children can only be modified by their parent user
+   • Listening events can only be created/updated for the user's own child
+   • Subscription endpoints scoped to authenticated user only
+
+5. RATE LIMITING
+   • Per-IP: 100 requests per minute on /api/* (use Redis or in-memory limiter)
+   • Per-user: 60 requests per minute on /api/* (excluding webhook endpoint)
+   • Webhook endpoint: no user limit but verify signature on every request
+   • OTP endpoints: stricter limits as above
+
+6. WEBHOOK SECURITY
+   • Razorpay webhook signature MUST be verified using HMAC-SHA256 with webhook secret
+   • Reject any webhook with invalid or missing signature
+   • Idempotent processing — check razorpay_event_id in payment_events before acting
+
+7. TRANSPORT SECURITY
+   • HTTPS only. Reject HTTP requests with 301 redirect to HTTPS.
+   • Strict-Transport-Security header on all responses
+   • Set secure cookie flags if any cookies are used (httpOnly, secure, sameSite=strict)
+
+8. CORS
+   • Whitelist only the app's domain(s). No wildcards.
+   • Allowed methods: GET, POST, PATCH, DELETE. No OPTIONS abuse.
+
+9. AUDIO URL PROTECTION
+   • All audio served via signed URLs with 1-hour expiry
+   • Never expose direct storage URLs
+   • Server validates subscription state before generating signed URL for paid content
+   • Log all stream-url requests for fraud monitoring
+
+10. DATA PROTECTION (India DPDP Act compliance)
+    • Phone numbers are PII. Encrypt at rest if possible, at minimum restrict DB access.
+    • Children's data: app is parent-operated, but explicitly note in onboarding that parent is setting up profile for their child
+    • Implement /api/users/me/delete endpoint for right-to-deletion (soft-delete user, cascade hard-delete after 30 days)
+    • Implement /api/users/me/export for data portability — returns user + children + listening_events as JSON
+
+11. LOGGING & MONITORING
+    • Log all auth events (login, logout, OTP request, OTP verify, failed attempts) with IP and timestamp
+    • Log all subscription state changes
+    • Log all payment events
+    • Never log: OTPs, JWT tokens, refresh tokens, full phone numbers (mask middle digits in logs: +91XXX****1234)
+    • Set up error reporting (Sentry free tier)
+
+12. DEPENDENCY HYGIENE
+    • Run npm audit / pip audit before deploy
+    • Pin all dependency versions
+    • No deprecated packages
+
+══════════════════════════════════════════════════════
+PHASE 7 — FRONTEND BEHAVIOR
+══════════════════════════════════════════════════════
+
+The frontend already exists. Update screens to integrate with the new backend.
+
+1. AUTH SCREENS (new)
+   • Splash → Phone number input (+91 locked prefix) → OTP input (6 digits, auto-fill from SMS if platform supports)
+   • Persist access_token and refresh_token in secure storage (Keychain on iOS, EncryptedSharedPreferences on Android — NOT AsyncStorage)
+   • On app open: check token, auto-refresh if access expired, restore session
+
+2. HOME SCREEN
+   • Single call to GET /api/stories/home on mount and on pull-to-refresh
+   • Render sections in the order returned by server (server enforces time-of-day reordering)
+   • Lock icon (gold padlock) on any story card where audio_url is null in the response
+   • Tap locked story → open Paywall screen
+   • Tap unlocked story → call POST /api/listening/start → fetch /api/stories/:id/stream-url → open Player
+
+3. PLAYER SCREEN
+   • Use a production audio library with background playback (react-native-track-player or platform equivalent)
+   • Enable lock screen + Bluetooth controls
+   • Auto-pause on phone call interruption, auto-resume on call end
+   • Sleep timer button top-right, cycles Off/15/30/60 min
+   • Progress bar visible, non-scrubbable
+   • Every 30 seconds and on pause/end → PATCH /api/listening/:event_id/progress
+   • On story end → return to home (no auto-play)
+
+4. PAYWALL SCREEN
+   • Triggered by tapping locked story OR settings tap OR day-4 first-open
+   • Single CTA "Start 7-day trial for ₹2"
+   • Tap CTA → POST /api/subscription/create → open returned short_url in in-app browser → on close, poll GET /api/subscription/me until state changes from 'free'
+
+5. SETTINGS
+   • Subscription row (status from /api/subscription/me)
+   • Child profile editing (PATCH /api/children/:id)
+   • Logout (POST /api/auth/logout, clear local storage, return to auth)
+   • Need help → opens WhatsApp deep link to support number
+
+6. OFFLINE BEHAVIOR
+   • Cache audio files locally after first play (500MB cap, LRU eviction)
+   • If offline, allow playback of cached files only
+   • If offline and cached files unavailable, show "No internet — connect to listen"
+
+══════════════════════════════════════════════════════
+PHASE 8 — DEPLOYMENT & ENVIRONMENT
+══════════════════════════════════════════════════════
+
+1. Set up environment variables in Replit Secrets:
+   DATABASE_URL, JWT_SECRET, MSG91_AUTH_KEY, MSG91_TEMPLATE_ID, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET, STORAGE_BUCKET, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, STORAGE_ENDPOINT, FCM_SERVER_KEY, APP_BASE_URL
+
+2. Create database migration files. Run migrations on deploy. Never edit production schema by hand.
+
+3. Add health check endpoint: GET /api/health → { status: "ok", db: true, timestamp }
+
+4. Add a seed script that inserts 8 free stories (with placeholder audio_url and thumbnail_url) so home screen renders on first install. I will provide real audio files separately.
+
+5. Document all environment variables in a README with descriptions, never values.
+
+══════════════════════════════════════════════════════
+SCOPE CUTS — DO NOT BUILD
+══════════════════════════════════════════════════════
+
+- Multiple child profiles per account
+- Parent PIN lock
+- Story favoriting/bookmarking by child
+- Comments, ratings, reviews
+- Social sharing features
+- User-uploaded content
+- In-app chat or messaging
+- Email signup
+- Google/Apple SSO
+- Web dashboard (mobile app only for v1)
+- Admin panel UI (use direct SQL/database UI for now)
+- Multi-language UI (English only for v1)
+- Analytics SDK beyond basic event logging
+
+══════════════════════════════════════════════════════
+CONFIRMATION RULE
+══════════════════════════════════════════════════════
+
+Before modifying any existing file:
+1. Read the current implementation
+2. List what's already in place that matches this spec
+3. List what conflicts and needs to be replaced
+4. Ask for confirmation before overwriting
+
+Build in this order: Phase 1 (schema) → Phase 2 (auth) → Phase 3 (APIs) → Phase 5 (storage) → Phase 6 (security throughout) → Phase 4 (scheduled jobs) → Phase 7 (frontend integration) → Phase 8 (deployment).
+
+Report progress at the end of each Phase before continuing.
+Three things to handle before running this:
+
+Razorpay account. Sign up, get test mode keys, configure a webhook endpoint pointing to your Replit deploy URL /api/webhooks/razorpay, copy the webhook secret. Without this, the subscription flow can't be tested end-to-end.
+MSG91 account. Sign up, get an approved DLT template for transactional OTP (Indian telecom regulator requires this — takes 24–48 hours for template approval). Without DLT approval, your OTP SMS won't deliver to Indian numbers.
+Storage bucket. Create a Cloudflare R2 bucket (free) or AWS S3 bucket, generate access keys, set bucket to private. Without this, audio playback won't work even after the schema is built.
+
+The prompt assumes Postgres. If Replit Agent connected your existing app to MongoDB or another NoSQL DB, tell it explicitly to migrate to Postgres before running Phase 1 — relational queries on filtered story lists by age + category + free flag are painful in document stores and will hurt you later.You said: So storage will be done in the cloudinarySo storage will be done in the cloudinary11 May2 / 2Claude responded: Push back before you commit: Cloudinary for audio is the wrong tool, and the cost math will hurt you at exactly the moment you start growing.Weighed Cloudinary's cost implications against audio streaming economicsWeighed Cloudinary's cost implications against audio streaming economicsPush back before you commit: Cloudinary for audio is the wrong tool, and the cost math will hurt you at exactly the moment you start growing.
+The actual problem. Cloudinary is built for image and video transformation. Audio works on it, but their pricing model is credit-based where 1 credit = 1GB bandwidth OR 1GB storage OR 1000 transformations, blended. Audio streaming consumes credits primarily through bandwidth, and bandwidth is what kills you in a streaming subscription product.
+Run the numbers on your unit economics. Confidence: high.
+A typical paying user — child plus parent — listens to roughly 25–35 minutes/day. At a reasonable 64kbps audio encoding, that's ~12–17MB/day per user, call it 450MB/month/user.
+At 1,000 paying users: 450GB/month bandwidth.
+
+Cloudinary: 450 credits/month → forces you onto the Advanced plan at $224/month (₹18,600). Even then you're near the cap.
+Cloudflare R2: $0 egress (R2's whole pitch is zero egress fees) + ~$0.015/GB storage for the catalog. Total cost for the same load: under $5/month (~₹400).
+
+That's a 45x cost difference. At your ₹599/year ARPU (~$0.60/month per user), Cloudinary is eating 5–8% of revenue at 1,000 users. At 10,000 users you're paying Cloudinary $2,000+/month for what costs $50 on R2.
+Where Cloudinary IS legitimately the best choice. Thumbnails. Their on-the-fly transformations (auto-resize, auto-WebP, auto-quality, CDN-served) are best-in-class and you'd otherwise have to build that pipeline yourself. Free tier easily cov
