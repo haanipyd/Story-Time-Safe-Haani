@@ -66,6 +66,15 @@ function getCurated(
   };
 }
 
+function getGreetingEmoji() {
+  const h = new Date().getHours();
+  if (h < 7) return "🌙";
+  if (h < 12) return "☀️";
+  if (h < 17) return "🌤️";
+  if (h < 20) return "🌅";
+  return "🌙";
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -96,6 +105,7 @@ export default function HomeScreen() {
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const name = currentProfile?.name ?? "";
+  const greetEmoji = getGreetingEmoji();
 
   if (!currentProfile) return null;
 
@@ -108,7 +118,8 @@ export default function HomeScreen() {
           { backgroundColor: colors.background },
         ]}
       >
-        <ActivityIndicator size="large" color={colors.coral} />
+        <Text style={styles.loadingEmoji}>📖</Text>
+        <ActivityIndicator size="large" color={colors.coral} style={{ marginTop: 12 }} />
       </View>
     );
   }
@@ -119,7 +130,6 @@ export default function HomeScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Fixed header — sits above the scroll view */}
       <View
         style={[
           styles.header,
@@ -129,35 +139,29 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <View>
-          <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
-            Hello!
-          </Text>
-          <Text style={[styles.title, { color: colors.navy }]}>
-            {name}&apos;s Stories
-          </Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greetEmoji}>{greetEmoji}</Text>
+          <View>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+              Story time for
+            </Text>
+            <Text style={[styles.childName, { color: colors.navy }]}>
+              {name}!
+            </Text>
+          </View>
         </View>
         <View style={styles.headerBtns}>
+          {isPremium && (
+            <View style={[styles.premiumBadge, { backgroundColor: colors.amber + "22" }]}>
+              <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
+            </View>
+          )}
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/settings")}
-            style={[
-              styles.gearBtn,
-              { backgroundColor: isPremium ? colors.coral + "22" : colors.muted },
-            ]}
+            style={[styles.iconBtn, { backgroundColor: colors.muted }]}
             hitSlop={8}
           >
-            <Ionicons
-              name={isPremium ? "star" : "person-circle-outline"}
-              size={20}
-              color={isPremium ? colors.coral : colors.navy}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/settings")}
-            style={[styles.gearBtn, { backgroundColor: colors.muted }]}
-            hitSlop={8}
-          >
-            <Ionicons name="settings-outline" size={20} color={colors.navy} />
+            <Ionicons name="settings-outline" size={22} color={colors.navy} />
           </TouchableOpacity>
         </View>
       </View>
@@ -165,14 +169,14 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: 12, paddingBottom: insets.bottom + 90 },
+          { paddingTop: 16, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
         {curated.featured && (
           <View style={styles.featuredSection}>
             <View style={styles.featuredLabel}>
-              <View style={[styles.dot, { backgroundColor: colors.coral }]} />
+              <Text style={styles.featuredEmoji}>✨</Text>
               <Text style={[styles.featuredText, { color: colors.coral }]}>
                 Today&apos;s Pick for {name}
               </Text>
@@ -182,10 +186,10 @@ export default function HomeScreen() {
         )}
 
         {favouriteStories.length > 0 && (
-          <View style={styles.recentSection}>
-            <View style={styles.recentHeader}>
-              <Ionicons name="heart" size={15} color={colors.coral} />
-              <Text style={[styles.recentTitle, { color: colors.navy }]}>
+          <View style={styles.namedSection}>
+            <View style={styles.namedHeader}>
+              <Text style={styles.namedEmoji}>❤️</Text>
+              <Text style={[styles.namedTitle, { color: colors.navy }]}>
                 {name}&apos;s Favourites
               </Text>
             </View>
@@ -194,14 +198,10 @@ export default function HomeScreen() {
         )}
 
         {recentlyPlayed.length > 0 && (
-          <View style={styles.recentSection}>
-            <View style={styles.recentHeader}>
-              <Ionicons
-                name="headset-outline"
-                size={16}
-                color={colors.navy}
-              />
-              <Text style={[styles.recentTitle, { color: colors.navy }]}>
+          <View style={styles.namedSection}>
+            <View style={styles.namedHeader}>
+              <Text style={styles.namedEmoji}>🎧</Text>
+              <Text style={[styles.namedTitle, { color: colors.navy }]}>
                 Recently Played
               </Text>
             </View>
@@ -210,7 +210,11 @@ export default function HomeScreen() {
         )}
 
         {curated.favorites.length > 0 && (
-          <SectionRow title="Picks for You" stories={curated.favorites} />
+          <SectionRow
+            title="Picks for You"
+            emoji="🌟"
+            stories={curated.favorites}
+          />
         )}
 
         {curated.moreLikeThis.length > 0 && (
@@ -218,12 +222,17 @@ export default function HomeScreen() {
         )}
 
         {curated.newForYou.length > 0 && (
-          <SectionRow title="New for You" stories={curated.newForYou} />
+          <SectionRow
+            title="New for You"
+            emoji="🆕"
+            stories={curated.newForYou}
+          />
         )}
 
         {curated.quickListens.length > 0 && (
           <SectionRow
             title="Quick Listens · under 5 min"
+            emoji="⚡"
             stories={curated.quickListens}
             size="small"
           />
@@ -232,6 +241,7 @@ export default function HomeScreen() {
         {curated.longStories.length > 0 && (
           <SectionRow
             title="Long Stories · 9+ min"
+            emoji="📚"
             stories={curated.longStories}
           />
         )}
@@ -256,33 +266,55 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  loadingEmoji: {
+    fontSize: 48,
+  },
   scroll: {},
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 16,
     zIndex: 10,
   },
-  greeting: {
-    fontSize: 14,
-    fontFamily: "Nunito_600SemiBold",
-    marginBottom: 2,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  title: {
+  greetEmoji: {
+    fontSize: 36,
+  },
+  greeting: {
+    fontSize: 13,
+    fontFamily: "Nunito_600SemiBold",
+    marginBottom: 1,
+  },
+  childName: {
     fontSize: 28,
     fontFamily: "Nunito_800ExtraBold",
+    lineHeight: 33,
   },
   headerBtns: {
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
   },
-  gearBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  premiumBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  premiumBadgeText: {
+    fontSize: 12,
+    fontFamily: "Nunito_700Bold",
+    color: "#D97706",
+  },
+  iconBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -296,28 +328,29 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 10,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  featuredEmoji: {
+    fontSize: 16,
   },
   featuredText: {
     fontSize: 13,
     fontFamily: "Nunito_700Bold",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
-  recentSection: {
+  namedSection: {
     marginBottom: 4,
   },
-  recentHeader: {
+  namedHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 16,
     marginBottom: 12,
   },
-  recentTitle: {
-    fontSize: 18,
+  namedEmoji: {
+    fontSize: 20,
+  },
+  namedTitle: {
+    fontSize: 19,
     fontFamily: "Nunito_800ExtraBold",
   },
 });

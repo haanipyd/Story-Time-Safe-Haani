@@ -18,17 +18,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CATEGORIES } from "@/data/preferences";
 import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
-import { useAuth } from "@/context/AuthContext";
 
 const { width: W } = Dimensions.get("window");
 const AGE_OPTIONS = [1, 2, 3, 4, 5];
+
+const AGE_LABELS: Record<number, string> = {
+  1: "👶",
+  2: "🐣",
+  3: "🌱",
+  4: "🐥",
+  5: "🌟",
+};
 
 export default function OnboardingScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeOnboarding } = useProfile();
-  const { isLoggedIn } = useAuth();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -45,7 +51,7 @@ export default function OnboardingScreen() {
     Animated.sequence([
       Animated.timing(slideAnim, {
         toValue: -W,
-        duration: 200,
+        duration: 220,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -53,7 +59,7 @@ export default function OnboardingScreen() {
       slideAnim.setValue(W);
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 220,
         useNativeDriver: true,
       }).start();
     });
@@ -81,20 +87,16 @@ export default function OnboardingScreen() {
       style={[styles.root, { backgroundColor: colors.cream }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View
-        style={[
-          styles.progressRow,
-          { paddingTop: topPadding + 12 },
-        ]}
-      >
+      <View style={[styles.progressRow, { paddingTop: topPadding + 16 }]}>
         {[0, 1, 2].map((i) => (
           <View
             key={i}
             style={[
-              styles.dot,
+              styles.progressDot,
               {
-                backgroundColor: i <= step ? colors.coral : colors.muted,
-                width: i === step ? 24 : 8,
+                backgroundColor: i < step ? colors.green : i === step ? colors.coral : colors.muted,
+                width: i === step ? 32 : 10,
+                opacity: i > step ? 0.5 : 1,
               },
             ]}
           />
@@ -105,13 +107,13 @@ export default function OnboardingScreen() {
         style={[styles.content, { transform: [{ translateX: slideAnim }] }]}
       >
         {step === 0 && (
-          <View style={styles.step}>
-            <Text style={[styles.emoji]}>👋</Text>
+          <View style={[styles.step, { paddingBottom: bottomPadding + 24 }]}>
+            <Text style={styles.topEmoji}>👋</Text>
             <Text style={[styles.heading, { color: colors.navy }]}>
-              Welcome!
+              Welcome to Storytime!
             </Text>
             <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
-              What&apos;s your child&apos;s name?
+              What&apos;s your little one&apos;s name?
             </Text>
             <TextInput
               value={name}
@@ -138,6 +140,7 @@ export default function OnboardingScreen() {
                 styles.continueBtn,
                 { backgroundColor: canContinueStep0 ? colors.coral : colors.muted },
               ]}
+              activeOpacity={0.85}
             >
               <Text
                 style={[
@@ -149,22 +152,21 @@ export default function OnboardingScreen() {
               </Text>
               <Ionicons
                 name="arrow-forward"
-                size={18}
+                size={20}
                 color={canContinueStep0 ? "#fff" : colors.mutedForeground}
               />
             </TouchableOpacity>
-
           </View>
         )}
 
         {step === 1 && (
-          <View style={styles.step}>
-            <Text style={styles.emoji}>🎂</Text>
+          <View style={[styles.step, { paddingBottom: bottomPadding + 24 }]}>
+            <Text style={styles.topEmoji}>🎂</Text>
             <Text style={[styles.heading, { color: colors.navy }]}>
               How old is {name}?
             </Text>
             <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
-              We&apos;ll pick the best stories for their age.
+              We&apos;ll find the perfect stories for their age.
             </Text>
             <View style={styles.ageRow}>
               {AGE_OPTIONS.map((a) => (
@@ -179,16 +181,27 @@ export default function OnboardingScreen() {
                     {
                       backgroundColor: age === a ? colors.coral : colors.card,
                       borderColor: age === a ? colors.coral : colors.border,
+                      transform: [{ scale: age === a ? 1.08 : 1 }],
                     },
                   ]}
+                  activeOpacity={0.8}
                 >
+                  <Text style={styles.ageBtnEmoji}>{AGE_LABELS[a]}</Text>
                   <Text
                     style={[
-                      styles.ageBtnText,
+                      styles.ageBtnNumber,
                       { color: age === a ? "#fff" : colors.navy },
                     ]}
                   >
                     {a}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.ageBtnLabel,
+                      { color: age === a ? "rgba(255,255,255,0.85)" : colors.mutedForeground },
+                    ]}
+                  >
+                    yr
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -200,6 +213,7 @@ export default function OnboardingScreen() {
                 styles.continueBtn,
                 { backgroundColor: canContinueStep1 ? colors.coral : colors.muted },
               ]}
+              activeOpacity={0.85}
             >
               <Text
                 style={[
@@ -211,7 +225,7 @@ export default function OnboardingScreen() {
               </Text>
               <Ionicons
                 name="arrow-forward"
-                size={18}
+                size={20}
                 color={canContinueStep1 ? "#fff" : colors.mutedForeground}
               />
             </TouchableOpacity>
@@ -219,13 +233,13 @@ export default function OnboardingScreen() {
         )}
 
         {step === 2 && (
-          <View style={styles.step}>
-            <Text style={styles.emoji}>✨</Text>
+          <View style={[styles.step, { paddingBottom: bottomPadding + 16 }]}>
+            <Text style={styles.topEmoji}>✨</Text>
             <Text style={[styles.heading, { color: colors.navy }]}>
-              What does {name} enjoy?
+              What does {name} love?
             </Text>
             <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
-              Pick 3 or more — we&apos;ll build their library.
+              Pick 3 or more — we&apos;ll build their perfect library!
             </Text>
             <ScrollView
               style={styles.prefScroll}
@@ -243,13 +257,14 @@ export default function OnboardingScreen() {
                       {
                         backgroundColor: sel ? cat.color : colors.card,
                         borderColor: sel ? cat.color : colors.border,
+                        transform: [{ scale: sel ? 1.04 : 1 }],
                       },
                     ]}
                     activeOpacity={0.8}
                   >
                     <Ionicons
                       name={cat.icon as "moon-outline"}
-                      size={28}
+                      size={30}
                       color={sel ? "#fff" : cat.color}
                     />
                     <Text
@@ -263,24 +278,31 @@ export default function OnboardingScreen() {
                     </Text>
                     {sel && (
                       <View style={styles.checkmark}>
-                        <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                        <Ionicons name="checkmark-circle" size={20} color="#fff" />
                       </View>
                     )}
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
+            <View style={styles.pickedBadgeRow}>
+              <Text style={[styles.pickedBadgeText, { color: prefs.length >= 3 ? colors.green : colors.mutedForeground }]}>
+                {prefs.length >= 3
+                  ? `${prefs.length} topics selected ✓`
+                  : `Pick ${3 - prefs.length} more`}
+              </Text>
+            </View>
             <TouchableOpacity
               onPress={finish}
               disabled={!canContinueStep2}
               style={[
                 styles.continueBtn,
-                styles.doneBtn,
                 {
                   backgroundColor: canContinueStep2 ? colors.green : colors.muted,
-                  marginTop: 12,
+                  marginTop: 8,
                 },
               ]}
+              activeOpacity={0.85}
             >
               <Text
                 style={[
@@ -288,13 +310,8 @@ export default function OnboardingScreen() {
                   { color: canContinueStep2 ? "#fff" : colors.mutedForeground },
                 ]}
               >
-                Let&apos;s go!
+                Let&apos;s go! 🎉
               </Text>
-              <Ionicons
-                name="headset-outline"
-                size={20}
-                color={canContinueStep2 ? "#fff" : colors.mutedForeground}
-              />
             </TouchableOpacity>
           </View>
         )}
@@ -309,12 +326,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     paddingBottom: 8,
   },
-  dot: {
-    height: 8,
-    borderRadius: 4,
+  progressDot: {
+    height: 10,
+    borderRadius: 5,
   },
   content: {
     flex: 1,
@@ -322,10 +339,10 @@ const styles = StyleSheet.create({
   step: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 16,
   },
-  emoji: {
-    fontSize: 48,
+  topEmoji: {
+    fontSize: 54,
     marginBottom: 16,
   },
   heading: {
@@ -338,56 +355,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Nunito_400Regular",
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   nameInput: {
-    borderWidth: 2,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    borderWidth: 2.5,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     fontSize: 22,
     fontFamily: "Nunito_700Bold",
     marginBottom: 24,
   },
   ageRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
     marginBottom: 32,
     flexWrap: "wrap",
   },
   ageBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 62,
+    height: 80,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
+    borderWidth: 2.5,
+    gap: 2,
   },
-  ageBtnText: {
-    fontSize: 26,
+  ageBtnEmoji: {
+    fontSize: 22,
+  },
+  ageBtnNumber: {
+    fontSize: 22,
     fontFamily: "Nunito_800ExtraBold",
+    lineHeight: 26,
+  },
+  ageBtnLabel: {
+    fontSize: 11,
+    fontFamily: "Nunito_600SemiBold",
   },
   continueBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 18,
+    borderRadius: 20,
     marginBottom: 12,
   },
-  signInLink: {
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  signInLinkText: {
-    fontSize: 14,
-    fontFamily: "Nunito_400Regular",
-    textAlign: "center",
-  },
-  doneBtn: {},
   continueBtnText: {
-    fontSize: 17,
+    fontSize: 18,
     fontFamily: "Nunito_700Bold",
   },
   prefScroll: {
@@ -398,16 +414,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   prefTile: {
     width: "47%",
     flexGrow: 1,
     minWidth: 130,
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 2,
+    borderRadius: 20,
+    borderWidth: 2.5,
     alignItems: "center",
     gap: 8,
     position: "relative",
@@ -421,5 +437,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
+  },
+  pickedBadgeRow: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  pickedBadgeText: {
+    fontSize: 14,
+    fontFamily: "Nunito_700Bold",
   },
 });
