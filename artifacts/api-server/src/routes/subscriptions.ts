@@ -145,10 +145,28 @@ router.post("/subscription/cancel", requireAuth, async (req, res) => {
 
   try {
     const auth = rzpAuth();
-    await fetch(
+    const cancelRes = await fetch(
       `https://api.razorpay.com/v1/subscriptions/${sub.razorpaySubscriptionId}/cancel`,
       { method: "POST", headers: { Authorization: auth } },
     );
+
+    if (!cancelRes.ok) {
+      let detail = "";
+      try {
+        const body = await cancelRes.json() as { error?: { description?: string } };
+        detail = body?.error?.description ?? "";
+      } catch {
+        detail = await cancelRes.text().catch(() => "");
+      }
+      req.log.error({ status: cancelRes.status, detail }, "Razorpay cancel API error");
+      res.status(502).json({
+        error: {
+          code: "PAYMENT_ERROR",
+          message: detail || "Razorpay could not cancel the subscription. Please try again.",
+        },
+      });
+      return;
+    }
 
     await db
       .update(subscriptionsTable)

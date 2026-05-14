@@ -79,6 +79,7 @@ export function setAdminCookie(res: Response): void {
     signed: true,
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 8 * 60 * 60 * 1000,
   });
 }

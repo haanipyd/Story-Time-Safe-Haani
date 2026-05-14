@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db, usersTable, otpRequestsTable, refreshTokensTable, subscriptionsTable, childrenTable } from "@workspace/db";
 import { eq, and, gt, desc } from "drizzle-orm";
@@ -57,8 +58,16 @@ const verifyOtpLimiter = rateLimit({
   message: { error: { code: "RATE_LIMIT", message: "Too many verification attempts. Try again later." } },
 });
 
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: { code: "RATE_LIMIT", message: "Too many refresh attempts. Try again later." } },
+});
+
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 function maskPhone(phone: string): string {
@@ -291,7 +300,7 @@ router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
 });
 
 // ── POST /auth/refresh ──────────────────────────────────────────────────────
-router.post("/auth/refresh", async (req, res) => {
+router.post("/auth/refresh", refreshLimiter, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({

@@ -1,11 +1,20 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { rateLimit } from "express-rate-limit";
+import crypto from "crypto";
 import { db, storiesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdminAuth, setAdminCookie, clearAdminCookie } from "../middleware/auth";
 
 const router: IRouter = Router();
 
-const ADMIN_COOKIE = "storytime_admin";
+function escapeHtml(str: unknown): string {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
 
 function normalizeMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -22,10 +31,20 @@ const CATEGORIES = [
   "learning", "yoga", "nature", "funny", "classic",
 ];
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const signed = (req as any).signedCookies?.[ADMIN_COOKIE];
-  if (signed === "authenticated") return next();
-  res.redirect("/api/admin/login");
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: "Too many login attempts. Please try again in 15 minutes.",
+});
+
+function adminCsp(_req: Request, res: Response, next: NextFunction) {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';",
+  );
+  next();
 }
 
 function loginPage(error?: string) {
@@ -56,7 +75,7 @@ function loginPage(error?: string) {
       <h1>🎙 Storytime</h1>
       <p>Admin Panel</p>
     </div>
-    ${error ? `<div class="error">${error}</div>` : ""}
+    ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
     <form method="POST" action="/api/admin/login">
       <label>Password</label>
       <input type="password" name="password" autofocus placeholder="Enter admin password" required />
@@ -72,25 +91,29 @@ function adminPage(stories: typeof storiesTable.$inferSelect[], message?: string
     .map(
       (s) => `
     <tr>
-      <td>${s.id}</td>
-      <td>${s.title}</td>
-      <td>${s.category}</td>
-      <td>${s.durationMin}m</td>
-      <td>${s.ageMin}–${s.ageMax}</td>
-      <td>${s.audioUrl ? `<a href="${s.audioUrl}" target="_blank">Audio</a>` : "—"}</td>
-      <td>${s.thumbnailUrl ? `<img src="${s.thumbnailUrl}" width="40" height="40" style="object-fit:cover;border-radius:4px">` : "—"}</td>
+      <td>${escapeHtml(s.id)}</td>
+      <td>${escapeHtml(s.title)}</td>
+      <td>${escapeHtml(s.category)}</td>
+      <td>${escapeHtml(s.durationMin)}m</td>
+      <td>${escapeHtml(s.ageMin)}–${escapeHtml(s.ageMax)}</td>
+      <td>${s.audioUrl ? `<a href="${escapeHtml(s.audioUrl)}" target="_blank">Audio</a>` : "—"}</td>
+      <td>${s.thumbnailUrl ? `<img src="${escapeHtml(s.thumbnailUrl)}" width="40" height="40" style="object-fit:cover;border-radius:4px">` : "—"}</td>
       <td>${s.isActive ? "✅" : "❌"}</td>
       <td>
-        <button onclick="editStory(${JSON.stringify(JSON.stringify(s))})" style="padding:4px 10px;background:#2D3E5E;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px">Edit</button>
-        <button onclick="deleteStory('${s.id}','${s.title.replace(/'/g, "\\'")}')" style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;margin-left:4px">Delete</button>
+        <button class="edit-btn" data-story="${escapeHtml(JSON.stringify(s))}" style="padding:4px 10px;background:#2D3E5E;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px">Edit</button>
+        <button class="delete-btn" data-id="${escapeHtml(s.id)}" data-title="${escapeHtml(s.title)}" style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;margin-left:4px">Delete</button>
       </td>
     </tr>`,
     )
     .join("");
 
   const catOptions = CATEGORIES.map(
-    (c) => `<option value="${c}">${c}</option>`,
+    (c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`,
   ).join("");
+
+  const flashHtml = message
+    ? `<div class="flash ${message.startsWith("Error") ? "error" : ""}">${escapeHtml(message)}</div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -149,7 +172,7 @@ function adminPage(stories: typeof storiesTable.$inferSelect[], message?: string
   </form>
 </header>
 <main>
-  ${message ? `<div class="flash ${message.startsWith("Error") ? "error" : ""}">${message}</div>` : ""}
+  ${flashHtml}
 
   <div class="card">
     <h2>Add New Story</h2>
@@ -296,8 +319,7 @@ function adminPage(stories: typeof storiesTable.$inferSelect[], message?: string
 </div>
 
 <script>
-function editStory(jsonStr) {
-  const s = JSON.parse(jsonStr);
+function openEdit(s) {
   document.getElementById('e_title').value = s.title;
   document.getElementById('e_category').value = s.category;
   document.getElementById('e_duration').value = s.durationMin;
@@ -308,20 +330,30 @@ function editStory(jsonStr) {
   document.getElementById('e_audioUrl').value = s.audioUrl || '';
   document.getElementById('e_videoUrl').value = s.videoUrl || '';
   document.getElementById('e_published').checked = s.isActive;
-  document.getElementById('editForm').action = '/api/admin/stories/' + s.id;
+  document.getElementById('editForm').action = '/api/admin/stories/' + encodeURIComponent(s.id);
   document.getElementById('editOverlay').classList.add('open');
 }
 function closeEdit() {
   document.getElementById('editOverlay').classList.remove('open');
 }
-async function deleteStory(id, title) {
-  if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
-  const res = await fetch('/api/admin/stories/' + id, { method: 'DELETE' });
-  if (res.ok || res.status === 204) location.reload();
-  else alert('Delete failed');
-}
 document.getElementById('editOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeEdit();
+});
+document.addEventListener('click', async function(e) {
+  const editBtn = e.target.closest('.edit-btn');
+  if (editBtn) {
+    try { openEdit(JSON.parse(editBtn.dataset.story)); } catch(err) { alert('Could not load story data.'); }
+    return;
+  }
+  const deleteBtn = e.target.closest('.delete-btn');
+  if (deleteBtn) {
+    const id = deleteBtn.dataset.id;
+    const title = deleteBtn.dataset.title;
+    if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
+    const res = await fetch('/api/admin/stories/' + encodeURIComponent(id), { method: 'DELETE' });
+    if (res.ok || res.status === 204) location.reload();
+    else alert('Delete failed');
+  }
 });
 
 async function runImport() {
@@ -358,14 +390,17 @@ async function runImport() {
 </html>`;
 }
 
-// ── Auth routes (no guard) ──────────────────────────────────────────────────
+// ── CSP middleware for all admin HTML routes ────────────────────────────────
+router.use("/admin", adminCsp);
+
+// ── Auth routes (no session guard) ─────────────────────────────────────────
 
 router.get("/admin/login", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(loginPage());
 });
 
-router.post("/admin/login", (req, res) => {
+router.post("/admin/login", adminLoginLimiter, (req, res) => {
   const { password } = req.body as { password?: string };
   const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -375,13 +410,14 @@ router.post("/admin/login", (req, res) => {
     return;
   }
 
-  if (password === adminPassword) {
-    (res as any).cookie(ADMIN_COOKIE, "authenticated", {
-      signed: true,
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "lax",
-    });
+  const passwordBuf = Buffer.from(String(password ?? ""));
+  const adminBuf = Buffer.from(adminPassword);
+  const lengthsMatch = passwordBuf.length === adminBuf.length;
+  const compareBuf = lengthsMatch ? adminBuf : Buffer.alloc(passwordBuf.length);
+  const equal = crypto.timingSafeEqual(passwordBuf, compareBuf) && lengthsMatch;
+
+  if (equal) {
+    setAdminCookie(res);
     res.redirect("/api/admin");
   } else {
     res.setHeader("Content-Type", "text/html");
@@ -390,13 +426,13 @@ router.post("/admin/login", (req, res) => {
 });
 
 router.post("/admin/logout", (_req, res) => {
-  (res as any).clearCookie(ADMIN_COOKIE);
+  clearAdminCookie(res);
   res.redirect("/api/admin/login");
 });
 
 // ── Protected admin routes ──────────────────────────────────────────────────
 
-router.get("/admin", requireAdmin, async (req, res) => {
+router.get("/admin", requireAdminAuth, async (req, res) => {
   const stories = await db
     .select()
     .from(storiesTable)
@@ -405,7 +441,7 @@ router.get("/admin", requireAdmin, async (req, res) => {
   res.send(adminPage(stories, req.query.msg as string | undefined));
 });
 
-router.post("/admin/stories/bulk", requireAdmin, async (req, res) => {
+router.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
   const { stories } = req.body as { stories?: unknown[] };
   if (!Array.isArray(stories) || stories.length === 0) {
     res.status(400).json({ error: "stories must be a non-empty array" });
@@ -442,7 +478,7 @@ router.post("/admin/stories/bulk", requireAdmin, async (req, res) => {
   res.json({ message, inserted, skipped, errors });
 });
 
-router.post("/admin/stories", requireAdmin, async (req, res) => {
+router.post("/admin/stories", requireAdminAuth, async (req, res) => {
   const b = req.body;
   try {
     await db.insert(storiesTable).values({
@@ -465,7 +501,7 @@ router.post("/admin/stories", requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/admin/stories/:id", requireAdmin, async (req, res) => {
+router.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
   const id = String(req.params.id);
   const b = req.body;
   try {
@@ -491,7 +527,7 @@ router.post("/admin/stories/:id", requireAdmin, async (req, res) => {
   }
 });
 
-router.delete("/admin/stories/:id", requireAdmin, async (req, res) => {
+router.delete("/admin/stories/:id", requireAdminAuth, async (req, res) => {
   const id = String(req.params.id);
   await db.delete(storiesTable).where(eq(storiesTable.id, id));
   res.status(204).send();
