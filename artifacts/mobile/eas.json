@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 16.0.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -8,14 +9,20 @@
       "distribution": "internal"
     },
     "preview": {
+      "distribution": "internal",
       "android": {
-        "buildType": "apk"
-      },
-      "distribution": "internal"
+        "buildType": "apk",
+        "env": {
+          "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
+        }
+      }
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "env": {
+          "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
+        }
       }
     }
   },
