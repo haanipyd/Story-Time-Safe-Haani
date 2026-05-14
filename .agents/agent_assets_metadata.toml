@@ -23,3 +23,9 @@ id = "-rNvWlTVLo0oTF65iLBCE"
 uri = "file://storytime-mobile.tar.gz"
 type = "unspecified"
 title = "Storytime Mobile App (source code)"
+
+[[outputs]]
+id = "l-bXSiKgxGOPiPSCiDGO6"
+uri = "file://storytime-build.tar.gz"
+type = "unspecified"
+title = "Storytime — Complete Build Package"
