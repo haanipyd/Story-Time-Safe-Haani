@@ -48,8 +48,8 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   isLoggedIn: boolean;
   isPremium: boolean;
-  sendOtp: (phone: string) => Promise<{ error?: string; devOtp?: string | null }>;
-  verifyOtp: (phone: string, otp: string) => Promise<{ error?: string; isNewUser?: boolean }>;
+  sendOtp: (phone: string) => Promise<{ error?: string; devOtp?: string | null; requestId?: string }>;
+  verifyOtp: (phone: string, otp: string, requestId: string) => Promise<{ error?: string; isNewUser?: boolean }>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   createChildProfile: (name: string, age: number, preferences: string[]) => Promise<{ error?: string }>;
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const sendOtp = useCallback(async (phone: string): Promise<{ error?: string; devOtp?: string | null }> => {
+  const sendOtp = useCallback(async (phone: string): Promise<{ error?: string; devOtp?: string | null; requestId?: string }> => {
     try {
       const base = getApiUrl();
       const res = await fetch(`${base}/api/auth/request-otp`, {
@@ -199,26 +199,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone_number: phone }),
       });
-      const data = await res.json() as { error?: { message?: string } | string; devOtp?: string; success?: boolean };
+      const data = await res.json() as { error?: { message?: string } | string; devOtp?: string; success?: boolean; request_id?: string };
       if (!res.ok) {
         const msg = typeof data.error === "object" ? data.error?.message : data.error;
         return { error: msg ?? "Failed to send OTP" };
       }
       const devOtp = __DEV__ ? (data.devOtp ?? null) : null;
-      return { devOtp };
+      return { devOtp, requestId: data.request_id };
     } catch {
       return { error: "Could not connect to server" };
     }
   }, []);
 
   const verifyOtp = useCallback(
-    async (phone: string, otp: string): Promise<{ error?: string; isNewUser?: boolean }> => {
+    async (phone: string, otp: string, requestId: string): Promise<{ error?: string; isNewUser?: boolean }> => {
       try {
         const base = getApiUrl();
         const res = await fetch(`${base}/api/auth/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone_number: phone, otp }),
+          body: JSON.stringify({ phone_number: phone, otp, request_id: requestId }),
         });
         const data = await res.json() as {
           access_token?: string;

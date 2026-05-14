@@ -42,6 +42,7 @@ export default function PhoneAuthScreen() {
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const otpInputRef = useRef<TextInput>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -82,6 +83,7 @@ export default function PhoneAuthScreen() {
       return;
     }
     if (result.devOtp) setDevOtp(result.devOtp);
+    if (result.requestId) setRequestId(result.requestId);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setStep("otp");
     startResendTimer();
@@ -89,10 +91,10 @@ export default function PhoneAuthScreen() {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length !== OTP_LENGTH) return;
+    if (otp.length !== OTP_LENGTH || !requestId) return;
     setLoading(true);
     setError("");
-    const result = await verifyOtp(fullPhone, otp);
+    const result = await verifyOtp(fullPhone, otp, requestId);
     setLoading(false);
     if (result.error) {
       setError(result.error);
@@ -108,6 +110,7 @@ export default function PhoneAuthScreen() {
     setOtp("");
     setError("");
     setDevOtp(null);
+    setRequestId(null);
     setLoading(true);
     const result = await sendOtp(fullPhone);
     setLoading(false);
@@ -116,6 +119,7 @@ export default function PhoneAuthScreen() {
       return;
     }
     if (result.devOtp) setDevOtp(result.devOtp);
+    if (result.requestId) setRequestId(result.requestId);
     startResendTimer();
   };
 
