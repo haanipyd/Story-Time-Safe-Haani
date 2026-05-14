@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "wmGZpr8LLPhjBS_en4vGW"
@@ -18,3 +17,9 @@ id = "qWnLDJNyg4wILxa0OCo6N"
 uri = "file://artifacts/mobile/assets/images/covers/krishna-butter.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "-rNvWlTVLo0oTF65iLBCE"
+uri = "file://storytime-mobile.tar.gz"
+type = "unspecified"
+title = "Storytime Mobile App (source code)"
