@@ -41,20 +41,11 @@ const refreshSchema = z
   .strict();
 
 // ── Per-IP rate limiters ─────────────────────────────────────────────────────
-const keyGen = (req: any) => {
-  const forwarded = req.headers["x-forwarded-for"];
-  const first = Array.isArray(forwarded)
-    ? forwarded[0]
-    : (forwarded ?? "").split(",")[0];
-  return (first ?? req.ip ?? "unknown").trim();
-};
-
 const requestOtpIpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 10,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  keyGenerator: keyGen,
   message: { error: { code: "RATE_LIMIT", message: "Too many OTP requests from this IP. Try again later." } },
 });
 
@@ -63,7 +54,6 @@ const verifyOtpLimiter = rateLimit({
   limit: 20,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  keyGenerator: keyGen,
   message: { error: { code: "RATE_LIMIT", message: "Too many verification attempts. Try again later." } },
 });
 

@@ -77,13 +77,6 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) =>
     req.path === "/api/healthz" || req.path.startsWith("/api/webhooks"),
-  keyGenerator: (req) => {
-    const forwarded = req.headers["x-forwarded-for"];
-    const firstHop = Array.isArray(forwarded)
-      ? forwarded[0]
-      : (forwarded ?? "").split(",")[0];
-    return (firstHop ?? req.ip ?? "unknown").trim();
-  },
   message: {
     error: {
       code: "RATE_LIMIT",
