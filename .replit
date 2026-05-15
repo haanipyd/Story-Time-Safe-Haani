@@ -25,5 +25,5 @@ externalPort = 3001
   run = ["sh", "-c", "node --enable-source-maps artifacts/api-server/dist/index.mjs"]
 
   [agent]
-  expertMode = true
+expertMode = true
   
