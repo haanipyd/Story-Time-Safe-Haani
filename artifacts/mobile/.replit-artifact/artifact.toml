@@ -19,8 +19,8 @@ localPort = 18115
 run = "pnpm --filter @workspace/mobile run dev"
 
 [services.production]
-build = [ "sh", "-c", "node scripts/build.js" ]
-run = [ "sh", "-c", "node server/serve.js" ]
+build = [ "sh", "-c", "pnpm install --frozen-lockfile && pnpm --filter @workspace/mobile run build" ]
+run = [ "sh", "-c", "pnpm --filter @workspace/mobile run serve" ]
 
 [services.env]
 PORT = "18115"
