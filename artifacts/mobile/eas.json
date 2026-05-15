@@ -10,19 +10,19 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
+      },
       "android": {
-        "buildType": "apk",
-        "env": {
-          "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
-        }
+        "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
+      },
       "android": {
-        "buildType": "app-bundle",
-        "env": {
-          "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
-        }
+        "buildType": "app-bundle"
       }
     }
   },
