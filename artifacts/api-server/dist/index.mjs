@@ -82004,6 +82004,24 @@ function adminPage(stories, message) {
   </div>
 
   <div class="card">
+    <h2>\u{1F510} Test OTP (No SMS)</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">Generate a real OTP for any phone number without sending an SMS. Use this to test login in the APK when MSG91 is not configured.</p>
+    <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Phone Number</label>
+        <input id="testOtpPhone" type="text" placeholder="+919876543210" style="width:100%;box-sizing:border-box" />
+      </div>
+      <button class="btn btn-primary" onclick="generateTestOtp()" style="white-space:nowrap">Get OTP</button>
+    </div>
+    <div id="testOtpResult" style="margin-top:12px;display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px">
+      <div style="font-size:13px;color:#555;margin-bottom:4px">Enter this OTP in the app:</div>
+      <div id="testOtpCode" style="font-size:36px;font-weight:700;letter-spacing:8px;color:#166534;font-family:monospace"></div>
+      <div id="testOtpExpiry" style="font-size:12px;color:#888;margin-top:6px"></div>
+    </div>
+    <div id="testOtpError" style="margin-top:12px;display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;font-size:13px;color:#991b1b"></div>
+  </div>
+
+  <div class="card">
     <h2>All Stories (${stories.length})</h2>
     <table>
       <thead><tr>
@@ -82133,6 +82151,35 @@ async function runImport() {
     result.textContent = 'Network error: ' + e.message;
   } finally {
     spinner.style.display = 'none';
+  }
+}
+
+async function generateTestOtp() {
+  const phone = document.getElementById('testOtpPhone').value.trim();
+  const resultBox = document.getElementById('testOtpResult');
+  const errorBox = document.getElementById('testOtpError');
+  const codeEl = document.getElementById('testOtpCode');
+  const expiryEl = document.getElementById('testOtpExpiry');
+  resultBox.style.display = 'none';
+  errorBox.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth/test-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone_number: phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorBox.textContent = data?.error?.message || 'Failed to generate OTP';
+      errorBox.style.display = 'block';
+      return;
+    }
+    codeEl.textContent = data.otp;
+    expiryEl.textContent = 'Valid for ' + (data.expires_in / 60) + ' minutes. Enter this in the app after requesting OTP for ' + phone;
+    resultBox.style.display = 'block';
+  } catch (e) {
+    errorBox.textContent = 'Network error: ' + e.message;
+    errorBox.style.display = 'block';
   }
 }
 </script>
@@ -84235,6 +84282,25 @@ router4.get("/auth/me", requireAuth, async (req, res) => {
     current_child_id: user.currentChildId,
     timezone: user.timezone,
     created_at: user.createdAt
+  });
+});
+router4.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
+  const parsed = external_exports.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: { code: "VALIDATION", message: external_exports.prettifyError(parsed.error) } });
+    return;
+  }
+  const { phone_number } = parsed.data;
+  const otp = generateOtp();
+  const otpHash = await bcryptjs_default.hash(otp, OTP_BCRYPT_COST);
+  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1e3);
+  const [otpRecord] = await db.insert(otpRequestsTable).values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 }).returning({ id: otpRequestsTable.id });
+  req.log.info({ phone: maskPhone(phone_number) }, "Test OTP generated via admin endpoint");
+  res.json({
+    otp,
+    request_id: otpRecord.id,
+    expires_in: OTP_TTL_MINUTES * 60,
+    warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead."
   });
 });
 var auth_default = router4;

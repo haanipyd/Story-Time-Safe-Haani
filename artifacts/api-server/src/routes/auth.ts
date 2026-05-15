@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 import {
   signAccessToken,
   requireAuth,
+  requireAdminAuth,
   generateRefreshToken,
   hashToken,
   generateUserId,
@@ -386,6 +387,36 @@ router.get("/auth/me", requireAuth, async (req, res) => {
     current_child_id: user.currentChildId,
     timezone: user.timezone,
     created_at: user.createdAt,
+  });
+});
+
+// ── POST /auth/test-otp ─────────────────────────────────────────────────────
+// Admin-only: generates a fresh OTP for any phone number and returns it in
+// plain text. Use only for testing when MSG91 is not configured.
+router.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
+  const parsed = z.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: { code: "VALIDATION", message: z.prettifyError(parsed.error) } });
+    return;
+  }
+
+  const { phone_number } = parsed.data;
+  const otp = generateOtp();
+  const otpHash = await bcrypt.hash(otp, OTP_BCRYPT_COST);
+  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+
+  const [otpRecord] = await db
+    .insert(otpRequestsTable)
+    .values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 })
+    .returning({ id: otpRequestsTable.id });
+
+  req.log.info({ phone: maskPhone(phone_number) }, "Test OTP generated via admin endpoint");
+
+  res.json({
+    otp,
+    request_id: otpRecord!.id,
+    expires_in: OTP_TTL_MINUTES * 60,
+    warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead.",
   });
 });
 
