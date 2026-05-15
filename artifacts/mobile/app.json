@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["storytime", "mobile"],
+    "scheme": [
+      "storytime",
+      "mobile"
+    ],
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -30,6 +33,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "81f7b1ff-f137-4b6c-b245-a1aa6141387c"
+      }
     }
   }
 }
