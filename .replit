@@ -26,4 +26,6 @@ externalPort = 3001
 
   [agent]
 expertMode = true
+
+[nix]
   
