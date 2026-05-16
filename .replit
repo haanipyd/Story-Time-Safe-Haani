@@ -1,4 +1,4 @@
-modules = ["python-3.11", "nodejs-24"]
+modules = ["python-3.11", "nodejs-24", "postgresql-16"]
 
 [[ports]]
 localPort = 5173
@@ -28,4 +28,10 @@ externalPort = 3001
 expertMode = true
 
 [nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_DOMAIN = "story-time-safe--haanipyd.replit.app"
   
