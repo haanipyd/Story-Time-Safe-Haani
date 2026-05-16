@@ -84169,7 +84169,7 @@ router4.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
     success: true,
     request_id: otpRecord.id,
     expires_in: OTP_TTL_MINUTES * 60,
-    ...process.env["NODE_ENV"] !== "production" ? { devOtp: otp } : {}
+    ...!hasMSG91 ? { devOtp: otp } : {}
   });
 });
 router4.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {

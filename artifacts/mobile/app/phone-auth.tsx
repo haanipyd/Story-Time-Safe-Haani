@@ -82,8 +82,19 @@ export default function PhoneAuthScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    if (result.devOtp) setDevOtp(result.devOtp);
     if (result.requestId) setRequestId(result.requestId);
+    // When server returns OTP directly (no SMS configured), auto-verify silently
+    if (result.devOtp && result.requestId) {
+      const verifyResult = await verifyOtp(fullPhone, result.devOtp, result.requestId);
+      setLoading(false);
+      if (verifyResult.error) {
+        setError(verifyResult.error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setStep("otp");
     startResendTimer();
