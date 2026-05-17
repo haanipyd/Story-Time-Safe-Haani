@@ -222,8 +222,6 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return result;
   }, [state.activityLog]);
 
-  if (!loaded) return <>{children}</>;
-
   return (
     <ProgressContext.Provider
       value={{

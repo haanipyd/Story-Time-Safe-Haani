@@ -62,10 +62,18 @@ export default function SettingsScreen() {
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  if (!currentProfile) return null;
+  const GUEST_PROFILE_SETTINGS = {
+    id: "guest",
+    name: "Little One",
+    age: 3,
+    preferences: ["bedtime", "adventure", "animals", "fairy_tales"],
+    listeningHistory: [] as string[],
+    favourites: [] as string[],
+  };
+  const profile = currentProfile ?? GUEST_PROFILE_SETTINGS;
 
   const saveName = () => {
-    if (nameValue.trim()) updateProfile(currentProfile.id, { name: nameValue.trim() });
+    if (nameValue.trim()) updateProfile(profile.id, { name: nameValue.trim() });
     setEditingName(false);
   };
 
@@ -74,9 +82,9 @@ export default function SettingsScreen() {
   };
 
   const toggleCurrentPref = (id: string) => {
-    const prefs = currentProfile.preferences;
+    const prefs = profile.preferences;
     const updated = prefs.includes(id) ? prefs.filter((p) => p !== id) : [...prefs, id];
-    updateProfile(currentProfile.id, { preferences: updated });
+    updateProfile(profile.id, { preferences: updated });
     Haptics.selectionAsync();
   };
 
@@ -122,13 +130,13 @@ export default function SettingsScreen() {
         {/* ── Profile Hero ── */}
         <View style={styles.heroSection}>
           <View style={[styles.avatarCircle, { backgroundColor: colors.coral }]}>
-            <Text style={styles.avatarLetter}>{currentProfile.name[0].toUpperCase()}</Text>
+            <Text style={styles.avatarLetter}>{profile.name[0].toUpperCase()}</Text>
           </View>
-          <Text style={[styles.heroName, { color: colors.navy }]}>{currentProfile.name}</Text>
+          <Text style={[styles.heroName, { color: colors.navy }]}>{profile.name}</Text>
           <View style={styles.heroBadgeRow}>
             <View style={[styles.heroBadge, { backgroundColor: colors.muted }]}>
               <Text style={[styles.heroBadgeText, { color: colors.navy }]}>
-                Age {currentProfile.age}
+                Age {profile.age}
               </Text>
             </View>
             {totalDaysActive > 0 && (
@@ -297,9 +305,9 @@ export default function SettingsScreen() {
                 />
               </View>
             ) : (
-              <TouchableOpacity onPress={() => { setNameValue(currentProfile.name); setEditingName(true); }}>
+              <TouchableOpacity onPress={() => { setNameValue(profile.name); setEditingName(true); }}>
                 <Text style={[styles.valueText, { color: colors.coral }]}>
-                  {currentProfile.name} <Ionicons name="pencil-outline" size={13} color={colors.coral} />
+                  {profile.name} <Ionicons name="pencil-outline" size={13} color={colors.coral} />
                 </Text>
               </TouchableOpacity>
             )}
@@ -310,10 +318,10 @@ export default function SettingsScreen() {
               {AGE_OPTIONS.map((a) => (
                 <TouchableOpacity
                   key={a}
-                  onPress={() => { updateProfile(currentProfile.id, { age: a }); Haptics.selectionAsync(); }}
-                  style={[styles.ageBtn, { backgroundColor: currentProfile.age === a ? colors.coral : colors.muted }]}
+                  onPress={() => { updateProfile(profile.id, { age: a }); Haptics.selectionAsync(); }}
+                  style={[styles.ageBtn, { backgroundColor: profile.age === a ? colors.coral : colors.muted }]}
                 >
-                  <Text style={[styles.ageBtnText, { color: currentProfile.age === a ? "#fff" : colors.navy }]}>
+                  <Text style={[styles.ageBtnText, { color: profile.age === a ? "#fff" : colors.navy }]}>
                     {a}
                   </Text>
                 </TouchableOpacity>
@@ -325,11 +333,11 @@ export default function SettingsScreen() {
         {/* ── Content Preferences ── */}
         <SectionLabel label="Content Preferences" colors={colors} />
         <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-          Tap to toggle categories for {currentProfile.name}
+          Tap to toggle categories for {profile.name}
         </Text>
         <View style={styles.prefGrid}>
           {CATEGORIES.map((cat) => {
-            const selected = currentProfile.preferences.includes(cat.id);
+            const selected = profile.preferences.includes(cat.id);
             return (
               <TouchableOpacity
                 key={cat.id}
@@ -394,7 +402,7 @@ export default function SettingsScreen() {
                       <Text style={[styles.profileName, { color: colors.navy }]}>{p.name}</Text>
                       <Text style={[styles.profileMeta, { color: colors.mutedForeground }]}>Age {p.age}</Text>
                     </View>
-                    {p.id === currentProfile.id && (
+                    {p.id === profile.id && (
                       <Ionicons name="checkmark-circle" size={22} color={colors.coral} />
                     )}
                   </TouchableOpacity>
