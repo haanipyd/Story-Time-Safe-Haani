@@ -10,6 +10,7 @@ export interface Story {
   thumbnailUrl?: string | null;
   audioUrl?: string | null;
   videoUrl?: string | null;
+  playCount?: number;
 }
 
 export const STORIES: Story[] = [

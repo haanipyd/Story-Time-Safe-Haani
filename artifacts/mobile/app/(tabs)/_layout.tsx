@@ -11,6 +11,7 @@ export default function TabLayout() {
         options={{ animation: "fade", gestureEnabled: true }}
       />
       <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
+      <Stack.Screen name="flashcards" options={{ animation: "slide_from_right" }} />
     </Stack>
   );
 }

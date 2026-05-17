@@ -14,8 +14,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioProvider } from "@/context/AudioContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { ProfileProvider, useProfile } from "@/context/ProfileContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProfileProvider } from "@/context/ProfileContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,31 +31,16 @@ function injectWebFonts() {
 }
 
 function AuthGuard() {
-  const { isLoggedIn, isLoading: authLoading } = useAuth();
-  const { currentProfile, isLoading: profileLoading } = useProfile();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (authLoading || profileLoading) return;
-
     const onPhoneAuth = segments[0] === "phone-auth";
     const onOnboarding = segments[0] === "onboarding";
-
-    if (!isLoggedIn) {
-      if (!onPhoneAuth) router.replace("/phone-auth");
-      return;
-    }
-
-    if (!currentProfile) {
-      if (!onOnboarding) router.replace("/onboarding");
-      return;
-    }
-
     if (onPhoneAuth || onOnboarding) {
       router.replace("/(tabs)/home");
     }
-  }, [isLoggedIn, authLoading, profileLoading, currentProfile, segments, router]);
+  }, [segments, router]);
 
   return null;
 }
@@ -84,12 +69,10 @@ export default function RootLayout() {
     isWeb
       ? {}
       : {
-          // Icon fonts — keys must match font family names used internally by @expo/vector-icons
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           ionicons: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"),
           // eslint-disable-next-line @typescript-eslint/no-require-imports
           feather: require("@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf"),
-          // App fonts
           Nunito_400Regular,
           Nunito_600SemiBold,
           Nunito_700Bold,

@@ -8,9 +8,14 @@ export interface RemoteStory extends Story {
   thumbnailUrl?: string | null;
   audioUrl?: string | null;
   videoUrl?: string | null;
+  playCount?: number;
 }
 
 function mapRemote(raw: Record<string, unknown>): RemoteStory {
+  const playCount =
+    (raw.playCount as number) ||
+    (raw.play_count as number) ||
+    undefined;
   return {
     id: raw.id as string,
     title: raw.title as string,
@@ -23,6 +28,7 @@ function mapRemote(raw: Record<string, unknown>): RemoteStory {
     audioUrl: (raw.audioUrl as string) || null,
     videoUrl: (raw.videoUrl as string) || null,
     hasCover: !!(raw.thumbnailUrl as string),
+    playCount,
   };
 }
 
@@ -41,15 +47,27 @@ export function useStories() {
   const fetchStories = useCallback(async () => {
     setLoading(true);
     setError(null);
+    if (!API_URL) {
+      setLoading(false);
+      return;
+    }
     try {
-      const res = await fetch(`${API_URL}/api/stories`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(`${API_URL}/api/stories`, { signal: controller.signal });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as Record<string, unknown>[];
       if (Array.isArray(data) && data.length > 0) {
         setStories(data.map(mapRemote));
       }
-    } catch {
-      setError("Could not reach server — showing cached content.");
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      setError(
+        isAbort
+          ? "Server took too long — showing built-in stories. Pull to retry."
+          : "Couldn't reach server — showing built-in stories. Pull to retry."
+      );
     } finally {
       setLoading(false);
     }

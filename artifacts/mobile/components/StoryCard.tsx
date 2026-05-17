@@ -64,7 +64,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const { width, height } = SIZE_CONFIG[size];
 
   const emoji = CATEGORY_EMOJI[story.category] ?? CATEGORY_EMOJI.default;
-  const durationLabel = `${story.duration} min`;
+  const durationLabel = story.duration ? `${story.duration} min` : "";
   const cardBgColor = category?.color ?? colors.coral;
 
   const doPlay = useCallback(() => {
@@ -178,6 +178,16 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
             <View style={[styles.badge, { backgroundColor: "rgba(255,255,255,0.28)" }]}>
               <Text style={styles.badgeText}>⏱ {durationLabel}</Text>
             </View>
+            {!!story.playCount && story.playCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
+                <Text style={styles.badgeText}>
+                  ▶{" "}
+                  {story.playCount > 999
+                    ? `${Math.floor(story.playCount / 1000)}k`
+                    : story.playCount}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>

@@ -16,10 +16,19 @@ import ContinueListeningBar from "@/components/ContinueListeningBar";
 import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
-import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
+import { useProfile, type ChildProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
 import { useStories, type RemoteStory } from "@/hooks/useStories";
+
+const GUEST_PROFILE: ChildProfile = {
+  id: "guest",
+  name: "Little One",
+  age: 3,
+  preferences: ["bedtime", "adventure", "animals", "fairy_tales"],
+  listeningHistory: [],
+  favourites: [],
+};
 
 function getCurated(
   age: number,
@@ -83,31 +92,29 @@ export default function HomeScreen() {
   const { isPremium } = useAuth();
   const { stories, loading, getStoryById } = useStories();
 
+  const effectiveProfile = currentProfile ?? GUEST_PROFILE;
+
   const curated = useMemo(() => {
-    if (!currentProfile || stories.length === 0) return null;
-    return getCurated(currentProfile.age, currentProfile.preferences, stories);
-  }, [currentProfile, stories]);
+    if (stories.length === 0) return null;
+    return getCurated(effectiveProfile.age, effectiveProfile.preferences, stories);
+  }, [effectiveProfile, stories]);
 
   const favouriteStories = useMemo(() => {
-    if (!currentProfile) return [];
-    return (currentProfile.favourites ?? [])
+    return (effectiveProfile.favourites ?? [])
       .map((id) => getStoryById(id))
       .filter((s): s is RemoteStory => s !== undefined);
-  }, [currentProfile, getStoryById]);
+  }, [effectiveProfile, getStoryById]);
 
   const recentlyPlayed = useMemo(() => {
-    if (!currentProfile) return [];
-    return (currentProfile.listeningHistory ?? [])
+    return (effectiveProfile.listeningHistory ?? [])
       .map((id) => getStoryById(id))
       .filter((s): s is RemoteStory => s !== undefined)
       .slice(0, 8);
-  }, [currentProfile, getStoryById]);
+  }, [effectiveProfile, getStoryById]);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const name = currentProfile?.name ?? "";
+  const name = effectiveProfile.name;
   const greetEmoji = getGreetingEmoji();
-
-  if (!currentProfile) return null;
 
   if (loading && stories.length === 0) {
     return (
@@ -164,6 +171,21 @@ export default function HomeScreen() {
             <Ionicons name="settings-outline" size={22} color={colors.navy} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Top Tab Bar */}
+      <View style={[styles.topTabBar, { borderBottomColor: colors.muted }]}>
+        <View style={styles.topTabActive}>
+          <Text style={[styles.topTabText, { color: colors.coral }]}>🎧 AudioStory</Text>
+          <View style={[styles.topTabUnderline, { backgroundColor: colors.coral }]} />
+        </View>
+        <TouchableOpacity
+          style={styles.topTab}
+          onPress={() => router.push("/(tabs)/flashcards" as Parameters<typeof router.push>[0])}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.topTabText, { color: colors.mutedForeground }]}>🃏 Flashcards</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -248,7 +270,7 @@ export default function HomeScreen() {
 
         {curated.ageMatched.length > 0 && (
           <StoryGrid
-            title={`Loved by ${currentProfile.age}-year-olds`}
+            title={`Loved by ${effectiveProfile.age}-year-olds`}
             stories={curated.ageMatched}
           />
         )}
@@ -317,6 +339,34 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
+  },
+  topTabBar: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  topTab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  topTabActive: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    position: "relative",
+  },
+  topTabText: {
+    fontSize: 14,
+    fontFamily: "Nunito_700Bold",
+  },
+  topTabUnderline: {
+    position: "absolute",
+    bottom: 0,
+    left: 8,
+    right: 8,
+    height: 3,
+    borderRadius: 3,
   },
   featuredSection: {
     paddingHorizontal: 16,
