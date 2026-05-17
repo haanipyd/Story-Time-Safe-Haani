@@ -20638,27 +20638,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router13;
+    module.exports = Router14;
     module.exports.Route = Route;
-    function Router13(options) {
-      if (!(this instanceof Router13)) {
-        return new Router13(options);
+    function Router14(options) {
+      if (!(this instanceof Router14)) {
+        return new Router14(options);
       }
       const opts = options || {};
-      function router13(req, res, next) {
-        router13.handle(req, res, next);
+      function router14(req, res, next) {
+        router14.handle(req, res, next);
       }
-      Object.setPrototypeOf(router13, this);
-      router13.caseSensitive = opts.caseSensitive;
-      router13.mergeParams = opts.mergeParams;
-      router13.params = {};
-      router13.strict = opts.strict;
-      router13.stack = [];
-      return router13;
+      Object.setPrototypeOf(router14, this);
+      router14.caseSensitive = opts.caseSensitive;
+      router14.mergeParams = opts.mergeParams;
+      router14.params = {};
+      router14.strict = opts.strict;
+      router14.stack = [];
+      return router14;
     }
-    Router13.prototype = function() {
+    Router14.prototype = function() {
     };
-    Router13.prototype.param = function param(name, fn) {
+    Router14.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20678,7 +20678,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router13.prototype.handle = function handle(req, res, callback) {
+    Router14.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20805,7 +20805,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router13.prototype.use = function use(handler) {
+    Router14.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20838,7 +20838,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router13.prototype.route = function route(path) {
+    Router14.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20853,7 +20853,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router13.prototype[method] = function(path) {
+      Router14.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21036,13 +21036,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router13 = require_router();
+    var Router14 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router13 = null;
+      var router14 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21051,13 +21051,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router13 === null) {
-            router13 = new Router13({
+          if (router14 === null) {
+            router14 = new Router14({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router13;
+          return router14;
         }
       });
     };
@@ -21128,15 +21128,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router13 = this.router;
+      var router14 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router13.use(path, fn2);
+          return router14.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router13.use(path, function mounted_app(req, res, next) {
+        router14.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23663,7 +23663,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router13 = require_router();
+    var Router14 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23685,8 +23685,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router13.Route;
-    exports.Router = Router13;
+    exports.Route = Router14.Route;
+    exports.Router = Router14;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -57243,7 +57243,7 @@ var require_node_cron = __commonJS({
 });
 
 // src/app.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../../node_modules/.pnpm/helmet@8.1.0/node_modules/helmet/index.mjs
@@ -58746,7 +58746,7 @@ var rateLimit = (passedOptions) => {
 var rate_limit_default = rateLimit;
 
 // src/routes/index.ts
-var import_express12 = __toESM(require_express2(), 1);
+var import_express13 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -69850,6 +69850,10 @@ var schema_exports = {};
 __export(schema_exports, {
   childrenTable: () => childrenTable,
   dailyPicksTable: () => dailyPicksTable,
+  flashcardSetsTable: () => flashcardSetsTable,
+  flashcardsTable: () => flashcardsTable,
+  insertFlashcardSchema: () => insertFlashcardSchema,
+  insertFlashcardSetSchema: () => insertFlashcardSetSchema,
   insertStorySchema: () => insertStorySchema,
   listeningEventsTable: () => listeningEventsTable,
   otpCodesTable: () => otpCodesTable,
@@ -69859,6 +69863,8 @@ __export(schema_exports, {
   refreshTokensTable: () => refreshTokensTable,
   storiesTable: () => storiesTable,
   subscriptionsTable: () => subscriptionsTable,
+  updateFlashcardSchema: () => updateFlashcardSchema,
+  updateFlashcardSetSchema: () => updateFlashcardSetSchema,
   updateStorySchema: () => updateStorySchema,
   usersTable: () => usersTable
 });
@@ -81466,6 +81472,39 @@ var otpCodesTable = pgTable("otp_codes", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// ../../lib/db/src/schema/flashcards.ts
+var flashcardSetsTable = pgTable("flashcard_sets", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  emoji: text("emoji").notNull().default("\u{1F4DA}"),
+  color: text("color").notNull().default("#6C5CE7"),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+var flashcardsTable = pgTable("flashcards", {
+  id: text("id").primaryKey(),
+  setId: text("set_id").notNull().references(() => flashcardSetsTable.id, { onDelete: "cascade" }),
+  word: text("word").notNull(),
+  emoji: text("emoji").notNull().default("\u2753"),
+  color: text("color").notNull().default("#E17055"),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+var insertFlashcardSetSchema = createInsertSchema(flashcardSetsTable).omit({
+  createdAt: true,
+  updatedAt: true
+});
+var insertFlashcardSchema = createInsertSchema(flashcardsTable).omit({
+  createdAt: true,
+  updatedAt: true
+});
+var updateFlashcardSetSchema = insertFlashcardSetSchema.partial().omit({ id: true });
+var updateFlashcardSchema = insertFlashcardSchema.partial().omit({ id: true });
+
 // ../../lib/db/src/index.ts
 var { Pool: Pool3 } = esm_default;
 if (!process.env.DATABASE_URL) {
@@ -84917,20 +84956,166 @@ router11.get("/users/me/export", requireAuth, async (req, res) => {
 });
 var users_default = router11;
 
-// src/routes/index.ts
+// src/routes/flashcards.ts
+var import_express12 = __toESM(require_express2(), 1);
 var router12 = (0, import_express12.Router)();
-router12.use(health_default);
-router12.use(auth_default);
-router12.use(stories_default);
-router12.use(children_default);
-router12.use(listening_default);
-router12.use(dashboard_default);
-router12.use(push_default);
-router12.use(webhooks_default);
-router12.use(subscriptions_default);
-router12.use(users_default);
-router12.use(admin_default);
-var routes_default = router12;
+router12.get("/api/flashcards/sets", async (req, res) => {
+  try {
+    const sets = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.isActive, true)).orderBy(asc(flashcardSetsTable.displayOrder));
+    res.json({ sets });
+  } catch (err) {
+    req.log.error(err, "Failed to fetch flashcard sets");
+    res.status(500).json({ error: "Failed to fetch flashcard sets" });
+  }
+});
+router12.get("/api/flashcards/sets/:id/cards", async (req, res) => {
+  try {
+    const id = String(req.params["id"] ?? "");
+    const [set2] = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.id, id)).limit(1);
+    if (!set2) {
+      res.status(404).json({ error: "Set not found" });
+      return;
+    }
+    const cards = await db.select().from(flashcardsTable).where(eq(flashcardsTable.setId, id)).orderBy(asc(flashcardsTable.displayOrder));
+    res.json({ set: set2, cards });
+  } catch (err) {
+    req.log.error(err, "Failed to fetch flashcards");
+    res.status(500).json({ error: "Failed to fetch flashcards" });
+  }
+});
+router12.get("/api/flashcards/all", async (req, res) => {
+  try {
+    const sets = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.isActive, true)).orderBy(asc(flashcardSetsTable.displayOrder));
+    const cards = await db.select().from(flashcardsTable).where(eq(flashcardsTable.isActive, true)).orderBy(asc(flashcardsTable.displayOrder));
+    res.json({ sets, cards });
+  } catch (err) {
+    req.log.error(err, "Failed to fetch all flashcards");
+    res.status(500).json({ error: "Failed to fetch all flashcard data" });
+  }
+});
+router12.post("/api/flashcards/sets", requireAdminAuth, async (req, res) => {
+  try {
+    const { id, title, emoji: emoji3, color, displayOrder } = req.body;
+    if (!id || !title) {
+      res.status(400).json({ error: "id and title are required" });
+      return;
+    }
+    const [created] = await db.insert(flashcardSetsTable).values({
+      id: String(id).trim().toLowerCase().replace(/\s+/g, "-"),
+      title: String(title).trim(),
+      emoji: String(emoji3 ?? "\u{1F4DA}"),
+      color: String(color ?? "#6C5CE7"),
+      displayOrder: parseInt(String(displayOrder ?? "0"), 10),
+      isActive: true
+    }).returning();
+    res.status(201).json({ set: created });
+  } catch (err) {
+    req.log.error(err, "Failed to create flashcard set");
+    res.status(500).json({ error: "Failed to create flashcard set" });
+  }
+});
+router12.put("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params["id"] ?? "");
+    const { title, emoji: emoji3, color, displayOrder, isActive } = req.body;
+    const updates = { updatedAt: /* @__PURE__ */ new Date() };
+    if (title !== void 0) updates.title = String(title).trim();
+    if (emoji3 !== void 0) updates.emoji = String(emoji3);
+    if (color !== void 0) updates.color = String(color);
+    if (displayOrder !== void 0) updates.displayOrder = Number(displayOrder);
+    if (isActive !== void 0) updates.isActive = Boolean(isActive);
+    const [updated] = await db.update(flashcardSetsTable).set(updates).where(eq(flashcardSetsTable.id, id)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Set not found" });
+      return;
+    }
+    res.json({ set: updated });
+  } catch (err) {
+    req.log.error(err, "Failed to update flashcard set");
+    res.status(500).json({ error: "Failed to update flashcard set" });
+  }
+});
+router12.delete("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params["id"] ?? "");
+    await db.delete(flashcardSetsTable).where(eq(flashcardSetsTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "Failed to delete flashcard set");
+    res.status(500).json({ error: "Failed to delete flashcard set" });
+  }
+});
+router12.post("/api/flashcards/cards", requireAdminAuth, async (req, res) => {
+  try {
+    const { id, setId, word, emoji: emoji3, color, displayOrder } = req.body;
+    if (!id || !setId || !word) {
+      res.status(400).json({ error: "id, setId and word are required" });
+      return;
+    }
+    const [created] = await db.insert(flashcardsTable).values({
+      id: String(id).trim(),
+      setId: String(setId).trim(),
+      word: String(word).trim(),
+      emoji: String(emoji3 ?? "\u2753"),
+      color: String(color ?? "#E17055"),
+      displayOrder: parseInt(String(displayOrder ?? "0"), 10),
+      isActive: true
+    }).returning();
+    res.status(201).json({ card: created });
+  } catch (err) {
+    req.log.error(err, "Failed to create flashcard");
+    res.status(500).json({ error: "Failed to create flashcard" });
+  }
+});
+router12.put("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params["id"] ?? "");
+    const { word, emoji: emoji3, color, displayOrder, isActive, setId } = req.body;
+    const updates = { updatedAt: /* @__PURE__ */ new Date() };
+    if (word !== void 0) updates.word = String(word).trim();
+    if (emoji3 !== void 0) updates.emoji = String(emoji3);
+    if (color !== void 0) updates.color = String(color);
+    if (displayOrder !== void 0) updates.displayOrder = Number(displayOrder);
+    if (isActive !== void 0) updates.isActive = Boolean(isActive);
+    if (setId !== void 0) updates.setId = String(setId);
+    const [updated] = await db.update(flashcardsTable).set(updates).where(eq(flashcardsTable.id, id)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Card not found" });
+      return;
+    }
+    res.json({ card: updated });
+  } catch (err) {
+    req.log.error(err, "Failed to update flashcard");
+    res.status(500).json({ error: "Failed to update flashcard" });
+  }
+});
+router12.delete("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params["id"] ?? "");
+    await db.delete(flashcardsTable).where(eq(flashcardsTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err, "Failed to delete flashcard");
+    res.status(500).json({ error: "Failed to delete flashcard" });
+  }
+});
+var flashcards_default = router12;
+
+// src/routes/index.ts
+var router13 = (0, import_express13.Router)();
+router13.use(health_default);
+router13.use(auth_default);
+router13.use(stories_default);
+router13.use(flashcards_default);
+router13.use(children_default);
+router13.use(listening_default);
+router13.use(dashboard_default);
+router13.use(push_default);
+router13.use(webhooks_default);
+router13.use(subscriptions_default);
+router13.use(users_default);
+router13.use(admin_default);
+var routes_default = router13;
 
 // src/jobs/index.ts
 var import_node_cron = __toESM(require_node_cron(), 1);
@@ -85145,7 +85330,7 @@ function getTimezoneOffsetMinutes(tz, at) {
 }
 
 // src/app.ts
-var app = (0, import_express13.default)();
+var app = (0, import_express14.default)();
 app.set("trust proxy", 1);
 app.use(
   helmet({
@@ -85183,7 +85368,7 @@ app.use(
 var SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 app.use((0, import_cookie_parser.default)(SESSION_SECRET));
 app.use(
-  import_express13.default.json({
+  import_express14.default.json({
     verify: (req, _res, buf) => {
       if (req.path.includes("/webhooks/razorpay")) {
         req.rawBody = buf;
@@ -85191,7 +85376,7 @@ app.use(
     }
   })
 );
-app.use(import_express13.default.urlencoded({ extended: true }));
+app.use(import_express14.default.urlencoded({ extended: true }));
 var globalLimiter = rate_limit_default({
   windowMs: 60 * 1e3,
   limit: 100,

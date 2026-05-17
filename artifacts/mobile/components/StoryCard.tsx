@@ -45,9 +45,9 @@ interface StoryCardProps {
 }
 
 const SIZE_CONFIG = {
-  featured: { width: SCREEN_WIDTH - 32, height: 230 },
-  card: { width: Math.floor(SCREEN_WIDTH * 0.44), height: 210 },
-  small: { width: Math.floor((SCREEN_WIDTH - 48) / 2), height: 165 },
+  featured: { width: SCREEN_WIDTH - 32, height: 350 },
+  card: { width: Math.floor(SCREEN_WIDTH * 0.44), height: 200 },
+  small: { width: Math.floor((SCREEN_WIDTH - 48) / 2), height: 155 },
 };
 
 export default function StoryCard({ story, size = "card" }: StoryCardProps) {
@@ -82,7 +82,10 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
     doPlay();
   }, [freePlayCount, isPremium, doPlay]);
 
-  const RADIUS = colors.radius;
+  const RADIUS = size === "featured" ? 20 : colors.radius;
+
+  const titleSize = size === "featured" ? 17 : size === "card" ? 13 : 12;
+  const metaSize = size === "featured" ? 12 : 11;
 
   return (
     <>
@@ -95,102 +98,102 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
           doPlay();
         }}
       />
-      <TouchableOpacity
-        onPress={handlePress}
-        activeOpacity={0.88}
-        style={[styles.container, { width, height, borderRadius: RADIUS }]}
-      >
-        {remoteThumbnail ? (
-          <Image
-            source={{ uri: remoteThumbnail }}
-            style={[styles.image, { borderRadius: RADIUS }]}
-            resizeMode="cover"
-          />
-        ) : localCover ? (
-          <Image
-            source={localCover}
-            style={[styles.image, { borderRadius: RADIUS }]}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={[
-              styles.colorCard,
-              { backgroundColor: cardBgColor, borderRadius: RADIUS },
-            ]}
-          >
-            <View style={styles.emojiCircle}>
-              <Text
-                style={[
-                  styles.emojiText,
-                  { fontSize: size === "featured" ? 64 : size === "card" ? 52 : 38 },
-                ]}
-              >
-                {emoji}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        <View
-          style={[
-            styles.overlay,
-            {
-              borderRadius: RADIUS,
-              backgroundColor: hasImage
-                ? "rgba(0,0,0,0.30)"
-                : "rgba(0,0,0,0.12)",
-            },
-          ]}
-        />
-
+      <View style={{ width }}>
+        {/* Thumbnail */}
         <TouchableOpacity
-          style={styles.heartBtn}
-          onPress={() => {
-            Haptics.impactAsync(
-              isFavourited
-                ? Haptics.ImpactFeedbackStyle.Light
-                : Haptics.ImpactFeedbackStyle.Medium
-            );
-            toggleFavourite(story.id);
-          }}
-          hitSlop={8}
+          onPress={handlePress}
+          activeOpacity={0.88}
+          style={[styles.container, { width, height, borderRadius: RADIUS }]}
         >
-          <Text style={styles.heartEmoji}>
-            {isFavourited ? "❤️" : "🤍"}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.textContainer}>
-          <Text
-            style={[
-              styles.title,
-              {
-                fontSize: size === "featured" ? 22 : size === "card" ? 15 : 13,
-                lineHeight: size === "featured" ? 29 : 21,
-              },
-            ]}
-            numberOfLines={2}
-          >
-            {story.title}
-          </Text>
-          <View style={styles.meta}>
-            <View style={[styles.badge, { backgroundColor: "rgba(255,255,255,0.28)" }]}>
-              <Text style={styles.badgeText}>⏱ {durationLabel}</Text>
-            </View>
-            {!!story.playCount && story.playCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
-                <Text style={styles.badgeText}>
-                  ▶{" "}
-                  {story.playCount > 999
-                    ? `${Math.floor(story.playCount / 1000)}k`
-                    : story.playCount}
+          {remoteThumbnail ? (
+            <Image
+              source={{ uri: remoteThumbnail }}
+              style={[styles.image, { borderRadius: RADIUS }]}
+              resizeMode="cover"
+            />
+          ) : localCover ? (
+            <Image
+              source={localCover}
+              style={[styles.image, { borderRadius: RADIUS }]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.colorCard,
+                { backgroundColor: cardBgColor, borderRadius: RADIUS },
+              ]}
+            >
+              <View style={styles.emojiCircle}>
+                <Text
+                  style={[
+                    styles.emojiText,
+                    { fontSize: size === "featured" ? 64 : size === "card" ? 52 : 38 },
+                  ]}
+                >
+                  {emoji}
                 </Text>
               </View>
-            )}
+            </View>
+          )}
+
+          {/* Minimal overlay — just enough for heart button visibility */}
+          <View
+            style={[
+              styles.overlay,
+              {
+                borderRadius: RADIUS,
+                backgroundColor: hasImage ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+              },
+            ]}
+          />
+
+          {/* Heart button */}
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={() => {
+              Haptics.impactAsync(
+                isFavourited
+                  ? Haptics.ImpactFeedbackStyle.Light
+                  : Haptics.ImpactFeedbackStyle.Medium
+              );
+              toggleFavourite(story.id);
+            }}
+            hitSlop={8}
+          >
+            <Text style={styles.heartEmoji}>
+              {isFavourited ? "❤️" : "🤍"}
+            </Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        {/* Title below thumbnail */}
+        <Text
+          style={[styles.cardTitle, { color: colors.navy, fontSize: titleSize }]}
+          numberOfLines={size === "featured" ? 2 : 2}
+        >
+          {story.title}
+        </Text>
+
+        {/* Duration + play count row */}
+        {(durationLabel || (story.playCount && story.playCount > 0)) ? (
+          <View style={styles.metaRow}>
+            {durationLabel ? (
+              <Text style={[styles.metaText, { color: colors.mutedForeground, fontSize: metaSize }]}>
+                ⏱ {durationLabel}
+              </Text>
+            ) : null}
+            {!!story.playCount && story.playCount > 0 ? (
+              <Text style={[styles.metaText, { color: colors.mutedForeground, fontSize: metaSize }]}>
+                ▶{" "}
+                {story.playCount > 999
+                  ? `${Math.floor(story.playCount / 1000)}k`
+                  : story.playCount}
+              </Text>
+            ) : null}
           </View>
-        </View>
-      </TouchableOpacity>
+        ) : null}
+      </View>
     </>
   );
 }
@@ -237,33 +240,18 @@ const styles = StyleSheet.create({
   heartEmoji: {
     fontSize: 16,
   },
-  textContainer: {
-    position: "absolute",
-    bottom: 12,
-    left: 12,
-    right: 12,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontFamily: "Nunito_800ExtraBold",
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
-    marginBottom: 6,
-  },
-  meta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  badge: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
+  cardTitle: {
     fontFamily: "Nunito_700Bold",
+    marginTop: 7,
+    marginBottom: 2,
+    lineHeight: 18,
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  metaText: {
+    fontFamily: "Nunito_600SemiBold",
   },
 });

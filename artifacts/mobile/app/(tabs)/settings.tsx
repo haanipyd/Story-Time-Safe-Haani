@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import BottomTabBar from "@/components/BottomTabBar";
 import React, { useState } from "react";
 import {
   Alert,
@@ -86,7 +87,7 @@ export default function SettingsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: topPadding + 16, paddingBottom: bottomPadding + 24 },
+          { paddingTop: topPadding + 16, paddingBottom: 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -369,6 +370,8 @@ export default function SettingsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <BottomTabBar />
 
       <Modal visible={showAddChild} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalRoot, { backgroundColor: colors.background }]}>

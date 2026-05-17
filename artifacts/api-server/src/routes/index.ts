@@ -10,12 +10,14 @@ import dashboardRouter from "./dashboard";
 import pushRouter from "./push";
 import webhooksRouter from "./webhooks";
 import usersRouter from "./users";
+import flashcardsRouter from "./flashcards";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
 router.use(storiesRouter);
+router.use(flashcardsRouter);
 router.use(childrenRouter);
 router.use(listeningRouter);
 router.use(dashboardRouter);

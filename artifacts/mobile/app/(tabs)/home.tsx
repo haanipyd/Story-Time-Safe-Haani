@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -12,7 +10,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BottomTabBar from "@/components/BottomTabBar";
 import ContinueListeningBar from "@/components/ContinueListeningBar";
+import FlashcardPlayer from "@/components/FlashcardPlayer";
 import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
@@ -86,11 +86,11 @@ function getGreetingEmoji() {
 
 export default function HomeScreen() {
   const colors = useColors();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
   const { isPremium } = useAuth();
   const { stories, loading, getStoryById } = useStories();
+  const [activeTab, setActiveTab] = useState<"stories" | "flashcards">("stories");
 
   const effectiveProfile = currentProfile ?? GUEST_PROFILE;
 
@@ -131,12 +131,11 @@ export default function HomeScreen() {
     );
   }
 
-  if (!curated) return null;
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Header — always visible on both tabs */}
       <View
         style={[
           styles.header,
@@ -157,125 +156,135 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-        <View style={styles.headerBtns}>
-          {isPremium && (
-            <View style={[styles.premiumBadge, { backgroundColor: colors.amber + "22" }]}>
-              <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/settings")}
-            style={[styles.iconBtn, { backgroundColor: colors.muted }]}
-            hitSlop={8}
-          >
-            <Ionicons name="settings-outline" size={22} color={colors.navy} />
-          </TouchableOpacity>
-        </View>
+        {isPremium && (
+          <View style={[styles.premiumBadge, { backgroundColor: colors.amber + "22" }]}>
+            <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
+          </View>
+        )}
       </View>
 
-      {/* Top Tab Bar */}
+      {/* Top Tab Bar — toggles content, no navigation */}
       <View style={[styles.topTabBar, { borderBottomColor: colors.muted }]}>
-        <View style={styles.topTabActive}>
-          <Text style={[styles.topTabText, { color: colors.coral }]}>🎧 AudioStory</Text>
-          <View style={[styles.topTabUnderline, { backgroundColor: colors.coral }]} />
-        </View>
-        <TouchableOpacity
-          style={styles.topTab}
-          onPress={() => router.push("/(tabs)/flashcards" as Parameters<typeof router.push>[0])}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.topTabText, { color: colors.mutedForeground }]}>🃏 Flashcards</Text>
-        </TouchableOpacity>
+        {(["stories", "flashcards"] as const).map((tab) => {
+          const active = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={styles.topTabItem}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.topTabText, { color: active ? colors.coral : colors.mutedForeground }]}>
+                {tab === "stories" ? "🎧 AudioStory" : "🃏 Flashcards"}
+              </Text>
+              {active && (
+                <View style={[styles.topTabUnderline, { backgroundColor: colors.coral }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: 16, paddingBottom: insets.bottom + 100 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {curated.featured && (
-          <View style={styles.featuredSection}>
-            <View style={styles.featuredLabel}>
-              <Text style={styles.featuredEmoji}>✨</Text>
-              <Text style={[styles.featuredText, { color: colors.coral }]}>
-                Today&apos;s Pick for {name}
-              </Text>
-            </View>
-            <StoryCard story={curated.featured} size="featured" />
-          </View>
-        )}
+      {/* Content area */}
+      {activeTab === "flashcards" ? (
+        <FlashcardPlayer extraBottomPadding={8} />
+      ) : (
+        <>
+          {curated ? (
+            <ScrollView
+              contentContainerStyle={[
+                styles.scroll,
+                { paddingTop: 16, paddingBottom: insets.bottom + 140 },
+              ]}
+              showsVerticalScrollIndicator={false}
+            >
+              {curated.featured && (
+                <View style={styles.featuredSection}>
+                  <View style={styles.featuredLabel}>
+                    <Text style={styles.featuredEmoji}>✨</Text>
+                    <Text style={[styles.featuredText, { color: colors.coral }]}>
+                      Today&apos;s Pick for {name}
+                    </Text>
+                  </View>
+                  <StoryCard story={curated.featured} size="featured" />
+                </View>
+              )}
 
-        {favouriteStories.length > 0 && (
-          <View style={styles.namedSection}>
-            <View style={styles.namedHeader}>
-              <Text style={styles.namedEmoji}>❤️</Text>
-              <Text style={[styles.namedTitle, { color: colors.navy }]}>
-                {name}&apos;s Favourites
-              </Text>
-            </View>
-            <SectionRow title="" stories={favouriteStories} />
-          </View>
-        )}
+              {favouriteStories.length > 0 && (
+                <View style={styles.namedSection}>
+                  <View style={styles.namedHeader}>
+                    <Text style={styles.namedEmoji}>❤️</Text>
+                    <Text style={[styles.namedTitle, { color: colors.navy }]}>
+                      {name}&apos;s Favourites
+                    </Text>
+                  </View>
+                  <SectionRow title="" stories={favouriteStories} />
+                </View>
+              )}
 
-        {recentlyPlayed.length > 0 && (
-          <View style={styles.namedSection}>
-            <View style={styles.namedHeader}>
-              <Text style={styles.namedEmoji}>🎧</Text>
-              <Text style={[styles.namedTitle, { color: colors.navy }]}>
-                Recently Played
-              </Text>
-            </View>
-            <SectionRow title="" stories={recentlyPlayed} size="small" />
-          </View>
-        )}
+              {recentlyPlayed.length > 0 && (
+                <View style={styles.namedSection}>
+                  <View style={styles.namedHeader}>
+                    <Text style={styles.namedEmoji}>🎧</Text>
+                    <Text style={[styles.namedTitle, { color: colors.navy }]}>
+                      Recently Played
+                    </Text>
+                  </View>
+                  <SectionRow title="" stories={recentlyPlayed} size="small" />
+                </View>
+              )}
 
-        {curated.favorites.length > 0 && (
-          <SectionRow
-            title="Picks for You"
-            emoji="🌟"
-            stories={curated.favorites}
-          />
-        )}
+              {curated.favorites.length > 0 && (
+                <SectionRow
+                  title="Picks for You"
+                  emoji="🌟"
+                  stories={curated.favorites}
+                />
+              )}
 
-        {curated.moreLikeThis.length > 0 && (
-          <StoryGrid title="More Like This" stories={curated.moreLikeThis} />
-        )}
+              {curated.moreLikeThis.length > 0 && (
+                <StoryGrid title="More Like This" stories={curated.moreLikeThis} />
+              )}
 
-        {curated.newForYou.length > 0 && (
-          <SectionRow
-            title="New for You"
-            emoji="🆕"
-            stories={curated.newForYou}
-          />
-        )}
+              {curated.newForYou.length > 0 && (
+                <SectionRow
+                  title="New for You"
+                  emoji="🆕"
+                  stories={curated.newForYou}
+                />
+              )}
 
-        {curated.quickListens.length > 0 && (
-          <SectionRow
-            title="Quick Listens · under 5 min"
-            emoji="⚡"
-            stories={curated.quickListens}
-            size="small"
-          />
-        )}
+              {curated.quickListens.length > 0 && (
+                <SectionRow
+                  title="Quick Listens · under 5 min"
+                  emoji="⚡"
+                  stories={curated.quickListens}
+                  size="small"
+                />
+              )}
 
-        {curated.longStories.length > 0 && (
-          <SectionRow
-            title="Long Stories · 9+ min"
-            emoji="📚"
-            stories={curated.longStories}
-          />
-        )}
+              {curated.longStories.length > 0 && (
+                <SectionRow
+                  title="Long Stories · 9+ min"
+                  emoji="📚"
+                  stories={curated.longStories}
+                />
+              )}
 
-        {curated.ageMatched.length > 0 && (
-          <StoryGrid
-            title={`Loved by ${effectiveProfile.age}-year-olds`}
-            stories={curated.ageMatched}
-          />
-        )}
-      </ScrollView>
-      <ContinueListeningBar />
+              {curated.ageMatched.length > 0 && (
+                <StoryGrid
+                  title={`Loved by ${effectiveProfile.age}-year-olds`}
+                  stories={curated.ageMatched}
+                />
+              )}
+            </ScrollView>
+          ) : null}
+          <ContinueListeningBar />
+        </>
+      )}
+
+      {/* Bottom Tab Bar — always visible */}
+      <BottomTabBar />
     </View>
   );
 }
@@ -297,7 +306,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
     zIndex: 10,
   },
   headerLeft: {
@@ -318,11 +327,6 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_800ExtraBold",
     lineHeight: 33,
   },
-  headerBtns: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
   premiumBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -333,24 +337,12 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_700Bold",
     color: "#D97706",
   },
-  iconBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   topTabBar: {
     flexDirection: "row",
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
-  topTab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  topTabActive: {
+  topTabItem: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 12,
@@ -371,12 +363,15 @@ const styles = StyleSheet.create({
   featuredSection: {
     paddingHorizontal: 16,
     marginBottom: 28,
+    alignItems: "center",
   },
   featuredLabel: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginBottom: 10,
+    alignSelf: "flex-start",
+    width: "100%",
   },
   featuredEmoji: {
     fontSize: 16,

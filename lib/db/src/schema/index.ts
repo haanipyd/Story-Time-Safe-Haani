@@ -9,3 +9,4 @@ export * from "./refresh_tokens";
 export * from "./push_tokens";
 export * from "./payment_events";
 export * from "./otp_codes";
+export * from "./flashcards";
