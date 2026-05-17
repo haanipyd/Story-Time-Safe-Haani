@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomTabBar from "@/components/BottomTabBar";
 import ContinueListeningBar from "@/components/ContinueListeningBar";
+import StreakWidget from "@/components/StreakWidget";
 import FlashcardPlayer from "@/components/FlashcardPlayer";
 import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
@@ -156,11 +157,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-        {isPremium && (
-          <View style={[styles.premiumBadge, { backgroundColor: colors.amber + "22" }]}>
-            <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
-          </View>
-        )}
+        <StreakWidget />
       </View>
 
       {/* Top Tab Bar — toggles content, no navigation */}

@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PaywallModal from "@/components/PaywallModal";
 import { useAudio } from "@/context/AudioContext";
 import { useProfile } from "@/context/ProfileContext";
+import { useProgress } from "@/context/ProgressContext";
 import { getCategoryById } from "@/data/preferences";
 import { STORIES, getStoryById, type Story } from "@/data/stories";
 import { useColors } from "@/hooks/useColors";
@@ -68,6 +69,8 @@ export default function PlayerScreen() {
 
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } =
     useProfile();
+  const { recordAudioPlay } = useProgress();
+  const playRecordedRef = React.useRef(false);
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [pendingStory, setPendingStory] = useState<Story | null>(null);
@@ -136,8 +139,16 @@ export default function PlayerScreen() {
   useEffect(() => {
     if (initStory && (!currentStory || currentStory.id !== initStory.id)) {
       playStory(initStory);
+      playRecordedRef.current = false;
     }
   }, [initStory?.id]);
+
+  useEffect(() => {
+    if (progress >= 0.9 && story && !playRecordedRef.current) {
+      playRecordedRef.current = true;
+      recordAudioPlay(story.duration);
+    }
+  }, [progress, story, recordAudioPlay]);
 
   const totalSeconds = story ? story.duration * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;

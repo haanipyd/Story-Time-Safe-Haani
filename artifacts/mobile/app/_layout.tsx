@@ -12,10 +12,12 @@ import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import AchievementCelebration from "@/components/AchievementCelebration";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioProvider } from "@/context/AudioContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProfileProvider } from "@/context/ProfileContext";
+import { ProgressProvider, useProgress } from "@/context/ProgressContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +30,17 @@ function injectWebFonts() {
   link.href =
     "https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap";
   document.head.appendChild(link);
+}
+
+function GlobalCelebration() {
+  const { pendingCelebration, dismissCelebration } = useProgress();
+  if (!pendingCelebration) return null;
+  return (
+    <AchievementCelebration
+      achievement={pendingCelebration}
+      onDismiss={dismissCelebration}
+    />
+  );
 }
 
 function AuthGuard() {
@@ -93,11 +106,14 @@ export default function RootLayout() {
       <ErrorBoundary>
         <AuthProvider>
           <ProfileProvider>
-            <AudioProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <RootLayoutNav />
-              </GestureHandlerRootView>
-            </AudioProvider>
+              <ProgressProvider>
+                <AudioProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <RootLayoutNav />
+                    <GlobalCelebration />
+                  </GestureHandlerRootView>
+                </AudioProvider>
+              </ProgressProvider>
           </ProfileProvider>
         </AuthProvider>
       </ErrorBoundary>

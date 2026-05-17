@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { FLASHCARD_SETS, getAllCards } from "@/data/flashcards";
+import { useProgress } from "@/context/ProgressContext";
 import { useColors } from "@/hooks/useColors";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -23,11 +24,13 @@ interface FlashcardPlayerProps {
 
 export default function FlashcardPlayer({ extraBottomPadding = 0 }: FlashcardPlayerProps) {
   const colors = useColors();
+  const { recordCardSession } = useProgress();
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [learnMode, setLearnMode] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
+  const sessionRecordedRef = React.useRef(false);
 
   const cards = useMemo(() => {
     const base =
@@ -47,6 +50,13 @@ export default function FlashcardPlayer({ extraBottomPadding = 0 }: FlashcardPla
       Speech.speak(word, { rate: 0.8, pitch: 1.1 });
     }
   }, []);
+
+  React.useEffect(() => {
+    if (currentIdx === cards.length - 1 && cards.length > 1 && !sessionRecordedRef.current) {
+      sessionRecordedRef.current = true;
+      recordCardSession(cards.length);
+    }
+  }, [currentIdx, cards.length, recordCardSession]);
 
   const handleNext = useCallback(() => {
     if (currentIdx < cards.length - 1) {
@@ -71,11 +81,13 @@ export default function FlashcardPlayer({ extraBottomPadding = 0 }: FlashcardPla
   const handleShuffle = useCallback(() => {
     setIsShuffled((s) => !s);
     setCurrentIdx(0);
+    sessionRecordedRef.current = false;
   }, []);
 
   const handleCategoryChange = useCallback((cat: string) => {
     setSelectedCategory(cat);
     setCurrentIdx(0);
+    sessionRecordedRef.current = false;
   }, []);
 
   const toggleLearnMode = useCallback(() => {
