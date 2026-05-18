@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -5,9 +6,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Image,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,6 +30,40 @@ const COVER_IMAGES: Record<string, ReturnType<typeof require>> = {
   s9: require("../../assets/images/covers/krishna-butter.png"),
 };
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  bedtime: "🌙", adventure: "🗺️", animal: "🐾", songs: "🎵",
+  mythology: "✨", learning: "📚", yoga: "🦁", nature: "🌿",
+  funny: "🤣", classic: "🏰", fairy_tales: "🦄", music: "🎶",
+  friendship: "🤝", family: "👨‍👩‍👧", default: "📖",
+};
+
+const CATEGORY_GRADIENTS: Record<string, readonly [string, string, string]> = {
+  bedtime:    ["#C4BAE8", "#7B6BA8", "#4A3D7A"],
+  adventure:  ["#F7C99A", "#E87B3F", "#B54D12"],
+  animal:     ["#A8D9A7", "#5B8C5A", "#2E5C2D"],
+  songs:      ["#FAEAA0", "#D4A827", "#9A7410"],
+  mythology:  ["#A0D4DF", "#3A7A8C", "#1A4A56"],
+  learning:   ["#A8D0F7", "#4A90D9", "#1A5C9E"],
+  yoga:       ["#E4C4EA", "#C48DC8", "#7A4A80"],
+  nature:     ["#A8D4B4", "#4A7C59", "#1E4A2E"],
+  funny:      ["#F9C4B8", "#E8826B", "#B54030"],
+  classic:    ["#E4D0B0", "#A07040", "#603A10"],
+  fairy_tales:["#F7D4E8", "#C4608A", "#7A2A50"],
+  music:      ["#B4CEE8", "#4A6FA5", "#1A3A70"],
+  friendship: ["#FFE8A0", "#E8921A", "#A85000"],
+  family:     ["#F9C4A0", "#F4A261", "#B05A20"],
+  default:    ["#FFBFA8", "#E87B5A", "#A8402A"],
+};
+
+const SPARKLE_CONFIGS = [
+  { top: "10%", left: "8%",  size: 18, char: "✦", opacity: 0.50 },
+  { top: "15%", right: "10%", size: 13, char: "·",  opacity: 0.65 },
+  { top: "60%", left: "6%",  size: 12, char: "✦", opacity: 0.35 },
+  { top: "72%", right: "8%", size: 16, char: "✦", opacity: 0.40 },
+  { top: "38%", right: "7%", size: 10, char: "·",  opacity: 0.50 },
+  { top: "50%", left: "10%", size: 10, char: "·",  opacity: 0.40 },
+];
+
 const TIMER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "Off", minutes: null },
   { label: "15 min", minutes: 15 },
@@ -34,16 +71,18 @@ const TIMER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "60 min", minutes: 60 },
 ];
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const ART_WIDTH = SCREEN_WIDTH - 56;
+const ART_HEIGHT = Math.round(ART_WIDTH * 1.05);
+
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
-
 function formatSleepLabel(seconds: number) {
   const m = Math.ceil(seconds / 60);
-  if (m <= 0) return "0m";
-  return `${m}m`;
+  return m <= 0 ? "0m" : `${m}m`;
 }
 
 export default function PlayerScreen() {
@@ -52,23 +91,12 @@ export default function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
-    currentStory,
-    isPlaying,
-    isBuffering,
-    progress,
-    elapsedSeconds,
-    sleepTimerSeconds,
-    playStory,
-    togglePlay,
-    seekBy,
-    seekTo,
-    setSleepTimer,
+    currentStory, isPlaying, isBuffering, progress, elapsedSeconds,
+    sleepTimerSeconds, playStory, togglePlay, seekBy, seekTo, setSleepTimer,
   } = useAudio();
 
   const trackWidthRef = useRef(0);
-
-  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } =
-    useProfile();
+  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
   const playRecordedRef = React.useRef(false);
 
@@ -83,18 +111,11 @@ export default function PlayerScreen() {
   const leftTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rightTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const triggerSeekFlash = useCallback(
-    (side: "left" | "right") => {
-      setSeekFlashSide(side);
-      seekFlashAnim.setValue(1);
-      Animated.timing(seekFlashAnim, {
-        toValue: 0,
-        duration: 650,
-        useNativeDriver: true,
-      }).start();
-    },
-    [seekFlashAnim],
-  );
+  const triggerSeekFlash = useCallback((side: "left" | "right") => {
+    setSeekFlashSide(side);
+    seekFlashAnim.setValue(1);
+    Animated.timing(seekFlashAnim, { toValue: 0, duration: 650, useNativeDriver: true }).start();
+  }, [seekFlashAnim]);
 
   const handleLeftDoubleTap = useCallback(() => {
     leftTapCount.current += 1;
@@ -106,9 +127,7 @@ export default function PlayerScreen() {
       triggerSeekFlash("left");
     } else {
       if (leftTapTimer.current) clearTimeout(leftTapTimer.current);
-      leftTapTimer.current = setTimeout(() => {
-        leftTapCount.current = 0;
-      }, 300);
+      leftTapTimer.current = setTimeout(() => { leftTapCount.current = 0; }, 300);
     }
   }, [seekBy, triggerSeekFlash]);
 
@@ -122,9 +141,7 @@ export default function PlayerScreen() {
       triggerSeekFlash("right");
     } else {
       if (rightTapTimer.current) clearTimeout(rightTapTimer.current);
-      rightTapTimer.current = setTimeout(() => {
-        rightTapCount.current = 0;
-      }, 300);
+      rightTapTimer.current = setTimeout(() => { rightTapCount.current = 0; }, 300);
     }
   }, [seekBy, triggerSeekFlash]);
 
@@ -133,8 +150,9 @@ export default function PlayerScreen() {
   const category = story ? getCategoryById(story.category) : null;
   const remoteThumbnail = story?.thumbnailUrl ?? null;
   const coverImage = story ? (remoteThumbnail ? null : COVER_IMAGES[story.id] ?? null) : null;
-  const hasImage = !!(remoteThumbnail || coverImage);
-  const cardBg = category?.color ?? colors.coral;
+  const gradient = story ? (CATEGORY_GRADIENTS[story.category] ?? CATEGORY_GRADIENTS.default) : CATEGORY_GRADIENTS.default;
+  const emoji = story ? (CATEGORY_EMOJI[story.category] ?? CATEGORY_EMOJI.default) : "📖";
+  const accentColor = category?.color ?? colors.coral;
 
   useEffect(() => {
     if (initStory && (!currentStory || currentStory.id !== initStory.id)) {
@@ -160,236 +178,230 @@ export default function PlayerScreen() {
   }, [seekTo, totalSeconds]);
 
   const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
-  const prevStory =
-    currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
-  const nextStory =
-    currentIdx >= 0 && currentIdx < STORIES.length - 1
-      ? STORIES[currentIdx + 1]
-      : STORIES[0];
+  const prevStory = currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
+  const nextStory = currentIdx >= 0 && currentIdx < STORIES.length - 1 ? STORIES[currentIdx + 1] : STORIES[0];
 
-  const doPlayStory = useCallback(
-    (s: Story) => {
-      if (freePlayCount >= 5 && !isPremium) {
-        setPendingStory(s);
-        setShowPaywall(true);
-        return;
-      }
-      incrementPlayCount();
-      addToHistory(s.id);
-      playStory(s);
-    },
-    [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]
-  );
+  const doPlayStory = useCallback((s: Story) => {
+    if (freePlayCount >= 5 && !isPremium) { setPendingStory(s); setShowPaywall(true); return; }
+    incrementPlayCount(); addToHistory(s.id); playStory(s);
+  }, [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]);
 
-  const handlePrev = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    doPlayStory(prevStory);
-  };
-
-  const handleNext = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    doPlayStory(nextStory);
-  };
-
-  const handleToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    togglePlay();
-  };
-
-  const handleBack = () => {
-    router.back();
-  };
-
+  const handlePrev = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); };
+  const handleNext = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); };
+  const handleToggle = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePlay(); };
+  const handleBack = () => router.back();
   const handleTimerOption = (minutes: number | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSleepTimer(minutes);
     setShowTimerSheet(false);
   };
-
   const handlePaywallUnlock = useCallback(() => {
-    unlockPremium();
-    setShowPaywall(false);
-    if (pendingStory) {
-      incrementPlayCount();
-      addToHistory(pendingStory.id);
-      playStory(pendingStory);
-      setPendingStory(null);
-    }
+    unlockPremium(); setShowPaywall(false);
+    if (pendingStory) { incrementPlayCount(); addToHistory(pendingStory.id); playStory(pendingStory); setPendingStory(null); }
   }, [pendingStory, unlockPremium, incrementPlayCount, addToHistory, playStory]);
+
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPadding = Platform.OS === "web" ? 20 : insets.bottom;
+  const timerActive = sleepTimerSeconds !== null;
 
   if (!story) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={[styles.backBtn, { top: insets.top + 12 }]}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, { top: topPadding + 8 }]}>
+          <Ionicons name="chevron-back" size={26} color={colors.navy} />
         </TouchableOpacity>
       </View>
     );
   }
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
-  const timerActive = sleepTimerSeconds !== null;
-
   return (
-    <View style={styles.root}>
-      {remoteThumbnail ? (
-        <Image
-          source={{ uri: remoteThumbnail }}
-          style={[StyleSheet.absoluteFillObject]}
-          resizeMode="cover"
-        />
-      ) : coverImage ? (
-        <Image
-          source={coverImage}
-          style={[StyleSheet.absoluteFillObject]}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: cardBg }]}>
-          <View style={styles.bgIconContainer}>
-            <Ionicons
-              name={(category?.icon as "moon-outline") ?? "book-outline"}
-              size={180}
-              color="rgba(255,255,255,0.15)"
-            />
-          </View>
-        </View>
-      )}
-
-      <View style={[StyleSheet.absoluteFillObject, styles.dimOverlay]} />
-
-      {/* Double-tap seek zones */}
-      <TouchableOpacity
-        style={styles.seekZoneLeft}
-        onPress={handleLeftDoubleTap}
-        activeOpacity={1}
-      />
-      <TouchableOpacity
-        style={styles.seekZoneRight}
-        onPress={handleRightDoubleTap}
-        activeOpacity={1}
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Ambient glow behind art */}
+      <View
+        style={[styles.ambientGlow, { backgroundColor: accentColor + "28", top: topPadding + 52 }]}
       />
 
-      {/* Seek flash feedback */}
-      {seekFlashSide !== null && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.seekFlash,
-            seekFlashSide === "left" ? styles.seekFlashLeft : styles.seekFlashRight,
-            { opacity: seekFlashAnim },
-          ]}
-        >
-          <View style={styles.seekFlashCircle}>
-            <Ionicons
-              name={seekFlashSide === "left" ? "play-back" : "play-forward"}
-              size={26}
-              color="#fff"
-            />
-            <Text style={styles.seekFlashLabel}>
-              {seekFlashSide === "left" ? "−10s" : "+10s"}
-            </Text>
-          </View>
-        </Animated.View>
-      )}
+      {/* Header */}
+      <View style={[styles.header, { top: topPadding + 8 }]}>
+        <TouchableOpacity onPress={handleBack} style={styles.headerBtn} hitSlop={12}>
+          <Ionicons name="chevron-back" size={26} color={colors.navy} />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={handleBack}
-        style={[styles.backBtn, { top: topPadding + 12 }]}
-        hitSlop={12}
-      >
-        <Ionicons name="arrow-back" size={26} color="#fff" />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setShowTimerSheet(true)}
-        style={[
-          styles.timerBtn,
-          { top: topPadding + 12 },
-          timerActive && styles.timerBtnActive,
-        ]}
-        hitSlop={12}
-      >
-        <Ionicons
-          name="moon"
-          size={20}
-          color={timerActive ? cardBg : "rgba(255,255,255,0.75)"}
-        />
-        {timerActive && sleepTimerSeconds !== null && (
-          <Text style={[styles.timerBadge, { color: "#fff" }]}>
-            {formatSleepLabel(sleepTimerSeconds)}
-          </Text>
-        )}
-      </TouchableOpacity>
-
-      <View style={styles.centerContent}>
-        <View
-          style={[
-            styles.categoryBadge,
-            { backgroundColor: "rgba(255,255,255,0.2)" },
-          ]}
-        >
-          <Text style={styles.categoryText}>{category?.label ?? "Story"}</Text>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerLabel, { color: colors.mutedForeground }]}>Now Playing</Text>
         </View>
-        <Text style={styles.storyTitle}>{story.title}</Text>
-        <Text style={styles.storyDesc} numberOfLines={2}>
-          {story.description}
-        </Text>
+
+        <TouchableOpacity
+          onPress={() => setShowTimerSheet(true)}
+          style={[styles.headerBtn, styles.timerBtnRight, timerActive && { backgroundColor: accentColor + "22" }]}
+          hitSlop={12}
+        >
+          <Ionicons name="moon" size={18} color={timerActive ? accentColor : colors.mutedForeground} />
+          {timerActive && sleepTimerSeconds !== null && (
+            <Text style={[styles.timerBadge, { color: accentColor }]}>{formatSleepLabel(sleepTimerSeconds)}</Text>
+          )}
+        </TouchableOpacity>
       </View>
 
-      <View style={[styles.bottomControls, { paddingBottom: bottomPadding + 24 }]}>
-        <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(elapsedSeconds)}</Text>
-          {timerActive && sleepTimerSeconds !== null ? (
-            <View style={styles.sleepCountdown}>
-              <Ionicons name="moon" size={11} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.timeText}>{formatTime(sleepTimerSeconds)}</Text>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* ── Art Card ── */}
+        <View style={styles.artWrapper}>
+          <View style={[styles.artCard, { width: ART_WIDTH, height: ART_HEIGHT }]}>
+            {remoteThumbnail ? (
+              <Image source={{ uri: remoteThumbnail }} style={styles.artImage} resizeMode="cover" />
+            ) : coverImage ? (
+              <Image source={coverImage} style={styles.artImage} resizeMode="cover" />
+            ) : (
+              <LinearGradient
+                colors={gradient}
+                start={{ x: 0.15, y: 0 }}
+                end={{ x: 0.85, y: 1 }}
+                style={styles.artGradient}
+              >
+                {SPARKLE_CONFIGS.map((s, i) => (
+                  <Text
+                    key={i}
+                    style={[
+                      styles.sparkle,
+                      {
+                        top: s.top,
+                        left: "left" in s ? s.left : undefined,
+                        right: "right" in s ? s.right : undefined,
+                        fontSize: s.size,
+                        opacity: s.opacity,
+                      } as object,
+                    ]}
+                  >
+                    {s.char}
+                  </Text>
+                ))}
+                <Text style={styles.artEmoji}>{emoji}</Text>
+              </LinearGradient>
+            )}
+
+            {/* Double-tap seek zones on art card */}
+            <TouchableOpacity
+              style={styles.seekZoneLeft}
+              onPress={handleLeftDoubleTap}
+              activeOpacity={1}
+            />
+            <TouchableOpacity
+              style={styles.seekZoneRight}
+              onPress={handleRightDoubleTap}
+              activeOpacity={1}
+            />
+
+            {/* Seek flash */}
+            {seekFlashSide !== null && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.seekFlash,
+                  seekFlashSide === "left" ? styles.seekFlashLeft : styles.seekFlashRight,
+                  { opacity: seekFlashAnim },
+                ]}
+              >
+                <View style={styles.seekFlashCircle}>
+                  <Ionicons
+                    name={seekFlashSide === "left" ? "play-back" : "play-forward"}
+                    size={24} color="#fff"
+                  />
+                  <Text style={styles.seekFlashLabel}>
+                    {seekFlashSide === "left" ? "−10s" : "+10s"}
+                  </Text>
+                </View>
+              </Animated.View>
+            )}
+          </View>
+        </View>
+
+        {/* ── Story Info ── */}
+        <View style={styles.infoSection}>
+          {category && (
+            <View style={[styles.categoryPill, { backgroundColor: accentColor + "1A" }]}>
+              <Text style={[styles.categoryPillText, { color: accentColor }]}>{category.label}</Text>
             </View>
-          ) : (
-            <Text style={styles.timeText}>-{formatTime(remaining)}</Text>
           )}
+          <Text style={[styles.storyTitle, { color: colors.navy }]} numberOfLines={2}>
+            {story.title}
+          </Text>
+          {story.description ? (
+            <Text style={[styles.storyDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+              {story.description}
+            </Text>
+          ) : null}
         </View>
 
-        <View
-          style={styles.progressTrack}
-          onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => handleProgressSeek(e.nativeEvent.locationX)}
-          onResponderMove={(e) => handleProgressSeek(e.nativeEvent.locationX)}
-        >
-          <View style={styles.progressTrackBg} />
-          <View style={[styles.progressFill, { width: `${Math.min(progress * 100, 100)}%` }]} />
-          <View style={[styles.progressThumb, { left: `${Math.min(progress * 100, 100)}%` as unknown as number }]} />
+        {/* ── Progress ── */}
+        <View style={styles.progressSection}>
+          <View
+            style={styles.progressTrack}
+            onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={(e) => handleProgressSeek(e.nativeEvent.locationX)}
+            onResponderMove={(e) => handleProgressSeek(e.nativeEvent.locationX)}
+          >
+            <View style={styles.progressTrackBg} />
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.min(progress * 100, 100)}%` as unknown as number, backgroundColor: accentColor },
+              ]}
+            />
+            <View
+              style={[
+                styles.progressThumb,
+                {
+                  left: `${Math.min(progress * 100, 100)}%` as unknown as number,
+                  backgroundColor: accentColor,
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.timeRow}>
+            <Text style={[styles.timeText, { color: colors.mutedForeground }]}>
+              {formatTime(elapsedSeconds)}
+            </Text>
+            {timerActive && sleepTimerSeconds !== null ? (
+              <View style={styles.sleepCountdown}>
+                <Ionicons name="moon" size={10} color={accentColor} />
+                <Text style={[styles.timeText, { color: accentColor }]}>
+                  {formatTime(sleepTimerSeconds)}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.timeText, { color: colors.mutedForeground }]}>
+                -{formatTime(remaining)}
+              </Text>
+            )}
+          </View>
         </View>
 
+        {/* ── Controls ── */}
         <View style={styles.controlsRow}>
           <TouchableOpacity onPress={handlePrev} style={styles.skipBtn} hitSlop={10}>
-            <Ionicons name="play-skip-back" size={30} color="rgba(255,255,255,0.85)" />
+            <Ionicons name="play-skip-back" size={28} color={colors.navy} />
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleToggle}
-            activeOpacity={0.8}
+            activeOpacity={0.82}
             disabled={isBuffering}
           >
-            <View
-              style={[
-                styles.playBtnInner,
-                { backgroundColor: "rgba(255,255,255,0.95)" },
-              ]}
-            >
+            <View style={[styles.playBtn, { backgroundColor: accentColor }]}>
               {isBuffering ? (
-                <ActivityIndicator size="large" color={cardBg} />
+                <ActivityIndicator size="large" color="#fff" />
               ) : (
                 <Ionicons
                   name={isPlaying ? "pause" : "play"}
                   size={36}
-                  color={cardBg}
+                  color="#fff"
                   style={isPlaying ? undefined : { marginLeft: 4 }}
                 />
               )}
@@ -397,10 +409,32 @@ export default function PlayerScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleNext} style={styles.skipBtn} hitSlop={10}>
-            <Ionicons name="play-skip-forward" size={30} color="rgba(255,255,255,0.85)" />
+            <Ionicons name="play-skip-forward" size={28} color={colors.navy} />
           </TouchableOpacity>
         </View>
-      </View>
+
+        {/* Duration / age tag row */}
+        {(story.duration || story.ageMin) ? (
+          <View style={styles.metaRow}>
+            {story.duration ? (
+              <View style={[styles.metaChip, { backgroundColor: colors.muted }]}>
+                <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
+                <Text style={[styles.metaChipText, { color: colors.mutedForeground }]}>
+                  {story.duration} min
+                </Text>
+              </View>
+            ) : null}
+            {story.ageMin ? (
+              <View style={[styles.metaChip, { backgroundColor: colors.muted }]}>
+                <Ionicons name="happy-outline" size={12} color={colors.mutedForeground} />
+                <Text style={[styles.metaChipText, { color: colors.mutedForeground }]}>
+                  Ages {story.ageMin}–{story.ageMax}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </ScrollView>
 
       <PaywallModal
         visible={showPaywall}
@@ -419,45 +453,30 @@ export default function PlayerScreen() {
           activeOpacity={1}
           onPress={() => setShowTimerSheet(false)}
         >
-          <View
-            style={[styles.timerSheet, { backgroundColor: "rgba(20,20,35,0.97)" }]}
-            onStartShouldSetResponder={() => true}
-          >
+          <View style={[styles.timerSheet, { backgroundColor: colors.card }]} onStartShouldSetResponder={() => true}>
             <View style={styles.timerSheetHeader}>
-              <Ionicons name="moon" size={18} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.timerSheetTitle}>Sleep Timer</Text>
+              <Ionicons name="moon" size={16} color={accentColor} />
+              <Text style={[styles.timerSheetTitle, { color: colors.navy }]}>Sleep Timer</Text>
             </View>
-
             {TIMER_OPTIONS.map((opt) => {
-              const isSelected =
-                opt.minutes === null
-                  ? sleepTimerSeconds === null
-                  : sleepTimerSeconds !== null &&
-                    Math.abs(sleepTimerSeconds - opt.minutes * 60) < 30;
+              const isSelected = opt.minutes === null
+                ? sleepTimerSeconds === null
+                : sleepTimerSeconds !== null && Math.abs(sleepTimerSeconds - opt.minutes * 60) < 30;
               return (
                 <TouchableOpacity
                   key={opt.label}
-                  style={[
-                    styles.timerOption,
-                    isSelected && { backgroundColor: cardBg + "33" },
-                  ]}
+                  style={[styles.timerOption, isSelected && { backgroundColor: accentColor + "18" }]}
                   onPress={() => handleTimerOption(opt.minutes)}
                 >
-                  {isSelected ? (
-                    <Ionicons name="checkmark-circle" size={18} color={cardBg} />
-                  ) : (
-                    <View style={styles.timerOptionDot} />
-                  )}
-                  <Text
-                    style={[
-                      styles.timerOptionText,
-                      { color: isSelected ? "#fff" : "rgba(255,255,255,0.75)" },
-                    ]}
-                  >
+                  {isSelected
+                    ? <Ionicons name="checkmark-circle" size={18} color={accentColor} />
+                    : <View style={[styles.timerOptionDot, { borderColor: colors.mutedForeground + "60" }]} />
+                  }
+                  <Text style={[styles.timerOptionText, { color: isSelected ? accentColor : colors.navy }]}>
                     {opt.label}
                   </Text>
                   {isSelected && sleepTimerSeconds !== null && opt.minutes !== null && (
-                    <Text style={[styles.timerOptionMeta, { color: cardBg }]}>
+                    <Text style={[styles.timerOptionMeta, { color: accentColor }]}>
                       {formatTime(sleepTimerSeconds)} left
                     </Text>
                   )}
@@ -472,165 +491,231 @@ export default function PlayerScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#1a1a2e",
-  },
-  dimOverlay: {
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  bgIconContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtn: {
+  root: { flex: 1 },
+  ambientGlow: {
     position: "absolute",
-    left: 16,
+    alignSelf: "center",
+    width: ART_WIDTH + 60,
+    height: ART_HEIGHT + 60,
+    borderRadius: (ART_WIDTH + 60) / 2,
+  },
+  header: {
+    position: "absolute",
+    left: 0,
+    right: 0,
     zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  headerBtn: {
     width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
-  },
-  timerBtn: {
-    position: "absolute",
-    right: 16,
-    zIndex: 10,
-    height: 44,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
     borderRadius: 22,
   },
-  timerBtnActive: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+  timerBtnRight: {
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 10,
+    width: "auto",
   },
   timerBadge: {
     fontSize: 12,
     fontFamily: "Nunito_700Bold",
   },
-  centerContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    paddingTop: 80,
-  },
-  categoryBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  categoryText: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 13,
-    fontFamily: "Nunito_600SemiBold",
-    letterSpacing: 0.5,
-  },
-  storyTitle: {
-    color: "#fff",
-    fontSize: 30,
-    fontFamily: "Nunito_800ExtraBold",
-    textAlign: "center",
-    marginBottom: 12,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  storyDesc: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 15,
-    fontFamily: "Nunito_400Regular",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  bottomControls: {
-    paddingHorizontal: 32,
-    alignItems: "center",
-  },
-  timeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  sleepCountdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  timeText: {
-    color: "rgba(255,255,255,0.6)",
+  headerCenter: { flex: 1, alignItems: "center" },
+  headerLabel: {
     fontSize: 12,
     fontFamily: "Nunito_600SemiBold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  scroll: {
+    paddingHorizontal: 28,
+    alignItems: "center",
+  },
+  artWrapper: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  artCard: {
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  artImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  artGradient: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sparkle: {
+    position: "absolute",
+    color: "rgba(255,255,255,0.85)",
+    fontWeight: "700",
+  },
+  artEmoji: {
+    fontSize: 110,
+    textAlign: "center",
+  },
+  seekZoneLeft: {
+    position: "absolute",
+    top: 0, left: 0, bottom: 0,
+    width: "50%",
+    zIndex: 5,
+  },
+  seekZoneRight: {
+    position: "absolute",
+    top: 0, right: 0, bottom: 0,
+    width: "50%",
+    zIndex: 5,
+  },
+  seekFlash: {
+    position: "absolute",
+    top: 0, bottom: 0,
+    width: "50%",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 6,
+  },
+  seekFlashLeft: { left: 0 },
+  seekFlashRight: { right: 0 },
+  seekFlashCircle: {
+    width: 72, height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  seekFlashLabel: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Nunito_700Bold",
+  },
+  infoSection: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  categoryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  categoryPillText: {
+    fontSize: 12,
+    fontFamily: "Nunito_700Bold",
+    letterSpacing: 0.4,
+  },
+  storyTitle: {
+    fontSize: 26,
+    fontFamily: "Nunito_800ExtraBold",
+    textAlign: "center",
+    lineHeight: 33,
+    marginBottom: 6,
+  },
+  storyDesc: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  progressSection: {
+    width: "100%",
+    marginBottom: 28,
   },
   progressTrack: {
     width: "100%",
-    height: 28,
+    height: 30,
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 4,
   },
   progressTrackBg: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "rgba(0,0,0,0.10)",
   },
   progressFill: {
     position: "absolute",
     left: 0,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#fff",
   },
   progressThumb: {
     position: "absolute",
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#fff",
-    marginLeft: -7,
+    width: 16, height: 16,
+    borderRadius: 8,
+    marginLeft: -8,
     top: 7,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 2,
+  },
+  sleepCountdown: { flexDirection: "row", alignItems: "center", gap: 4 },
+  timeText: { fontSize: 12, fontFamily: "Nunito_600SemiBold" },
   controlsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 28,
-    marginBottom: 8,
+    gap: 32,
+    marginBottom: 24,
+    width: "100%",
   },
   skipBtn: {
-    width: 52,
-    height: 52,
+    width: 52, height: 52,
     alignItems: "center",
     justifyContent: "center",
   },
-  playBtnInner: {
-    width: 80,
-    height: 80,
+  playBtn: {
+    width: 80, height: 80,
     borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 8,
   },
+  metaRow: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+  },
+  metaChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  metaChipText: {
+    fontSize: 12,
+    fontFamily: "Nunito_600SemiBold",
+  },
   timerOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -639,6 +724,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 8,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   timerSheetHeader: {
     flexDirection: "row",
@@ -647,11 +737,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    borderBottomColor: "rgba(0,0,0,0.08)",
     marginBottom: 4,
   },
   timerSheetTitle: {
-    color: "rgba(255,255,255,0.7)",
     fontSize: 13,
     fontFamily: "Nunito_700Bold",
     letterSpacing: 0.5,
@@ -668,65 +757,18 @@ const styles = StyleSheet.create({
     marginVertical: 1,
   },
   timerOptionDot: {
-    width: 18,
-    height: 18,
+    width: 18, height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.3)",
   },
-  timerOptionText: {
-    fontSize: 16,
-    fontFamily: "Nunito_700Bold",
-    flex: 1,
-  },
-  timerOptionMeta: {
-    fontSize: 12,
-    fontFamily: "Nunito_600SemiBold",
-  },
-  seekZoneLeft: {
+  timerOptionText: { fontSize: 16, fontFamily: "Nunito_700Bold", flex: 1 },
+  timerOptionMeta: { fontSize: 12, fontFamily: "Nunito_600SemiBold" },
+  backBtn: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: "50%",
-    bottom: 160,
-    zIndex: 5,
-  },
-  seekZoneRight: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: "50%",
-    bottom: 160,
-    zIndex: 5,
-  },
-  seekFlash: {
-    position: "absolute",
-    top: 0,
-    bottom: 160,
-    width: "50%",
+    left: 16,
+    zIndex: 10,
+    width: 44, height: 44,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 6,
-    pointerEvents: "none",
-  },
-  seekFlashLeft: {
-    left: 0,
-  },
-  seekFlashRight: {
-    right: 0,
-  },
-  seekFlashCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-  },
-  seekFlashLabel: {
-    color: "#fff",
-    fontSize: 12,
-    fontFamily: "Nunito_700Bold",
   },
 });
