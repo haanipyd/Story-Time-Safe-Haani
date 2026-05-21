@@ -245,12 +245,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const seekTo = useCallback(async (seconds: number) => {
     if (!isFinite(seconds) || isNaN(seconds)) return;
-    const storyMax = currentStory ? currentStory.duration * 60 : 0;
-    const clamped = Math.max(0, Math.min(seconds, storyMax));
+    const rawMax = currentStory ? Number(currentStory.duration) * 60 : 0;
+    const storyMax = isFinite(rawMax) && rawMax > 0 ? rawMax : 0;
+    const clamped = Math.max(0, Math.min(seconds, storyMax > 0 ? storyMax : seconds));
+    const positionMs = Math.round(clamped * 1000);
+    if (!isFinite(positionMs) || isNaN(positionMs) || positionMs < 0) return;
     if (soundRef.current) {
       const status = await soundRef.current.getStatusAsync();
       if (status.isLoaded) {
-        await soundRef.current.setPositionAsync(clamped * 1000);
+        await soundRef.current.setPositionAsync(positionMs);
         setElapsedSeconds(Math.floor(clamped));
       }
     } else {
