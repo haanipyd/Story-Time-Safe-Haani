@@ -35,17 +35,35 @@ function injectWebFonts() {
 function patchWebAudioSeeking() {
   if (Platform.OS !== "web") return;
   if (typeof HTMLMediaElement === "undefined") return;
-  const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "currentTime");
-  if (!descriptor?.set || (descriptor.set as unknown as { __patched?: boolean }).__patched) return;
-  const originalSetter = descriptor.set;
-  function safeSetter(this: HTMLMediaElement, value: number) {
-    if (!isFinite(value) || isNaN(value)) return;
-    originalSetter.call(this, value);
-  }
-  (safeSetter as unknown as { __patched: boolean }).__patched = true;
-  Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
-    ...descriptor,
-    set: safeSetter,
+
+  // Layer 1: patch HTMLMediaElement.prototype.currentTime setter
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "currentTime");
+    if (descriptor?.set && !(descriptor.set as unknown as { __patched?: boolean }).__patched) {
+      const originalSetter = descriptor.set;
+      function safeSetter(this: HTMLMediaElement, value: number) {
+        if (!isFinite(value) || isNaN(value)) return;
+        try { originalSetter.call(this, value); } catch { /* ignore */ }
+      }
+      (safeSetter as unknown as { __patched: boolean }).__patched = true;
+      Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
+        ...descriptor,
+        set: safeSetter,
+        configurable: true,
+      });
+    }
+  } catch { /* descriptor not configurable — fall through to layer 2 */ }
+
+  // Layer 2: suppress the specific unhandledrejection so it never crashes the app
+  if ((window as unknown as { __audioErrPatched?: boolean }).__audioErrPatched) return;
+  (window as unknown as { __audioErrPatched: boolean }).__audioErrPatched = true;
+  window.addEventListener("unhandledrejection", (event) => {
+    if (
+      event.reason?.message?.includes("currentTime") ||
+      event.reason?.message?.includes("non-finite")
+    ) {
+      event.preventDefault();
+    }
   });
 }
 

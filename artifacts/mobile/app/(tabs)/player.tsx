@@ -99,6 +99,7 @@ export default function PlayerScreen() {
   const trackWidthRef = useRef(0);
   const initialLocalXRef = useRef(0);
   const progressViewRef = useRef<View>(null);
+  const isDraggingRef = useRef(false);
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
   const playRecordedRef = React.useRef(false);
@@ -183,20 +184,63 @@ export default function PlayerScreen() {
     seekTo(target);
   }, [seekTo, totalSeconds]);
 
+  // Keep a mutable ref so PanResponder (created once) always calls the latest seekFromLocalX
+  const seekFromLocalXRef = useRef(seekFromLocalX);
+  useEffect(() => { seekFromLocalXRef.current = seekFromLocalX; }, [seekFromLocalX]);
+
   const progressPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         initialLocalXRef.current = evt.nativeEvent.locationX;
-        seekFromLocalX(evt.nativeEvent.locationX);
+        seekFromLocalXRef.current(evt.nativeEvent.locationX);
       },
       onPanResponderMove: (_evt, gestureState) => {
-        seekFromLocalX(initialLocalXRef.current + gestureState.dx);
+        seekFromLocalXRef.current(initialLocalXRef.current + gestureState.dx);
       },
+      onPanResponderRelease: () => { isDraggingRef.current = false; },
     })
   ).current;
+
+  // Web: use native DOM pointer events — PanResponder is unreliable inside iframes
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const domEl = progressViewRef.current as unknown as HTMLElement | null;
+    if (!domEl) return;
+
+    const getLocalX = (e: PointerEvent) => {
+      const rect = domEl.getBoundingClientRect();
+      return Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    };
+
+    const onDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isDraggingRef.current = true;
+      domEl.setPointerCapture(e.pointerId);
+      seekFromLocalXRef.current(getLocalX(e));
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      e.preventDefault();
+      seekFromLocalXRef.current(getLocalX(e));
+    };
+    const onUp = () => { isDraggingRef.current = false; };
+
+    domEl.style.cursor = "pointer";
+    domEl.addEventListener("pointerdown", onDown);
+    domEl.addEventListener("pointermove", onMove);
+    domEl.addEventListener("pointerup", onUp);
+    domEl.addEventListener("pointercancel", onUp);
+    return () => {
+      domEl.removeEventListener("pointerdown", onDown);
+      domEl.removeEventListener("pointermove", onMove);
+      domEl.removeEventListener("pointerup", onUp);
+      domEl.removeEventListener("pointercancel", onUp);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
   const prevStory = currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
@@ -365,7 +409,7 @@ export default function PlayerScreen() {
             onLayout={(e) => {
               trackWidthRef.current = e.nativeEvent.layout.width;
             }}
-            {...progressPanResponder.panHandlers}
+            {...(Platform.OS !== "web" ? progressPanResponder.panHandlers : {})}
           >
             <View style={styles.progressTrackBg} />
             <View
