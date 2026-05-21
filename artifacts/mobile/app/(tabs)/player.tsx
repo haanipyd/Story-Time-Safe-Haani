@@ -9,6 +9,7 @@ import {
   Dimensions,
   Image,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -96,6 +97,8 @@ export default function PlayerScreen() {
   } = useAudio();
 
   const trackWidthRef = useRef(0);
+  const trackLeftRef = useRef(0);
+  const progressViewRef = useRef<View>(null);
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
   const playRecordedRef = React.useRef(false);
@@ -171,11 +174,25 @@ export default function PlayerScreen() {
   const totalSeconds = story ? story.duration * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;
 
-  const handleProgressSeek = useCallback((locationX: number) => {
+  const seekFromPageX = useCallback((pageX: number) => {
     if (!trackWidthRef.current) return;
-    const ratio = Math.max(0, Math.min(locationX / trackWidthRef.current, 1));
+    const ratio = Math.max(0, Math.min((pageX - trackLeftRef.current) / trackWidthRef.current, 1));
     seekTo(ratio * totalSeconds);
   }, [seekTo, totalSeconds]);
+
+  const progressPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        seekFromPageX(evt.nativeEvent.pageX);
+      },
+      onPanResponderMove: (evt) => {
+        seekFromPageX(evt.nativeEvent.pageX);
+      },
+    })
+  ).current;
 
   const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
   const prevStory = currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
@@ -339,12 +356,15 @@ export default function PlayerScreen() {
         {/* ── Progress ── */}
         <View style={styles.progressSection}>
           <View
+            ref={progressViewRef}
             style={styles.progressTrack}
-            onLayout={(e) => { trackWidthRef.current = e.nativeEvent.layout.width; }}
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-            onResponderGrant={(e) => handleProgressSeek(e.nativeEvent.locationX)}
-            onResponderMove={(e) => handleProgressSeek(e.nativeEvent.locationX)}
+            onLayout={() => {
+              progressViewRef.current?.measure((_x, _y, w, _h, pageX) => {
+                trackWidthRef.current = w;
+                trackLeftRef.current = pageX;
+              });
+            }}
+            {...progressPanResponder.panHandlers}
           >
             <View style={styles.progressTrackBg} />
             <View
