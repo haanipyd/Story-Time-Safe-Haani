@@ -32,6 +32,23 @@ function injectWebFonts() {
   document.head.appendChild(link);
 }
 
+function patchWebAudioSeeking() {
+  if (Platform.OS !== "web") return;
+  if (typeof HTMLMediaElement === "undefined") return;
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "currentTime");
+  if (!descriptor?.set || (descriptor.set as unknown as { __patched?: boolean }).__patched) return;
+  const originalSetter = descriptor.set;
+  function safeSetter(this: HTMLMediaElement, value: number) {
+    if (!isFinite(value) || isNaN(value)) return;
+    originalSetter.call(this, value);
+  }
+  (safeSetter as unknown as { __patched: boolean }).__patched = true;
+  Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
+    ...descriptor,
+    set: safeSetter,
+  });
+}
+
 function GlobalCelebration() {
   const { pendingCelebration, dismissCelebration } = useProgress();
   if (!pendingCelebration) return null;
@@ -76,6 +93,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     injectWebFonts();
+    patchWebAudioSeeking();
   }, []);
 
   const [fontsLoaded, fontError] = useFonts(

@@ -227,39 +227,57 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     await resumeBgMusic();
   }, [clearInterval_, unloadSound, resumeBgMusic]);
 
-  const seekBy = useCallback(async (seconds: number) => {
-    if (soundRef.current) {
+  const safeSetPosition = useCallback(async (positionMs: number): Promise<boolean> => {
+    if (!isFinite(positionMs) || isNaN(positionMs) || positionMs < 0) return false;
+    if (!soundRef.current) return false;
+    try {
       const status = await soundRef.current.getStatusAsync();
-      if (status.isLoaded) {
-        const newMs = Math.max(0, status.positionMillis + seconds * 1000);
-        await soundRef.current.setPositionAsync(newMs);
-        setElapsedSeconds(Math.floor(newMs / 1000));
-      }
+      if (!status.isLoaded) return false;
+      // On web, durationMillis can be undefined/NaN before metadata loads — skip seeking then
+      if (status.durationMillis !== undefined && !isFinite(status.durationMillis)) return false;
+      await soundRef.current.setPositionAsync(Math.round(positionMs));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const seekBy = useCallback(async (seconds: number) => {
+    if (!isFinite(seconds) || isNaN(seconds)) return;
+    if (soundRef.current) {
+      try {
+        const status = await soundRef.current.getStatusAsync();
+        if (!status.isLoaded) return;
+        const currentMs = (isFinite(status.positionMillis) && status.positionMillis >= 0)
+          ? status.positionMillis : 0;
+        const newMs = Math.max(0, currentMs + seconds * 1000);
+        const ok = await safeSetPosition(newMs);
+        if (ok) setElapsedSeconds(Math.floor(newMs / 1000));
+      } catch {}
     } else {
       setElapsedSeconds((prev) => {
-        const storyMax = currentStory ? currentStory.duration * 60 : 0;
-        return Math.max(0, Math.min(prev + seconds, storyMax));
+        const raw = currentStory ? Number(currentStory.duration) * 60 : 0;
+        const storyMax = isFinite(raw) && raw > 0 ? raw : 0;
+        const next = prev + seconds;
+        return Math.max(0, storyMax > 0 ? Math.min(next, storyMax) : next);
       });
     }
-  }, [currentStory]);
+  }, [currentStory, safeSetPosition]);
 
   const seekTo = useCallback(async (seconds: number) => {
     if (!isFinite(seconds) || isNaN(seconds)) return;
-    const rawMax = currentStory ? Number(currentStory.duration) * 60 : 0;
-    const storyMax = isFinite(rawMax) && rawMax > 0 ? rawMax : 0;
-    const clamped = Math.max(0, Math.min(seconds, storyMax > 0 ? storyMax : seconds));
+    const raw = currentStory ? Number(currentStory.duration) * 60 : 0;
+    const storyMax = isFinite(raw) && raw > 0 ? raw : 0;
+    const clamped = Math.max(0, storyMax > 0 ? Math.min(seconds, storyMax) : seconds);
     const positionMs = Math.round(clamped * 1000);
     if (!isFinite(positionMs) || isNaN(positionMs) || positionMs < 0) return;
     if (soundRef.current) {
-      const status = await soundRef.current.getStatusAsync();
-      if (status.isLoaded) {
-        await soundRef.current.setPositionAsync(positionMs);
-        setElapsedSeconds(Math.floor(clamped));
-      }
+      const ok = await safeSetPosition(positionMs);
+      if (ok) setElapsedSeconds(Math.floor(clamped));
     } else {
       setElapsedSeconds(Math.floor(clamped));
     }
-  }, [currentStory]);
+  }, [currentStory, safeSetPosition]);
 
   const setSleepTimer = useCallback((minutes: number | null) => {
     if (minutes === null) {
