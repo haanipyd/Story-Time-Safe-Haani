@@ -97,7 +97,7 @@ export default function PlayerScreen() {
   } = useAudio();
 
   const trackWidthRef = useRef(0);
-  const trackLeftRef = useRef(0);
+  const initialLocalXRef = useRef(0);
   const progressViewRef = useRef<View>(null);
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
@@ -174,10 +174,13 @@ export default function PlayerScreen() {
   const totalSeconds = story ? story.duration * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;
 
-  const seekFromPageX = useCallback((pageX: number) => {
-    if (!trackWidthRef.current) return;
-    const ratio = Math.max(0, Math.min((pageX - trackLeftRef.current) / trackWidthRef.current, 1));
-    seekTo(ratio * totalSeconds);
+  const seekFromLocalX = useCallback((localX: number) => {
+    const w = trackWidthRef.current;
+    if (!w || !isFinite(localX)) return;
+    const ratio = Math.max(0, Math.min(localX / w, 1));
+    const target = ratio * totalSeconds;
+    if (!isFinite(target)) return;
+    seekTo(target);
   }, [seekTo, totalSeconds]);
 
   const progressPanResponder = useRef(
@@ -186,10 +189,11 @@ export default function PlayerScreen() {
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        seekFromPageX(evt.nativeEvent.pageX);
+        initialLocalXRef.current = evt.nativeEvent.locationX;
+        seekFromLocalX(evt.nativeEvent.locationX);
       },
-      onPanResponderMove: (evt) => {
-        seekFromPageX(evt.nativeEvent.pageX);
+      onPanResponderMove: (_evt, gestureState) => {
+        seekFromLocalX(initialLocalXRef.current + gestureState.dx);
       },
     })
   ).current;
@@ -358,11 +362,8 @@ export default function PlayerScreen() {
           <View
             ref={progressViewRef}
             style={styles.progressTrack}
-            onLayout={() => {
-              progressViewRef.current?.measure((_x, _y, w, _h, pageX) => {
-                trackWidthRef.current = w;
-                trackLeftRef.current = pageX;
-              });
+            onLayout={(e) => {
+              trackWidthRef.current = e.nativeEvent.layout.width;
             }}
             {...progressPanResponder.panHandlers}
           >

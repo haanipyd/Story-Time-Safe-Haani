@@ -244,6 +244,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, [currentStory]);
 
   const seekTo = useCallback(async (seconds: number) => {
+    if (!isFinite(seconds) || isNaN(seconds)) return;
     const storyMax = currentStory ? currentStory.duration * 60 : 0;
     const clamped = Math.max(0, Math.min(seconds, storyMax));
     if (soundRef.current) {
