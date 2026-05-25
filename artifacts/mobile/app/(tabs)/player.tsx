@@ -77,8 +77,9 @@ const ART_WIDTH = SCREEN_WIDTH - 56;
 const ART_HEIGHT = Math.round(ART_WIDTH * 1.05);
 
 function formatTime(seconds: number) {
+  if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 function formatSleepLabel(seconds: number) {
@@ -172,7 +173,7 @@ export default function PlayerScreen() {
     }
   }, [progress, story, recordAudioPlay]);
 
-  const totalSeconds = story ? story.duration * 60 : 0;
+  const totalSeconds = story ? (Number(story.duration) || 0) * 60 : 0;
   const remaining = totalSeconds - elapsedSeconds;
 
   const seekFromLocalX = useCallback((localX: number) => {

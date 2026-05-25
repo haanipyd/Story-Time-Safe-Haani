@@ -47,7 +47,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sleepTimerRef = useRef<number | null>(null);
 
-  const totalSeconds = currentStory ? currentStory.duration * 60 : 1;
+  const totalSeconds = currentStory ? (Number(currentStory.duration) || 1) * 60 : 1;
   const progress = Math.min(elapsedSeconds / totalSeconds, 1);
 
   const clearInterval_ = useCallback(() => {
