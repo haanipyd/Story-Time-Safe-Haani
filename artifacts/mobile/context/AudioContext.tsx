@@ -139,7 +139,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (!soundRef.current) {
         setElapsedSeconds((prev) => {
           const next = prev + 1;
-          const storyMax = (currentStory?.duration ?? 1) * 60;
+          const storyMax = (Number(currentStory?.duration) || 1) * 60;
           if (next >= storyMax) {
             setIsPlaying(false);
             return storyMax;

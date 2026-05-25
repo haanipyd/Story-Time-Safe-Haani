@@ -15,11 +15,21 @@ import type { DbStory } from "@workspace/db";
 
 const router: IRouter = Router();
 
-function maskAudio(story: DbStory, isFreeUser: boolean): DbStory {
+// Mobile app Story type uses `duration` but the DB column is `durationMin`.
+// Add `duration` as an alias on every outgoing story so the mobile client
+// never receives undefined for this field.
+function serialize(story: DbStory): DbStory & { duration: number } {
+  return { ...story, duration: story.durationMin };
+}
+
+function maskAudio(
+  story: DbStory,
+  isFreeUser: boolean,
+): DbStory & { duration: number } {
   if (isFreeUser && !story.isFree) {
-    return { ...story, audioUrl: "" };
+    return serialize({ ...story, audioUrl: "" });
   }
-  return story;
+  return serialize(story);
 }
 
 router.get("/stories", async (req, res) => {
@@ -29,7 +39,7 @@ router.get("/stories", async (req, res) => {
       .from(storiesTable)
       .where(eq(storiesTable.isActive, true))
       .orderBy(desc(storiesTable.publishedAt));
-    res.json(stories);
+    res.json(stories.map(serialize));
   } catch (err) {
     req.log.error(err, "Failed to list stories");
     res.status(500).json({ error: "Internal server error" });
@@ -249,7 +259,7 @@ router.get("/stories/:id", async (req, res) => {
     res.status(404).json({ error: "Story not found" });
     return;
   }
-  res.json(story);
+  res.json(serialize(story));
 });
 
 const insertStorySchema = z.object({
@@ -303,7 +313,7 @@ router.put("/stories/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Story not found" });
       return;
     }
-    res.json(story);
+    res.json(serialize(story));
   } catch (err) {
     req.log.error(err, "Failed to update story");
     res.status(500).json({ error: "Internal server error" });

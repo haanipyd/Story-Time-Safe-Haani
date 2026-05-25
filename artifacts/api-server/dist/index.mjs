@@ -22364,7 +22364,7 @@ var require_cookie = __commonJS({
   "../../node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js"(exports) {
     "use strict";
     exports.parse = parse3;
-    exports.serialize = serialize;
+    exports.serialize = serialize2;
     var __toString = Object.prototype.toString;
     var __hasOwnProperty = Object.prototype.hasOwnProperty;
     var cookieNameRegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -22423,7 +22423,7 @@ var require_cookie = __commonJS({
       }
       return min;
     }
-    function serialize(name, val, opt) {
+    function serialize2(name, val, opt) {
       var enc = opt && opt.encode || encodeURIComponent;
       if (typeof enc !== "function") {
         throw new TypeError("option encode is invalid");
@@ -24889,7 +24889,7 @@ var require_redact = __commonJS({
       const {
         paths = [],
         censor = "[REDACTED]",
-        serialize = JSON.stringify,
+        serialize: serialize2 = JSON.stringify,
         strict = true,
         remove = false
       } = options;
@@ -24898,10 +24898,10 @@ var require_redact = __commonJS({
       return function redact(obj) {
         if (strict && (obj === null || typeof obj !== "object")) {
           if (obj === null || obj === void 0) {
-            return serialize ? serialize(obj) : obj;
+            return serialize2 ? serialize2(obj) : obj;
           }
           if (typeof obj !== "object") {
-            return serialize ? serialize(obj) : obj;
+            return serialize2 ? serialize2(obj) : obj;
           }
         }
         const cloned = selectiveClone(obj, pathStructure);
@@ -24911,14 +24911,14 @@ var require_redact = __commonJS({
           actualCensor = censor;
         }
         redactPaths(cloned, paths, actualCensor, remove);
-        if (serialize === false) {
+        if (serialize2 === false) {
           cloned.restore = function() {
             return deepClone(original);
           };
           return cloned;
         }
-        if (typeof serialize === "function") {
-          return serialize(cloned);
+        if (typeof serialize2 === "function") {
+          return serialize2(cloned);
         }
         return JSON.stringify(cloned);
       };
@@ -25007,7 +25007,7 @@ var require_redaction = __commonJS({
     var rx = /[^.[\]]+|\[([^[\]]*?)\]/g;
     var CENSOR = "[Redacted]";
     var strict = false;
-    function redaction(opts, serialize) {
+    function redaction(opts, serialize2) {
       const { paths, censor, remove } = handle(opts);
       const shape = paths.reduce((o, str) => {
         rx.lastIndex = 0;
@@ -25041,10 +25041,10 @@ var require_redaction = __commonJS({
         return o;
       }, {});
       const result = {
-        [redactFmtSym]: Redact({ paths, censor, serialize, strict, remove })
+        [redactFmtSym]: Redact({ paths, censor, serialize: serialize2, strict, remove })
       };
       const topCensor = (...args) => {
-        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
+        return typeof censor === "function" ? serialize2(censor(...args)) : serialize2(censor);
       };
       return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o, k) => {
         if (shape[k] === null) {
@@ -25056,7 +25056,7 @@ var require_redaction = __commonJS({
           o[k] = Redact({
             paths: shape[k],
             censor: wrappedCensor,
-            serialize,
+            serialize: serialize2,
             strict,
             remove
           });
@@ -33202,7 +33202,7 @@ var require_serializer = __commonJS({
       99
       /* code.copyDone */
     );
-    var serialize = {
+    var serialize2 = {
       startup,
       password,
       requestSsl,
@@ -33222,7 +33222,7 @@ var require_serializer = __commonJS({
       copyFail,
       cancel
     };
-    exports.serialize = serialize;
+    exports.serialize = serialize2;
   }
 });
 
@@ -33696,11 +33696,11 @@ var require_connection = __commonJS({
   "../../node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/connection.js"(exports, module) {
     "use strict";
     var EventEmitter = __require("events").EventEmitter;
-    var { parse: parse3, serialize } = require_dist2();
+    var { parse: parse3, serialize: serialize2 } = require_dist2();
     var { getStream, getSecureStream } = require_stream();
-    var flushBuffer = serialize.flush();
-    var syncBuffer = serialize.sync();
-    var endBuffer = serialize.end();
+    var flushBuffer = serialize2.flush();
+    var syncBuffer = serialize2.sync();
+    var endBuffer = serialize2.end();
     var Connection2 = class extends EventEmitter {
       constructor(config2) {
         super();
@@ -33791,22 +33791,22 @@ var require_connection = __commonJS({
         });
       }
       requestSsl() {
-        this.stream.write(serialize.requestSsl());
+        this.stream.write(serialize2.requestSsl());
       }
       startup(config2) {
-        this.stream.write(serialize.startup(config2));
+        this.stream.write(serialize2.startup(config2));
       }
       cancel(processID, secretKey) {
-        this._send(serialize.cancel(processID, secretKey));
+        this._send(serialize2.cancel(processID, secretKey));
       }
       password(password) {
-        this._send(serialize.password(password));
+        this._send(serialize2.password(password));
       }
       sendSASLInitialResponseMessage(mechanism, initialResponse) {
-        this._send(serialize.sendSASLInitialResponseMessage(mechanism, initialResponse));
+        this._send(serialize2.sendSASLInitialResponseMessage(mechanism, initialResponse));
       }
       sendSCRAMClientFinalMessage(additionalData) {
-        this._send(serialize.sendSCRAMClientFinalMessage(additionalData));
+        this._send(serialize2.sendSCRAMClientFinalMessage(additionalData));
       }
       _send(buffer) {
         if (!this.stream.writable) {
@@ -33815,19 +33815,19 @@ var require_connection = __commonJS({
         return this.stream.write(buffer);
       }
       query(text2) {
-        this._send(serialize.query(text2));
+        this._send(serialize2.query(text2));
       }
       // send parse message
       parse(query) {
-        this._send(serialize.parse(query));
+        this._send(serialize2.parse(query));
       }
       // send bind message
       bind(config2) {
-        this._send(serialize.bind(config2));
+        this._send(serialize2.bind(config2));
       }
       // send execute message
       execute(config2) {
-        this._send(serialize.execute(config2));
+        this._send(serialize2.execute(config2));
       }
       flush() {
         if (this.stream.writable) {
@@ -33855,19 +33855,19 @@ var require_connection = __commonJS({
         });
       }
       close(msg) {
-        this._send(serialize.close(msg));
+        this._send(serialize2.close(msg));
       }
       describe(msg) {
-        this._send(serialize.describe(msg));
+        this._send(serialize2.describe(msg));
       }
       sendCopyFromChunk(chunk) {
-        this._send(serialize.copyData(chunk));
+        this._send(serialize2.copyData(chunk));
       }
       endCopyFrom() {
-        this._send(serialize.copyDone());
+        this._send(serialize2.copyDone());
       }
       sendCopyFail(msg) {
-        this._send(serialize.copyFail(msg));
+        this._send(serialize2.copyFail(msg));
       }
     };
     module.exports = Connection2;
@@ -81597,16 +81597,19 @@ async function generateSignedUrl(storageKey, ttlSeconds = 3600) {
 
 // src/routes/stories.ts
 var router2 = (0, import_express2.Router)();
+function serialize(story) {
+  return { ...story, duration: story.durationMin };
+}
 function maskAudio(story, isFreeUser) {
   if (isFreeUser && !story.isFree) {
-    return { ...story, audioUrl: "" };
+    return serialize({ ...story, audioUrl: "" });
   }
-  return story;
+  return serialize(story);
 }
 router2.get("/stories", async (req, res) => {
   try {
     const stories = await db.select().from(storiesTable).where(eq(storiesTable.isActive, true)).orderBy(desc(storiesTable.publishedAt));
-    res.json(stories);
+    res.json(stories.map(serialize));
   } catch (err) {
     req.log.error(err, "Failed to list stories");
     res.status(500).json({ error: "Internal server error" });
@@ -81738,7 +81741,7 @@ router2.get("/stories/:id", async (req, res) => {
     res.status(404).json({ error: "Story not found" });
     return;
   }
-  res.json(story);
+  res.json(serialize(story));
 });
 var insertStorySchema2 = external_exports.object({
   id: external_exports.string().min(1).max(10),
@@ -81785,7 +81788,7 @@ router2.put("/stories/:id", requireAuth, async (req, res) => {
       res.status(404).json({ error: "Story not found" });
       return;
     }
-    res.json(story);
+    res.json(serialize(story));
   } catch (err) {
     req.log.error(err, "Failed to update story");
     res.status(500).json({ error: "Internal server error" });
