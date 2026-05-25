@@ -11,7 +11,6 @@ import {
   Modal,
   PanResponder,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -72,9 +71,10 @@ const TIMER_OPTIONS: { label: string; minutes: number | null }[] = [
   { label: "60 min", minutes: 60 },
 ];
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const ART_WIDTH = SCREEN_WIDTH - 56;
-const ART_HEIGHT = Math.round(ART_WIDTH * 1.05);
+// Cap art height so everything fits on screen without scrolling
+const ART_HEIGHT = Math.min(Math.round(ART_WIDTH * 0.82), Math.round(SCREEN_HEIGHT * 0.31));
 
 function formatTime(seconds: number) {
   if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
@@ -309,11 +309,7 @@ export default function PlayerScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+      <View style={[styles.content, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}>
         {/* ── Art Card ── */}
         <View style={styles.artWrapper}>
           <View style={[styles.artCard, { width: ART_WIDTH, height: ART_HEIGHT }]}>
@@ -500,7 +496,7 @@ export default function PlayerScreen() {
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
+      </View>
 
       <PaywallModal
         visible={showPaywall}
@@ -598,13 +594,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
-  scroll: {
+  content: {
+    flex: 1,
     paddingHorizontal: 28,
     alignItems: "center",
+    justifyContent: "space-between",
   },
   artWrapper: {
     alignItems: "center",
-    marginBottom: 28,
   },
   artCard: {
     borderRadius: 24,
@@ -670,7 +667,6 @@ const styles = StyleSheet.create({
   infoSection: {
     width: "100%",
     alignItems: "center",
-    marginBottom: 24,
   },
   categoryPill: {
     paddingHorizontal: 14,
@@ -698,7 +694,6 @@ const styles = StyleSheet.create({
   },
   progressSection: {
     width: "100%",
-    marginBottom: 28,
   },
   progressTrack: {
     width: "100%",
@@ -743,7 +738,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 32,
-    marginBottom: 24,
     width: "100%",
   },
   skipBtn: {
