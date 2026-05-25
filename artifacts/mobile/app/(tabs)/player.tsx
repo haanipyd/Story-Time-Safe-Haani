@@ -11,6 +11,7 @@ import {
   Modal,
   PanResponder,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -309,7 +310,11 @@ export default function PlayerScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.content, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}>
+      <ScrollView
+        scrollEnabled={false}
+        bounces={false}
+        contentContainerStyle={[styles.content, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}
+      >
         {/* ── Art Card ── */}
         <View style={styles.artWrapper}>
           <View style={[styles.artCard, { width: ART_WIDTH, height: ART_HEIGHT }]}>
@@ -496,7 +501,7 @@ export default function PlayerScreen() {
             ) : null}
           </View>
         ) : null}
-      </View>
+      </ScrollView>
 
       <PaywallModal
         visible={showPaywall}
@@ -595,13 +600,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   content: {
-    flex: 1,
     paddingHorizontal: 28,
     alignItems: "center",
-    justifyContent: "space-between",
   },
   artWrapper: {
     alignItems: "center",
+    marginBottom: 20,
   },
   artCard: {
     borderRadius: 24,
@@ -667,6 +671,7 @@ const styles = StyleSheet.create({
   infoSection: {
     width: "100%",
     alignItems: "center",
+    marginBottom: 16,
   },
   categoryPill: {
     paddingHorizontal: 14,
@@ -694,6 +699,7 @@ const styles = StyleSheet.create({
   },
   progressSection: {
     width: "100%",
+    marginBottom: 16,
   },
   progressTrack: {
     width: "100%",
@@ -738,6 +744,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 32,
+    marginBottom: 16,
     width: "100%",
   },
   skipBtn: {
