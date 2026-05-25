@@ -20,7 +20,7 @@ function mapRemote(raw: Record<string, unknown>): RemoteStory {
     id: raw.id as string,
     title: raw.title as string,
     category: raw.category as string,
-    duration: raw.duration as number,
+    duration: (raw.duration as number) || (raw.durationMin as number) || 0,
     ageMin: raw.ageMin as number,
     ageMax: raw.ageMax as number,
     description: raw.description as string,

@@ -206,41 +206,47 @@ export default function PlayerScreen() {
     })
   ).current;
 
-  // Web: use native DOM pointer events — PanResponder is unreliable inside iframes
+  // Web: document-level pointermove/pointerup so drag keeps working when
+  // the pointer leaves the element or the ScrollView intercepts events.
   useEffect(() => {
     if (Platform.OS !== "web") return;
     const domEl = progressViewRef.current as unknown as HTMLElement | null;
     if (!domEl) return;
 
-    const getLocalX = (e: PointerEvent) => {
+    domEl.style.cursor = "pointer";
+    (domEl.style as CSSStyleDeclaration & { touchAction: string }).touchAction = "none";
+
+    const getX = (e: PointerEvent) => {
       const rect = domEl.getBoundingClientRect();
       return Math.max(0, Math.min(e.clientX - rect.left, rect.width));
     };
 
     const onDown = (e: PointerEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       isDraggingRef.current = true;
-      domEl.setPointerCapture(e.pointerId);
-      seekFromLocalXRef.current(getLocalX(e));
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current) return;
-      e.preventDefault();
-      seekFromLocalXRef.current(getLocalX(e));
-    };
-    const onUp = () => { isDraggingRef.current = false; };
+      seekFromLocalXRef.current(getX(e));
 
-    domEl.style.cursor = "pointer";
-    domEl.addEventListener("pointerdown", onDown);
-    domEl.addEventListener("pointermove", onMove);
-    domEl.addEventListener("pointerup", onUp);
-    domEl.addEventListener("pointercancel", onUp);
-    return () => {
-      domEl.removeEventListener("pointerdown", onDown);
-      domEl.removeEventListener("pointermove", onMove);
-      domEl.removeEventListener("pointerup", onUp);
-      domEl.removeEventListener("pointercancel", onUp);
+      const onDocMove = (ev: PointerEvent) => {
+        if (!isDraggingRef.current) return;
+        const rect = domEl.getBoundingClientRect();
+        seekFromLocalXRef.current(
+          Math.max(0, Math.min(ev.clientX - rect.left, rect.width))
+        );
+      };
+      const onDocUp = () => {
+        isDraggingRef.current = false;
+        document.removeEventListener("pointermove", onDocMove);
+        document.removeEventListener("pointerup", onDocUp);
+        document.removeEventListener("pointercancel", onDocUp);
+      };
+      document.addEventListener("pointermove", onDocMove);
+      document.addEventListener("pointerup", onDocUp);
+      document.addEventListener("pointercancel", onDocUp);
     };
+
+    domEl.addEventListener("pointerdown", onDown);
+    return () => { domEl.removeEventListener("pointerdown", onDown); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -267,7 +273,7 @@ export default function PlayerScreen() {
     if (pendingStory) { incrementPlayCount(); addToHistory(pendingStory.id); playStory(pendingStory); setPendingStory(null); }
   }, [pendingStory, unlockPremium, incrementPlayCount, addToHistory, playStory]);
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const topPadding = Platform.OS === "web" ? 20 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 20 : insets.bottom;
   const timerActive = sleepTimerSeconds !== null;
 

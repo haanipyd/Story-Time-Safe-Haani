@@ -178,7 +178,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
             if (!status.isLoaded) return;
             setIsBuffering(status.isBuffering ?? false);
-            setElapsedSeconds(Math.floor(status.positionMillis / 1000));
+            setElapsedSeconds(Math.floor((status.positionMillis ?? 0) / 1000));
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
               setIsPlaying(false);
