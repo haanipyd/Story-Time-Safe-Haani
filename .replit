@@ -34,4 +34,8 @@ channel = "stable-25_05"
 
 [userenv.shared]
 EXPO_PUBLIC_DOMAIN = "story-time-safe--haanipyd.replit.app"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
   
