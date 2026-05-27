@@ -18,6 +18,7 @@ import { AudioProvider } from "@/context/AudioContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { ProgressProvider, useProgress } from "@/context/ProgressContext";
+import { StoriesProvider } from "@/context/StoriesContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -142,6 +143,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <AuthProvider>
           <ProfileProvider>
+            <StoriesProvider>
               <ProgressProvider>
                 <AudioProvider>
                   <GestureHandlerRootView style={{ flex: 1 }}>
@@ -150,6 +152,7 @@ export default function RootLayout() {
                   </GestureHandlerRootView>
                 </AudioProvider>
               </ProgressProvider>
+            </StoriesProvider>
           </ProfileProvider>
         </AuthProvider>
       </ErrorBoundary>

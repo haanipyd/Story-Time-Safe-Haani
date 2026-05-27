@@ -23,7 +23,8 @@ import { useAudio } from "@/context/AudioContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useProgress } from "@/context/ProgressContext";
 import { getCategoryById } from "@/data/preferences";
-import { STORIES, getStoryById, type Story } from "@/data/stories";
+import { type Story } from "@/data/stories";
+import { useStoriesContext } from "@/context/StoriesContext";
 import { useColors } from "@/hooks/useColors";
 
 const COVER_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -102,6 +103,7 @@ export default function PlayerScreen() {
   const initialLocalXRef = useRef(0);
   const progressViewRef = useRef<View>(null);
   const isDraggingRef = useRef(false);
+  const { stories: allStories, getStoryById } = useStoriesContext();
   const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
   const playRecordedRef = React.useRef(false);
@@ -151,7 +153,7 @@ export default function PlayerScreen() {
     }
   }, [seekBy, triggerSeekFlash]);
 
-  const initStory = getStoryById(id ?? "");
+  const initStory = getStoryById(id ?? "") ?? undefined;
   const story = currentStory ?? initStory;
   const category = story ? getCategoryById(story.category) : null;
   const remoteThumbnail = story?.thumbnailUrl ?? null;
@@ -250,17 +252,22 @@ export default function PlayerScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentIdx = story ? STORIES.findIndex((s) => s.id === story.id) : -1;
-  const prevStory = currentIdx > 0 ? STORIES[currentIdx - 1] : STORIES[STORIES.length - 1];
-  const nextStory = currentIdx >= 0 && currentIdx < STORIES.length - 1 ? STORIES[currentIdx + 1] : STORIES[0];
+  const storyList = allStories.length > 0 ? allStories : [];
+  const currentIdx = story ? storyList.findIndex((s) => s.id === story.id) : -1;
+  const prevStory = storyList.length > 0
+    ? (currentIdx > 0 ? storyList[currentIdx - 1] : storyList[storyList.length - 1])
+    : null;
+  const nextStory = storyList.length > 0
+    ? (currentIdx >= 0 && currentIdx < storyList.length - 1 ? storyList[currentIdx + 1] : storyList[0])
+    : null;
 
   const doPlayStory = useCallback((s: Story) => {
     if (freePlayCount >= 5 && !isPremium) { setPendingStory(s); setShowPaywall(true); return; }
     incrementPlayCount(); addToHistory(s.id); playStory(s);
   }, [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]);
 
-  const handlePrev = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); };
-  const handleNext = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); };
+  const handlePrev = () => { if (prevStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); } };
+  const handleNext = () => { if (nextStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); } };
   const handleToggle = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePlay(); };
   const handleBack = () => router.back();
   const handleTimerOption = (minutes: number | null) => {
