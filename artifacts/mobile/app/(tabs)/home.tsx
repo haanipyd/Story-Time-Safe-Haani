@@ -90,7 +90,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
   const { isPremium } = useAuth();
-  const { stories, loading, getStoryById } = useStories();
+  const { stories, loading, error, refresh, getStoryById } = useStories();
   const [activeTab, setActiveTab] = useState<"stories" | "flashcards">("stories");
 
   const effectiveProfile = currentProfile ?? GUEST_PROFILE;
@@ -117,19 +117,27 @@ export default function HomeScreen() {
   const name = effectiveProfile.name;
   const greetEmoji = getGreetingEmoji();
 
-  if (loading && stories.length === 0) {
-    return (
-      <View
-        style={[
-          styles.root,
-          styles.center,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <Text style={styles.loadingEmoji}>📖</Text>
-        <ActivityIndicator size="large" color={colors.coral} style={{ marginTop: 12 }} />
-      </View>
-    );
+  if (stories.length === 0) {
+    if (error) {
+      return (
+        <View style={[styles.root, styles.center, { backgroundColor: colors.background }]}>
+          <Text style={styles.loadingEmoji}>📡</Text>
+          <Text style={[styles.errorTitle, { color: colors.text }]}>No connection</Text>
+          <Text style={[styles.errorBody, { color: colors.secondary }]}>{error}</Text>
+          <TouchableOpacity onPress={refresh} style={[styles.retryBtn, { backgroundColor: colors.coral }]}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    if (loading) {
+      return (
+        <View style={[styles.root, styles.center, { backgroundColor: colors.background }]}>
+          <Text style={styles.loadingEmoji}>📖</Text>
+          <ActivityIndicator size="large" color={colors.coral} style={{ marginTop: 12 }} />
+        </View>
+      );
+    }
   }
 
   return (
@@ -296,6 +304,30 @@ const styles = StyleSheet.create({
   },
   loadingEmoji: {
     fontSize: 48,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontFamily: "Nunito_700Bold",
+    marginTop: 12,
+  },
+  errorBody: {
+    fontSize: 14,
+    fontFamily: "Nunito_400Regular",
+    textAlign: "center",
+    marginTop: 8,
+    marginHorizontal: 32,
+    lineHeight: 20,
+  },
+  retryBtn: {
+    marginTop: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryText: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Nunito_700Bold",
   },
   scroll: {},
   header: {

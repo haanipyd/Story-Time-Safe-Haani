@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   useCallback,
@@ -5,7 +6,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { STORIES, type Story } from "@/data/stories";
+import { type Story } from "@/data/stories";
 
 export interface RemoteStory extends Story {
   thumbnailUrl?: string | null;
@@ -14,14 +15,13 @@ export interface RemoteStory extends Story {
   playCount?: number;
 }
 
+const CACHE_KEY = "@storytime/stories_cache";
 const EXPO_DOMAIN = process.env.EXPO_PUBLIC_DOMAIN ?? "";
 const API_URL: string = EXPO_DOMAIN ? `https://${EXPO_DOMAIN}` : "";
 
 function mapRemote(raw: Record<string, unknown>): RemoteStory {
   const playCount =
-    (raw.playCount as number) ||
-    (raw.play_count as number) ||
-    undefined;
+    (raw.playCount as number) || (raw.play_count as number) || undefined;
   return {
     id: raw.id as string,
     title: raw.title as string,
@@ -38,10 +38,33 @@ function mapRemote(raw: Record<string, unknown>): RemoteStory {
   };
 }
 
+async function readCache(): Promise<RemoteStory[] | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as RemoteStory[];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCache(stories: RemoteStory[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(stories));
+  } catch {
+    // Cache write failure is non-fatal
+  }
+}
+
 interface StoriesContextValue {
   stories: RemoteStory[];
+  /** True only on first ever launch with no cache and no connection yet */
   loading: boolean;
+  /** Non-null only when there is no data at all (no cache, no API) */
   error: string | null;
+  /** Whether a background refresh is in flight (cache already showing) */
+  refreshing: boolean;
   refresh: () => void;
   getStoryById: (id: string) => RemoteStory | undefined;
 }
@@ -49,24 +72,16 @@ interface StoriesContextValue {
 const StoriesContext = createContext<StoriesContextValue | null>(null);
 
 export function StoriesProvider({ children }: { children: React.ReactNode }) {
-  // Start empty — static stories only appear as an offline fallback, never as
-  // "initial" data that gets replaced by production stories on screen.
   const [stories, setStories] = useState<RemoteStory[]>([]);
+  // loading = true only when there is nothing to show yet
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStories = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    if (!API_URL) {
-      // No API URL configured — use static stories as permanent fallback
-      setStories(
-        STORIES.map((s) => ({ ...s, thumbnailUrl: null, audioUrl: null, videoUrl: null }))
-      );
-      setLoading(false);
-      return;
-    }
+  const fetchFromApi = useCallback(async (hasCache: boolean): Promise<RemoteStory[] | null> => {
+    if (!API_URL) return null;
     try {
+      if (hasCache) setRefreshing(true);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(`${API_URL}/api/stories`, { signal: controller.signal });
@@ -74,27 +89,46 @@ export function StoriesProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as Record<string, unknown>[];
       if (Array.isArray(data) && data.length > 0) {
-        setStories(data.map(mapRemote));
-      } else {
-        // Empty API response — fall back to static
-        setStories(
-          STORIES.map((s) => ({ ...s, thumbnailUrl: null, audioUrl: null, videoUrl: null }))
-        );
+        return data.map(mapRemote);
       }
+      return null;
     } catch {
-      // Network error — fall back to static stories so app still works offline
-      setStories(
-        STORIES.map((s) => ({ ...s, thumbnailUrl: null, audioUrl: null, videoUrl: null }))
-      );
-      setError("Couldn't reach server — showing built-in stories. Pull to retry.");
+      return null;
     } finally {
-      setLoading(false);
+      if (hasCache) setRefreshing(false);
     }
   }, []);
 
+  const loadStories = useCallback(async () => {
+    setError(null);
+
+    // Step 1: load cache immediately — no spinner if we have real data
+    const cached = await readCache();
+    if (cached) {
+      setStories(cached);
+      setLoading(false);
+    }
+
+    // Step 2: fetch fresh from API in the background
+    const fresh = await fetchFromApi(!!cached);
+
+    if (fresh) {
+      // API returned real data — update display and persist
+      setStories(fresh);
+      await writeCache(fresh);
+      setLoading(false);
+      setError(null);
+    } else if (!cached) {
+      // No cache AND no API — show error with retry
+      setLoading(false);
+      setError("No connection. Check your internet and tap retry.");
+    }
+    // If cache exists but API failed — silently keep showing cache, no error
+  }, [fetchFromApi]);
+
   useEffect(() => {
-    fetchStories();
-  }, [fetchStories]);
+    loadStories();
+  }, [loadStories]);
 
   const getStoryById = useCallback(
     (id: string) => stories.find((s) => s.id === id),
@@ -102,7 +136,9 @@ export function StoriesProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <StoriesContext.Provider value={{ stories, loading, error, refresh: fetchStories, getStoryById }}>
+    <StoriesContext.Provider
+      value={{ stories, loading, error, refreshing, refresh: loadStories, getStoryById }}
+    >
       {children}
     </StoriesContext.Provider>
   );
