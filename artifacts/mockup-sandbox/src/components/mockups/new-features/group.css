@@ -6,5 +6,19 @@
   100% { transform: scale(1.4); opacity: 0; }
 }
 
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(249,199,79,0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(249,199,79,0.55); }
+}
+
+@keyframes audio-bounce {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1.2); }
+}
+
+.audio-bar {
+  animation: audio-bounce 0.8s ease-in-out infinite;
+}
+
 * { box-sizing: border-box; }
 button { font-family: 'Nunito', sans-serif; }
