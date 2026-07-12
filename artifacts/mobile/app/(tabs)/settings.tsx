@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import BottomTabBar from "@/components/BottomTabBar";
 import React, { useState } from "react";
@@ -433,6 +434,23 @@ export default function SettingsScreen() {
           <TouchableOpacity onPress={async () => { await logout(); }} style={styles.logoutRow}>
             <Ionicons name="log-out-outline" size={18} color="#E55" />
             <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── About ── */}
+        <SectionLabel label="About" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            onPress={() => {
+              const domain = process.env.EXPO_PUBLIC_DOMAIN;
+              const base = domain ? `https://${domain}` : "";
+              WebBrowser.openBrowserAsync(`${base}/api/privacy`);
+            }}
+            style={styles.linkRow}
+          >
+            <Ionicons name="document-text-outline" size={18} color={colors.navy} />
+            <Text style={[styles.linkText, { color: colors.navy }]}>Privacy Policy</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
 
@@ -1014,6 +1032,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Nunito_700Bold",
     textAlign: "center",
+  },
+
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Nunito_600SemiBold",
   },
 
   /* Modal */
