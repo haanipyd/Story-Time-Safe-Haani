@@ -76,4 +76,22 @@ title = "Feature Graphic (Play Store banner)"
 id = "bY2LU_ekutHojaiHyJEP9"
 uri = "file://artifacts/mobile/assets/store/screenshot-home.jpg"
 type = "image"
-title = "Screenshot — Home Screen"
+title = "📱 Phone — Home (Listen tab)"
+
+[[outputs]]
+id = "psGj-Nd_rEFnHfhbwTrGb"
+uri = "file://artifacts/mobile/assets/store/phone-screenshot-flashcards.jpg"
+type = "image"
+title = "📱 Phone — Flashcards"
+
+[[outputs]]
+id = "J7sOKiofP2aNeIoYFpJHH"
+uri = "file://artifacts/mobile/assets/store/tablet-screenshot-home.jpg"
+type = "image"
+title = "🖥️ Tablet — Home (Listen tab)"
+
+[[outputs]]
+id = "--szLha0QeXQ_L_wPUOyK"
+uri = "file://artifacts/mobile/assets/store/tablet-screenshot-flashcards.jpg"
+type = "image"
+title = "🖥️ Tablet — Flashcards"
