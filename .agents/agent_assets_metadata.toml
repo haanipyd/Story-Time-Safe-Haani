@@ -112,10 +112,10 @@ title = "7-inch Tablet — Flashcards"
 id = "rXf9qpnU_JcYQwRKafyo7"
 uri = "file://artifacts/mobile/assets/store/tablet10-screenshot-home.jpg"
 type = "image"
-title = "10-inch Tablet — Home"
+title = "10-inch Tablet — Home (1200×1920)"
 
 [[outputs]]
 id = "UjMP5uiPypV-nGb1osc7A"
 uri = "file://artifacts/mobile/assets/store/tablet10-screenshot-flashcards.jpg"
 type = "image"
-title = "10-inch Tablet — Flashcards"
+title = "10-inch Tablet — Flashcards (1200×1920)"
