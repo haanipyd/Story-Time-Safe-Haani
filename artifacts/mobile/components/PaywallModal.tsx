@@ -78,6 +78,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
     if (
       url.includes("razorpay.com/payment/success") ||
       url.includes("razorpay.com/payment/done") ||
+      url.startsWith("storylamp://payment-success") ||
       url.startsWith("storytime://payment-success")
     ) {
       setCheckoutUrl(null);
@@ -86,6 +87,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
       onUnlock();
     } else if (
       url.includes("razorpay.com/payment/cancel") ||
+      url.startsWith("storylamp://payment-cancelled") ||
       url.startsWith("storytime://payment-cancelled")
     ) {
       setCheckoutUrl(null);
@@ -129,7 +131,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
               <Ionicons name="star" size={38} color={colors.coral} />
             </View>
 
-            <Text style={[styles.title, { color: colors.navy }]}>Storytime Premium</Text>
+            <Text style={[styles.title, { color: colors.navy }]}>StoryLamp Premium</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
               You&apos;ve enjoyed your 5 free stories!{"\n"}Unlock unlimited for your little one.
             </Text>

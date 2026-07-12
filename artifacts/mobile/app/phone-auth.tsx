@@ -150,10 +150,10 @@ export default function PhoneAuthScreen() {
     >
       <View style={[styles.inner, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }]}>
         <View style={[styles.logoCircle, { backgroundColor: colors.coral + "22" }]}>
-          <Text style={styles.logoEmoji}>📖</Text>
+          <Text style={styles.logoEmoji}>🪔</Text>
         </View>
 
-        <Text style={[styles.appName, { color: colors.navy }]}>Storytime</Text>
+        <Text style={[styles.appName, { color: colors.navy }]}>StoryLamp</Text>
         <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
           Stories that spark little imaginations
         </Text>

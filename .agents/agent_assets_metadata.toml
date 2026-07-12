@@ -42,6 +42,12 @@ uri = "file://artifacts/mobile/assets/store/screenshot-playback.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "QLnSgtJV6u_8GjXBrjB0z"
+uri = "file://artifacts/mobile/assets/images/splash-icon.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "-rNvWlTVLo0oTF65iLBCE"
 uri = "file://storytime-mobile.tar.gz"

@@ -110,7 +110,7 @@ export default function OnboardingScreen() {
           <View style={[styles.step, { paddingBottom: bottomPadding + 24 }]}>
             <Text style={styles.topEmoji}>👋</Text>
             <Text style={[styles.heading, { color: colors.navy }]}>
-              Welcome to Storytime!
+              Welcome to StoryLamp!
             </Text>
             <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
               What&apos;s your little one&apos;s name?

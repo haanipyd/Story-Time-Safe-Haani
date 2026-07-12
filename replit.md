@@ -28,7 +28,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ## Artifacts
 
 - **API Server** (`artifacts/api-server`) — Express 5, serves `/api/*`
-- **Mobile App** (`artifacts/mobile`) — Expo Router, audio storytelling app "Storytime"
+- **Mobile App** (`artifacts/mobile`) — Expo Router, audio storytelling app "StoryLamp"
 - **Mockup Sandbox** (`artifacts/mockup-sandbox`) — Component preview server for canvas
 
 ## Content Management
