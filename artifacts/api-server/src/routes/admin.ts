@@ -517,7 +517,7 @@ document.addEventListener('click', async function(e) {
     const id = isDeleteBtn.dataset.id;
     const title = isDeleteBtn.dataset.title;
     if (!confirm('Delete "' + title + '"? All segments and options will be removed.')) return;
-    const res = await fetch('/api/admin/interactive-stories/' + encodeURIComponent(id), { method: 'DELETE' });
+    const res = await fetch('/api/interactive-stories/' + encodeURIComponent(id), { method: 'DELETE' });
     if (res.ok || res.status === 204) location.reload();
     else alert('Delete failed');
   }
@@ -786,8 +786,8 @@ async function saveIS() {
   };
 
   const url = isEditingId
-    ? '/api/admin/interactive-stories/' + encodeURIComponent(isEditingId)
-    : '/api/admin/interactive-stories';
+    ? '/api/interactive-stories/' + encodeURIComponent(isEditingId)
+    : '/api/interactive-stories';
   const method = isEditingId ? 'PUT' : 'POST';
 
   msg.style.display = 'inline';

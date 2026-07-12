@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import {
   db,
   interactiveStoriesTable,
@@ -11,7 +11,49 @@ import { z } from "zod/v4";
 
 const router: IRouter = Router();
 
-// ── Public: list all published interactive stories ──────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+async function getFullStory(storyId: string) {
+  const [story] = await db
+    .select()
+    .from(interactiveStoriesTable)
+    .where(eq(interactiveStoriesTable.id, storyId))
+    .limit(1);
+  if (!story) return null;
+
+  const segments = await db
+    .select()
+    .from(storySegmentsTable)
+    .where(eq(storySegmentsTable.storyId, storyId))
+    .orderBy(asc(storySegmentsTable.orderIndex));
+
+  const segmentIds = segments.map((s) => s.id);
+  const options =
+    segmentIds.length > 0
+      ? await db
+          .select()
+          .from(storyOptionsTable)
+          .where(inArray(storyOptionsTable.segmentId, segmentIds))
+          .orderBy(asc(storyOptionsTable.displayOrder))
+      : [];
+
+  const bySegment = options.reduce<
+    Record<string, typeof storyOptionsTable.$inferSelect[]>
+  >((acc, opt) => {
+    (acc[opt.segmentId] ??= []).push(opt);
+    return acc;
+  }, {});
+
+  return {
+    ...story,
+    segments: segments.map((seg) => ({
+      ...seg,
+      options: bySegment[seg.id] ?? [],
+    })),
+  };
+}
+
+// ── Public: list all published interactive stories (with segment count) ───────
 
 router.get("/interactive-stories", async (req, res) => {
   try {
@@ -20,71 +62,55 @@ router.get("/interactive-stories", async (req, res) => {
       .from(interactiveStoriesTable)
       .where(eq(interactiveStoriesTable.published, true))
       .orderBy(asc(interactiveStoriesTable.createdAt));
-    res.json(stories);
+
+    if (stories.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    // Count segments per story
+    const storyIds = stories.map((s) => s.id);
+    const segCounts = await db
+      .select({
+        storyId: storySegmentsTable.storyId,
+        segmentCount: count(storySegmentsTable.id),
+      })
+      .from(storySegmentsTable)
+      .where(inArray(storySegmentsTable.storyId, storyIds))
+      .groupBy(storySegmentsTable.storyId);
+
+    const countMap = segCounts.reduce<Record<string, number>>((acc, r) => {
+      acc[r.storyId] = Number(r.segmentCount);
+      return acc;
+    }, {});
+
+    res.json(
+      stories.map((s) => ({ ...s, segmentCount: countMap[s.id] ?? 0 })),
+    );
   } catch (err) {
     req.log.error(err, "Failed to list interactive stories");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// ── Public: get full story tree (segments + options) ─────────────────────────
+// ── Public: get full story tree (published only) ──────────────────────────────
 
 router.get("/interactive-stories/:id", async (req, res) => {
   const storyId = String(req.params["id"]);
   try {
-    const [story] = await db
-      .select()
-      .from(interactiveStoriesTable)
-      .where(
-        and(
-          eq(interactiveStoriesTable.id, storyId),
-          eq(interactiveStoriesTable.published, true),
-        ),
-      )
-      .limit(1);
-
-    if (!story) {
+    const story = await getFullStory(storyId);
+    if (!story || !story.published) {
       res.status(404).json({ error: "Interactive story not found" });
       return;
     }
-
-    const segments = await db
-      .select()
-      .from(storySegmentsTable)
-      .where(eq(storySegmentsTable.storyId, storyId))
-      .orderBy(asc(storySegmentsTable.orderIndex));
-
-    const segmentIds = segments.map((s) => s.id);
-    const options =
-      segmentIds.length > 0
-        ? await db
-            .select()
-            .from(storyOptionsTable)
-            .where(inArray(storyOptionsTable.segmentId, segmentIds))
-            .orderBy(asc(storyOptionsTable.displayOrder))
-        : [];
-
-    const optionsBySegment = options.reduce<
-      Record<string, typeof storyOptionsTable.$inferSelect[]>
-    >((acc, opt) => {
-      if (!acc[opt.segmentId]) acc[opt.segmentId] = [];
-      acc[opt.segmentId]!.push(opt);
-      return acc;
-    }, {});
-
-    const segmentsWithOptions = segments.map((seg) => ({
-      ...seg,
-      options: optionsBySegment[seg.id] ?? [],
-    }));
-
-    res.json({ ...story, segments: segmentsWithOptions });
+    res.json(story);
   } catch (err) {
     req.log.error(err, "Failed to get interactive story");
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// ── Schemas ──────────────────────────────────────────────────────────────────
+// ── Schemas ───────────────────────────────────────────────────────────────────
 
 const optionSchema = z.object({
   id: z.string().min(1),
@@ -95,15 +121,38 @@ const optionSchema = z.object({
   displayOrder: z.number().int().default(0),
 });
 
-const segmentSchema = z.object({
+const narrationSegmentSchema = z.object({
   id: z.string().min(1),
   orderIndex: z.number().int().min(0),
-  type: z.enum(["narration", "checkpoint"]),
+  type: z.literal("narration"),
   audioUrl: z.string().default(""),
   sceneImageUrl: z.string().default(""),
   questionText: z.string().default(""),
-  options: z.array(optionSchema).default([]),
+  options: z.array(optionSchema).max(0).default([]),
 });
+
+const checkpointSegmentSchema = z
+  .object({
+    id: z.string().min(1),
+    orderIndex: z.number().int().min(0),
+    type: z.literal("checkpoint"),
+    audioUrl: z.string().default(""),
+    sceneImageUrl: z.string().default(""),
+    questionText: z.string().min(1, "Checkpoint must have a question"),
+    options: z
+      .array(optionSchema)
+      .min(2, "Checkpoint must have at least 2 options")
+      .max(4, "Checkpoint may have at most 4 options"),
+  })
+  .refine(
+    (seg) => seg.options.filter((o) => o.isCorrect).length === 1,
+    { message: "Checkpoint must have exactly one correct option" },
+  );
+
+const segmentSchema = z.discriminatedUnion("type", [
+  narrationSegmentSchema,
+  checkpointSegmentSchema,
+]);
 
 const interactiveStoryBodySchema = z.object({
   id: z.string().min(1).max(40),
@@ -117,13 +166,14 @@ const interactiveStoryBodySchema = z.object({
   segments: z.array(segmentSchema).default([]),
 });
 
-const updateInteractiveStoryBodySchema = interactiveStoryBodySchema.partial().omit({ id: true }).extend({
-  segments: z.array(segmentSchema).optional(),
-});
+const updateInteractiveStoryBodySchema = interactiveStoryBodySchema
+  .partial()
+  .omit({ id: true })
+  .extend({ segments: z.array(segmentSchema).optional() });
 
 // ── Admin: create ─────────────────────────────────────────────────────────────
 
-router.post("/admin/interactive-stories", requireAdminAuth, async (req, res) => {
+router.post("/interactive-stories", requireAdminAuth, async (req, res) => {
   const parsed = interactiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -141,10 +191,7 @@ router.post("/admin/interactive-stories", requireAdminAuth, async (req, res) => 
         }
       }
     });
-    const [story] = await db
-      .select()
-      .from(interactiveStoriesTable)
-      .where(eq(interactiveStoriesTable.id, storyData.id));
+    const story = await getFullStory(storyData.id);
     res.status(201).json(story);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -159,7 +206,7 @@ router.post("/admin/interactive-stories", requireAdminAuth, async (req, res) => 
 
 // ── Admin: update (replaces segments entirely) ────────────────────────────────
 
-router.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router.put("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const parsed = updateInteractiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -168,19 +215,16 @@ router.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) 
   }
   const { segments, ...storyData } = parsed.data;
   try {
-    const [updated] = await db.transaction(async (tx) => {
+    const updated = await db.transaction(async (tx) => {
       const rows = await tx
         .update(interactiveStoriesTable)
         .set({ ...storyData, updatedAt: new Date() })
         .where(eq(interactiveStoriesTable.id, storyId))
         .returning();
-      if (!rows[0]) return [];
+      if (!rows[0]) return null;
 
       if (segments !== undefined) {
-        // Replace all segments and options for this story
-        await tx
-          .delete(storySegmentsTable)
-          .where(eq(storySegmentsTable.storyId, storyId));
+        await tx.delete(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId));
         for (const seg of segments) {
           const { options, ...segData } = seg;
           await tx.insert(storySegmentsTable).values({ ...segData, storyId });
@@ -189,13 +233,15 @@ router.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) 
           }
         }
       }
-      return rows;
+      return rows[0];
     });
+
     if (!updated) {
       res.status(404).json({ error: "Interactive story not found" });
       return;
     }
-    res.json(updated);
+    const story = await getFullStory(storyId);
+    res.json(story);
   } catch (err) {
     req.log.error(err, "Failed to update interactive story");
     res.status(500).json({ error: "Internal server error" });
@@ -204,7 +250,7 @@ router.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) 
 
 // ── Admin: delete ─────────────────────────────────────────────────────────────
 
-router.delete("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const [deleted] = await db
     .delete(interactiveStoriesTable)

@@ -875,8 +875,8 @@ var require_depd = __commonJS({
       return deprecate;
     }
     function eehaslisteners(emitter, type) {
-      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count > 0;
+      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count2 > 0;
     }
     function isignored(namespace) {
       if (process.noDeprecation) {
@@ -18470,14 +18470,14 @@ var require_urlencoded = __commonJS({
       };
     }
     function parameterCount(body, limit) {
-      let count = 0;
+      let count2 = 0;
       let index2 = -1;
       do {
-        count++;
-        if (count > limit) return void 0;
+        count2++;
+        if (count2 > limit) return void 0;
         index2 = body.indexOf("&", index2 + 1);
       } while (index2 !== -1);
-      return count;
+      return count2;
     }
   }
 });
@@ -21714,13 +21714,13 @@ var require_mediaType = __commonJS({
       return spec.q > 0;
     }
     function quoteCount(string4) {
-      var count = 0;
+      var count2 = 0;
       var index2 = 0;
       while ((index2 = string4.indexOf('"', index2)) !== -1) {
-        count++;
+        count2++;
         index2++;
       }
-      return count;
+      return count2;
     }
     function splitKeyValuePair(str) {
       var index2 = str.indexOf("=");
@@ -22979,8 +22979,8 @@ var require_send = __commonJS({
       }
     }
     function hasListeners(emitter, type) {
-      var count = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
-      return count > 0;
+      var count2 = typeof emitter.listenerCount !== "function" ? emitter.listeners(type).length : emitter.listenerCount(type);
+      return count2 > 0;
     }
     function normalizeList(val, name) {
       var list = [].concat(val || []);
@@ -31377,11 +31377,11 @@ var require_binaryParsers = __commonJS({
         var array2 = [];
         var i2;
         if (dimension.length > 1) {
-          var count = dimension.shift();
-          for (i2 = 0; i2 < count; i2++) {
+          var count2 = dimension.shift();
+          for (i2 = 0; i2 < count2; i2++) {
             array2[i2] = parse3(dimension, elementType2);
           }
-          dimension.unshift(count);
+          dimension.unshift(count2);
         } else {
           for (i2 = 0; i2 < dimension[0]; i2++) {
             array2[i2] = parseElement(elementType2);
@@ -54026,7 +54026,7 @@ var require_payments = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip;
           var expand = void 0;
           if (from) {
             from = normalizeDate(from);
@@ -54037,14 +54037,14 @@ var require_payments = __commonJS({
           if (params.hasOwnProperty("expand[]")) {
             expand = { "expand[]": params["expand[]"] };
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: "" + BASE_URL,
             data: {
               from,
               to,
-              count,
+              count: count2,
               skip,
               expand
             }
@@ -54126,13 +54126,13 @@ var require_payments = __commonJS({
         fetchMultipleRefund: function fetchMultipleRefund(paymentId) {
           var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
           var callback = arguments[2];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL + "/" + paymentId + "/refunds";
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL + "/" + paymentId + "/refunds";
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -54264,7 +54264,7 @@ var require_refunds = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, payment_id = params.payment_id;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, payment_id = params.payment_id;
           var url2 = "/refunds";
           if (payment_id) {
             url2 = "/payments/" + payment_id + "/refunds";
@@ -54275,14 +54275,14 @@ var require_refunds = __commonJS({
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: {
               from,
               to,
-              count,
+              count: count2,
               skip
             }
           }, callback);
@@ -54347,7 +54347,7 @@ var require_orders = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, authorized = params.authorized, receipt = params.receipt;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, authorized = params.authorized, receipt = params.receipt;
           var expand = void 0;
           if (from) {
             from = normalizeDate(from);
@@ -54358,7 +54358,7 @@ var require_orders = __commonJS({
           if (params.hasOwnProperty("expand[]")) {
             expand = { "expand[]": params["expand[]"] };
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           authorized = authorized;
           return api.get({
@@ -54366,7 +54366,7 @@ var require_orders = __commonJS({
             data: {
               from,
               to,
-              count,
+              count: count2,
               skip,
               authorized,
               receipt,
@@ -54466,13 +54466,13 @@ var require_customers = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var count = params.count, skip = params.skip;
-          count = Number(count) || 10;
+          var count2 = params.count, skip = params.skip;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: "/customers",
             data: {
-              count,
+              count: count2,
               skip
             }
           }, callback);
@@ -54530,7 +54530,7 @@ var require_transfers = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, payment_id = params.payment_id, recipient_settlement_id = params.recipient_settlement_id;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, payment_id = params.payment_id, recipient_settlement_id = params.recipient_settlement_id;
           var url2 = "/transfers";
           if (payment_id) {
             url2 = "/payments/" + payment_id + "/transfers";
@@ -54541,14 +54541,14 @@ var require_transfers = __commonJS({
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: {
               from,
               to,
-              count,
+              count: count2,
               skip,
               recipient_settlement_id
             }
@@ -54670,7 +54670,7 @@ var require_virtualAccounts = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, otherParams = _objectWithoutProperties(params, ["from", "to", "count", "skip"]);
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, otherParams = _objectWithoutProperties(params, ["from", "to", "count", "skip"]);
           var url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
@@ -54678,14 +54678,14 @@ var require_virtualAccounts = __commonJS({
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({
               from,
               to,
-              count,
+              count: count2,
               skip
             }, otherParams)
           }, callback);
@@ -54842,21 +54842,21 @@ var require_invoices = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -54951,21 +54951,21 @@ var require_paymentLink = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55032,21 +55032,21 @@ var require_plans = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55192,21 +55192,21 @@ var require_subscriptions = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55286,21 +55286,21 @@ var require_addons = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55340,13 +55340,13 @@ var require_settlements = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55380,7 +55380,7 @@ var require_settlements = __commonJS({
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
           var expand = void 0;
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL + "/ondemand";
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL + "/ondemand";
           if (params.hasOwnProperty("expand[]")) {
             expand = { "expand[]": params["expand[]"] };
           }
@@ -55389,7 +55389,7 @@ var require_settlements = __commonJS({
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip,
               expand
             })
@@ -55398,12 +55398,12 @@ var require_settlements = __commonJS({
         reports: function reports() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var day = params.day, count = params.count, skip = params.skip, url2 = BASE_URL + "/recon/combined";
+          var day = params.day, count2 = params.count, skip = params.skip, url2 = BASE_URL + "/recon/combined";
           return api.get({
             url: url2,
             data: _extends({}, params, {
               day,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55443,13 +55443,13 @@ var require_qrCode = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL;
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55457,13 +55457,13 @@ var require_qrCode = __commonJS({
         fetchAllPayments: function fetchAllPayments(qrCodeId) {
           var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
           var callback = arguments[2];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, url2 = BASE_URL + "/" + qrCodeId + "/payments";
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, url2 = BASE_URL + "/" + qrCodeId + "/payments";
           return api.get({
             url: url2,
             data: _extends({}, params, {
               from,
               to,
-              count,
+              count: count2,
               skip
             })
           }, callback);
@@ -55557,21 +55557,21 @@ var require_items = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip, authorized = params.authorized, receipt = params.receipt;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip, authorized = params.authorized, receipt = params.receipt;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: "/items",
             data: {
               from,
               to,
-              count,
+              count: count2,
               skip,
               authorized,
               receipt
@@ -55701,16 +55701,16 @@ var require_webhooks = __commonJS({
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var accountId = arguments[1];
           var callback = arguments[2];
-          var from = params.from, to = params.to, count = params.count, skip = params.skip;
+          var from = params.from, to = params.to, count2 = params.count, skip = params.skip;
           if (from) {
             from = normalizeDate(from);
           }
           if (to) {
             to = normalizeDate(to);
           }
-          count = Number(count) || 10;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
-          var data = _extends({}, params, { from, to, count, skip });
+          var data = _extends({}, params, { from, to, count: count2, skip });
           if (accountId) {
             return api.get({
               version: "v2",
@@ -55801,13 +55801,13 @@ var require_disputes = __commonJS({
         all: function all() {
           var params = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
           var callback = arguments[1];
-          var count = params.count, skip = params.skip;
-          count = Number(count) || 10;
+          var count2 = params.count, skip = params.skip;
+          count2 = Number(count2) || 10;
           skip = Number(skip) || 0;
           return api.get({
             url: "" + BASE_URL,
             data: {
-              count,
+              count: count2,
               skip
             }
           }, callback);
@@ -66080,6 +66080,9 @@ function mapRelationalRow(tablesConfig, tableConfig, row, buildQueryResultSelect
 }
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/sql/functions/aggregate.js
+function count(expression) {
+  return sql`count(${expression || sql.raw("*")})`.mapWith(Number);
+}
 function countDistinct(expression) {
   return sql`count(distinct ${expression})`.mapWith(Number);
 }
@@ -73793,8 +73796,8 @@ function az_default() {
 }
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getBelarusianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -76939,8 +76942,8 @@ function pt_default() {
 }
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getRussianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -82411,7 +82414,7 @@ document.addEventListener('click', async function(e) {
     const id = isDeleteBtn.dataset.id;
     const title = isDeleteBtn.dataset.title;
     if (!confirm('Delete "' + title + '"? All segments and options will be removed.')) return;
-    const res = await fetch('/api/admin/interactive-stories/' + encodeURIComponent(id), { method: 'DELETE' });
+    const res = await fetch('/api/interactive-stories/' + encodeURIComponent(id), { method: 'DELETE' });
     if (res.ok || res.status === 204) location.reload();
     else alert('Delete failed');
   }
@@ -82680,8 +82683,8 @@ async function saveIS() {
   };
 
   const url = isEditingId
-    ? '/api/admin/interactive-stories/' + encodeURIComponent(isEditingId)
-    : '/api/admin/interactive-stories';
+    ? '/api/interactive-stories/' + encodeURIComponent(isEditingId)
+    : '/api/interactive-stories';
   const method = isEditingId ? 'PUT' : 'POST';
 
   msg.style.display = 'inline';
@@ -85606,10 +85609,43 @@ var flashcards_default = router12;
 // src/routes/interactive-stories.ts
 var import_express13 = __toESM(require_express2(), 1);
 var router13 = (0, import_express13.Router)();
+async function getFullStory(storyId) {
+  const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).limit(1);
+  if (!story) return null;
+  const segments = await db.select().from(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId)).orderBy(asc(storySegmentsTable.orderIndex));
+  const segmentIds = segments.map((s) => s.id);
+  const options = segmentIds.length > 0 ? await db.select().from(storyOptionsTable).where(inArray(storyOptionsTable.segmentId, segmentIds)).orderBy(asc(storyOptionsTable.displayOrder)) : [];
+  const bySegment = options.reduce((acc, opt) => {
+    (acc[opt.segmentId] ??= []).push(opt);
+    return acc;
+  }, {});
+  return {
+    ...story,
+    segments: segments.map((seg) => ({
+      ...seg,
+      options: bySegment[seg.id] ?? []
+    }))
+  };
+}
 router13.get("/interactive-stories", async (req, res) => {
   try {
     const stories = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.published, true)).orderBy(asc(interactiveStoriesTable.createdAt));
-    res.json(stories);
+    if (stories.length === 0) {
+      res.json([]);
+      return;
+    }
+    const storyIds = stories.map((s) => s.id);
+    const segCounts = await db.select({
+      storyId: storySegmentsTable.storyId,
+      segmentCount: count(storySegmentsTable.id)
+    }).from(storySegmentsTable).where(inArray(storySegmentsTable.storyId, storyIds)).groupBy(storySegmentsTable.storyId);
+    const countMap = segCounts.reduce((acc, r) => {
+      acc[r.storyId] = Number(r.segmentCount);
+      return acc;
+    }, {});
+    res.json(
+      stories.map((s) => ({ ...s, segmentCount: countMap[s.id] ?? 0 }))
+    );
   } catch (err) {
     req.log.error(err, "Failed to list interactive stories");
     res.status(500).json({ error: "Internal server error" });
@@ -85618,29 +85654,12 @@ router13.get("/interactive-stories", async (req, res) => {
 router13.get("/interactive-stories/:id", async (req, res) => {
   const storyId = String(req.params["id"]);
   try {
-    const [story] = await db.select().from(interactiveStoriesTable).where(
-      and(
-        eq(interactiveStoriesTable.id, storyId),
-        eq(interactiveStoriesTable.published, true)
-      )
-    ).limit(1);
-    if (!story) {
+    const story = await getFullStory(storyId);
+    if (!story || !story.published) {
       res.status(404).json({ error: "Interactive story not found" });
       return;
     }
-    const segments = await db.select().from(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId)).orderBy(asc(storySegmentsTable.orderIndex));
-    const segmentIds = segments.map((s) => s.id);
-    const options = segmentIds.length > 0 ? await db.select().from(storyOptionsTable).where(inArray(storyOptionsTable.segmentId, segmentIds)).orderBy(asc(storyOptionsTable.displayOrder)) : [];
-    const optionsBySegment = options.reduce((acc, opt) => {
-      if (!acc[opt.segmentId]) acc[opt.segmentId] = [];
-      acc[opt.segmentId].push(opt);
-      return acc;
-    }, {});
-    const segmentsWithOptions = segments.map((seg) => ({
-      ...seg,
-      options: optionsBySegment[seg.id] ?? []
-    }));
-    res.json({ ...story, segments: segmentsWithOptions });
+    res.json(story);
   } catch (err) {
     req.log.error(err, "Failed to get interactive story");
     res.status(500).json({ error: "Internal server error" });
@@ -85654,15 +85673,31 @@ var optionSchema = external_exports.object({
   isCorrect: external_exports.boolean().default(false),
   displayOrder: external_exports.number().int().default(0)
 });
-var segmentSchema = external_exports.object({
+var narrationSegmentSchema = external_exports.object({
   id: external_exports.string().min(1),
   orderIndex: external_exports.number().int().min(0),
-  type: external_exports.enum(["narration", "checkpoint"]),
+  type: external_exports.literal("narration"),
   audioUrl: external_exports.string().default(""),
   sceneImageUrl: external_exports.string().default(""),
   questionText: external_exports.string().default(""),
-  options: external_exports.array(optionSchema).default([])
+  options: external_exports.array(optionSchema).max(0).default([])
 });
+var checkpointSegmentSchema = external_exports.object({
+  id: external_exports.string().min(1),
+  orderIndex: external_exports.number().int().min(0),
+  type: external_exports.literal("checkpoint"),
+  audioUrl: external_exports.string().default(""),
+  sceneImageUrl: external_exports.string().default(""),
+  questionText: external_exports.string().min(1, "Checkpoint must have a question"),
+  options: external_exports.array(optionSchema).min(2, "Checkpoint must have at least 2 options").max(4, "Checkpoint may have at most 4 options")
+}).refine(
+  (seg) => seg.options.filter((o) => o.isCorrect).length === 1,
+  { message: "Checkpoint must have exactly one correct option" }
+);
+var segmentSchema = external_exports.discriminatedUnion("type", [
+  narrationSegmentSchema,
+  checkpointSegmentSchema
+]);
 var interactiveStoryBodySchema = external_exports.object({
   id: external_exports.string().min(1).max(40),
   title: external_exports.string().min(1).max(120),
@@ -85674,10 +85709,8 @@ var interactiveStoryBodySchema = external_exports.object({
   published: external_exports.boolean().default(false),
   segments: external_exports.array(segmentSchema).default([])
 });
-var updateInteractiveStoryBodySchema = interactiveStoryBodySchema.partial().omit({ id: true }).extend({
-  segments: external_exports.array(segmentSchema).optional()
-});
-router13.post("/admin/interactive-stories", requireAdminAuth, async (req, res) => {
+var updateInteractiveStoryBodySchema = interactiveStoryBodySchema.partial().omit({ id: true }).extend({ segments: external_exports.array(segmentSchema).optional() });
+router13.post("/interactive-stories", requireAdminAuth, async (req, res) => {
   const parsed = interactiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -85695,7 +85728,7 @@ router13.post("/admin/interactive-stories", requireAdminAuth, async (req, res) =
         }
       }
     });
-    const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyData.id));
+    const story = await getFullStory(storyData.id);
     res.status(201).json(story);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -85707,7 +85740,7 @@ router13.post("/admin/interactive-stories", requireAdminAuth, async (req, res) =
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router13.put("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const parsed = updateInteractiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -85716,9 +85749,9 @@ router13.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res
   }
   const { segments, ...storyData } = parsed.data;
   try {
-    const [updated] = await db.transaction(async (tx) => {
+    const updated = await db.transaction(async (tx) => {
       const rows = await tx.update(interactiveStoriesTable).set({ ...storyData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(interactiveStoriesTable.id, storyId)).returning();
-      if (!rows[0]) return [];
+      if (!rows[0]) return null;
       if (segments !== void 0) {
         await tx.delete(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId));
         for (const seg of segments) {
@@ -85729,19 +85762,20 @@ router13.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res
           }
         }
       }
-      return rows;
+      return rows[0];
     });
     if (!updated) {
       res.status(404).json({ error: "Interactive story not found" });
       return;
     }
-    res.json(updated);
+    const story = await getFullStory(storyId);
+    res.json(story);
   } catch (err) {
     req.log.error(err, "Failed to update interactive story");
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.delete("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router13.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const [deleted] = await db.delete(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).returning();
   if (!deleted) {
