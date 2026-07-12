@@ -11,8 +11,6 @@ import React, { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { initSentry, Sentry } from "@/sentry";
-
 import AchievementCelebration from "@/components/AchievementCelebration";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioProvider } from "@/context/AudioContext";
@@ -23,7 +21,6 @@ import { StoriesProvider } from "@/context/StoriesContext";
 import { InteractiveStoriesProvider } from "@/context/InteractiveStoriesContext";
 
 SplashScreen.preventAutoHideAsync();
-initSentry();
 
 function injectWebFonts() {
   if (Platform.OS !== "web") return;
@@ -143,11 +140,7 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary
-        onError={(error, componentStack) => {
-          Sentry.captureException(error, { extra: { componentStack } });
-        }}
-      >
+      <ErrorBoundary>
         <AuthProvider>
           <ProfileProvider>
             <StoriesProvider>
@@ -169,4 +162,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;

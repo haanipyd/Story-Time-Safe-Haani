@@ -11,8 +11,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app",
-        "EXPO_PUBLIC_SENTRY_DSN": "$SENTRY_DSN"
+        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
       },
       "android": {
         "buildType": "apk"
@@ -20,11 +19,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app",
-        "EXPO_PUBLIC_SENTRY_DSN": "$SENTRY_DSN",
-        "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN",
-        "SENTRY_ORG": "$SENTRY_ORG",
-        "SENTRY_PROJECT": "$SENTRY_PROJECT"
+        "EXPO_PUBLIC_DOMAIN": "story-time-safe--haanipyd.replit.app"
       },
       "android": {
         "buildType": "app-bundle"
