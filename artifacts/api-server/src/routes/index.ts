@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import privacyRouter from "./privacy";
 import storiesRouter from "./stories";
 import adminRouter from "./admin";
 import authRouter from "./auth";
@@ -16,6 +17,7 @@ import interactiveStoriesRouter from "./interactive-stories";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(privacyRouter);
 router.use(authRouter);
 router.use(storiesRouter);
 router.use(flashcardsRouter);
