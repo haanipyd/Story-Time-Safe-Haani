@@ -20662,27 +20662,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router14;
+    module.exports = Router15;
     module.exports.Route = Route;
-    function Router14(options) {
-      if (!(this instanceof Router14)) {
-        return new Router14(options);
+    function Router15(options) {
+      if (!(this instanceof Router15)) {
+        return new Router15(options);
       }
       const opts = options || {};
-      function router14(req, res, next) {
-        router14.handle(req, res, next);
+      function router15(req, res, next) {
+        router15.handle(req, res, next);
       }
-      Object.setPrototypeOf(router14, this);
-      router14.caseSensitive = opts.caseSensitive;
-      router14.mergeParams = opts.mergeParams;
-      router14.params = {};
-      router14.strict = opts.strict;
-      router14.stack = [];
-      return router14;
+      Object.setPrototypeOf(router15, this);
+      router15.caseSensitive = opts.caseSensitive;
+      router15.mergeParams = opts.mergeParams;
+      router15.params = {};
+      router15.strict = opts.strict;
+      router15.stack = [];
+      return router15;
     }
-    Router14.prototype = function() {
+    Router15.prototype = function() {
     };
-    Router14.prototype.param = function param(name, fn) {
+    Router15.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20702,7 +20702,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router14.prototype.handle = function handle(req, res, callback) {
+    Router15.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20829,7 +20829,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router14.prototype.use = function use(handler) {
+    Router15.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20862,7 +20862,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router14.prototype.route = function route(path) {
+    Router15.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20877,7 +20877,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router14.prototype[method] = function(path) {
+      Router15.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21060,13 +21060,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router14 = null;
+      var router15 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21075,13 +21075,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router14 === null) {
-            router14 = new Router14({
+          if (router15 === null) {
+            router15 = new Router15({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router14;
+          return router15;
         }
       });
     };
@@ -21152,15 +21152,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router14 = this.router;
+      var router15 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router14.use(path, fn2);
+          return router15.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router14.use(path, function mounted_app(req, res, next) {
+        router15.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23687,7 +23687,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router14 = require_router();
+    var Router15 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23709,8 +23709,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router14.Route;
-    exports.Router = Router14;
+    exports.Route = Router15.Route;
+    exports.Router = Router15;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -57267,7 +57267,7 @@ var require_node_cron = __commonJS({
 });
 
 // src/app.ts
-var import_express14 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../../node_modules/.pnpm/helmet@8.1.0/node_modules/helmet/index.mjs
@@ -58770,7 +58770,7 @@ var rateLimit = (passedOptions) => {
 var rate_limit_default = rateLimit;
 
 // src/routes/index.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express14 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -63369,6 +63369,33 @@ var PgEnumColumn = class extends PgColumn {
     return this.enum.enumName;
   }
 };
+function pgEnum(enumName, input) {
+  return Array.isArray(input) ? pgEnumWithSchema(enumName, [...input], void 0) : pgEnumObjectWithSchema(enumName, input, void 0);
+}
+function pgEnumWithSchema(enumName, values, schema) {
+  const enumInstance = Object.assign(
+    (name) => new PgEnumColumnBuilder(name ?? "", enumInstance),
+    {
+      enumName,
+      enumValues: values,
+      schema,
+      [isPgEnumSym]: true
+    }
+  );
+  return enumInstance;
+}
+function pgEnumObjectWithSchema(enumName, values, schema) {
+  const enumInstance = Object.assign(
+    (name) => new PgEnumObjectColumnBuilder(name ?? "", enumInstance),
+    {
+      enumName,
+      enumValues: Object.values(values),
+      schema,
+      [isPgEnumSym]: true
+    }
+  );
+  return enumInstance;
+}
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/subquery.js
 var Subquery = class {
@@ -69878,14 +69905,21 @@ __export(schema_exports, {
   flashcardsTable: () => flashcardsTable,
   insertFlashcardSchema: () => insertFlashcardSchema,
   insertFlashcardSetSchema: () => insertFlashcardSetSchema,
+  insertInteractiveStorySchema: () => insertInteractiveStorySchema,
+  insertStoryOptionSchema: () => insertStoryOptionSchema,
   insertStorySchema: () => insertStorySchema,
+  insertStorySegmentSchema: () => insertStorySegmentSchema,
+  interactiveStoriesTable: () => interactiveStoriesTable,
   listeningEventsTable: () => listeningEventsTable,
   otpCodesTable: () => otpCodesTable,
   otpRequestsTable: () => otpRequestsTable,
   paymentEventsTable: () => paymentEventsTable,
   pushTokensTable: () => pushTokensTable,
   refreshTokensTable: () => refreshTokensTable,
+  segmentTypeEnum: () => segmentTypeEnum,
   storiesTable: () => storiesTable,
+  storyOptionsTable: () => storyOptionsTable,
+  storySegmentsTable: () => storySegmentsTable,
   subscriptionsTable: () => subscriptionsTable,
   updateFlashcardSchema: () => updateFlashcardSchema,
   updateFlashcardSetSchema: () => updateFlashcardSetSchema,
@@ -81529,6 +81563,60 @@ var insertFlashcardSchema = createInsertSchema(flashcardsTable).omit({
 var updateFlashcardSetSchema = insertFlashcardSetSchema.partial().omit({ id: true });
 var updateFlashcardSchema = insertFlashcardSchema.partial().omit({ id: true });
 
+// ../../lib/db/src/schema/interactive_stories.ts
+var segmentTypeEnum = pgEnum("segment_type", ["narration", "checkpoint"]);
+var interactiveStoriesTable = pgTable(
+  "interactive_stories",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    language: text("language").notNull().default("en"),
+    description: text("description").notNull().default(""),
+    thumbnailUrl: text("thumbnail_url").notNull().default(""),
+    ageMin: smallint("age_min").notNull().default(2),
+    ageMax: smallint("age_max").notNull().default(5),
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index("interactive_stories_published_idx").on(t.published),
+    index("interactive_stories_language_idx").on(t.language)
+  ]
+);
+var storySegmentsTable = pgTable(
+  "story_segments",
+  {
+    id: text("id").primaryKey(),
+    storyId: text("story_id").notNull().references(() => interactiveStoriesTable.id, { onDelete: "cascade" }),
+    orderIndex: integer("order_index").notNull(),
+    type: segmentTypeEnum("type").notNull(),
+    audioUrl: text("audio_url").notNull().default(""),
+    sceneImageUrl: text("scene_image_url").notNull().default(""),
+    questionText: text("question_text").notNull().default("")
+  },
+  (t) => [index("story_segments_story_id_idx").on(t.storyId)]
+);
+var storyOptionsTable = pgTable(
+  "story_options",
+  {
+    id: text("id").primaryKey(),
+    segmentId: text("segment_id").notNull().references(() => storySegmentsTable.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    emoji: text("emoji").notNull().default(""),
+    imageUrl: text("image_url").notNull().default(""),
+    isCorrect: boolean("is_correct").notNull().default(false),
+    displayOrder: integer("display_order").notNull().default(0)
+  },
+  (t) => [index("story_options_segment_id_idx").on(t.segmentId)]
+);
+var insertInteractiveStorySchema = createInsertSchema(interactiveStoriesTable).omit({
+  createdAt: true,
+  updatedAt: true
+});
+var insertStorySegmentSchema = createInsertSchema(storySegmentsTable);
+var insertStoryOptionSchema = createInsertSchema(storyOptionsTable);
+
 // ../../lib/db/src/index.ts
 var { Pool: Pool3 } = esm_default;
 if (!process.env.DATABASE_URL) {
@@ -81909,7 +81997,37 @@ function loginPage(error40) {
 </body>
 </html>`;
 }
-function adminPage(stories, message) {
+function interactiveStoriesSection(iStories) {
+  const rows = iStories.map(
+    (s) => `
+    <tr>
+      <td>${escapeHtml(s.id)}</td>
+      <td>${escapeHtml(s.title)}</td>
+      <td>${escapeHtml(s.language === "ml" ? "Malayalam" : "English")}</td>
+      <td>${escapeHtml(s.ageMin)}\u2013${escapeHtml(s.ageMax)}</td>
+      <td>${s.thumbnailUrl ? `<img src="${escapeHtml(s.thumbnailUrl)}" width="40" height="40" style="object-fit:cover;border-radius:4px">` : "\u2014"}</td>
+      <td>${s.published ? "\u2705" : "\u274C"}</td>
+      <td>
+        <button class="is-edit-btn" data-id="${escapeHtml(s.id)}" style="padding:4px 10px;background:#2D3E5E;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px">Edit</button>
+        <button class="is-delete-btn" data-id="${escapeHtml(s.id)}" data-title="${escapeHtml(s.title)}" style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;margin-left:4px">Delete</button>
+      </td>
+    </tr>`
+  ).join("");
+  return `
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2>Interactive Stories (${iStories.length})</h2>
+      <button class="btn btn-primary" onclick="openNewIS()">+ New Story</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Title</th><th>Language</th><th>Age</th><th>Cover</th><th>Published</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+function adminPage(stories, iStories, message) {
   const rows = stories.map(
     (s) => `
     <tr>
@@ -81962,19 +82080,36 @@ function adminPage(stories, message) {
     .btn-secondary{background:#5B8C5A;color:white}
     .btn-outline{background:white;color:#2D3E5E;border:1px solid #ddd}
     .btn-import{background:#2D3E5E;color:white}
+    .btn-sm{padding:6px 14px;font-size:13px}
+    .btn-danger{background:#c0392b;color:white}
     table{width:100%;border-collapse:collapse;font-size:13px}
     th{text-align:left;padding:10px 12px;background:#f0f0e8;color:#555;font-weight:600;border-bottom:2px solid #e0e0d0}
     td{padding:10px 12px;border-bottom:1px solid #f0f0e8;vertical-align:middle}
     tr:hover td{background:#fffbf5}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
     .modal-overlay.open{display:flex}
-    .modal{background:white;border-radius:14px;padding:28px;width:600px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+    .modal{background:white;border-radius:14px;padding:28px;width:700px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)}
     .modal h2{margin-bottom:20px;font-size:18px}
     .modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:#999}
     .import-area{width:100%;min-height:160px;font-family:monospace;font-size:12px;padding:12px;border:1px solid #ddd;border-radius:6px;background:#fafafa;resize:vertical}
     .import-result{margin-top:12px;font-size:13px;padding:10px 14px;border-radius:6px;display:none}
     .import-result.success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;display:block}
     .import-result.error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;display:block}
+    /* Tabs */
+    .tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:2px solid #e0e0d0}
+    .tab-btn{padding:10px 22px;background:none;border:none;font-size:15px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s}
+    .tab-btn.active{color:#E8826B;border-bottom-color:#E8826B}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    /* Segment builder */
+    .segment-card{background:#f8f8f2;border:1px solid #e0e0d0;border-radius:10px;padding:16px;margin-bottom:12px;position:relative}
+    .segment-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .segment-badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+    .badge-narration{background:#dbeafe;color:#1e40af}
+    .badge-checkpoint{background:#fef9c3;color:#854d0e}
+    .option-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;background:white;border:1px solid #e0e0d0;border-radius:6px;padding:8px 10px}
+    .option-row input{margin-bottom:0}
+    .correct-radio{width:auto!important;margin:0 4px 0 0}
   </style>
 </head>
 <body>
@@ -81990,65 +82125,73 @@ function adminPage(stories, message) {
 <main>
   ${flashHtml}
 
-  <div class="card">
-    <h2>Add New Story</h2>
-    <form method="POST" action="/api/admin/stories">
-      <div class="grid">
-        <div>
-          <label>Story ID (unique slug)</label>
-          <input name="id" required placeholder="e.g. s21" />
-        </div>
-        <div>
-          <label>Title</label>
-          <input name="title" required placeholder="The Little Star" />
-        </div>
-        <div>
-          <label>Category</label>
-          <select name="category" required>${catOptions}</select>
-        </div>
-        <div>
-          <label>Duration (minutes)</label>
-          <input name="duration" type="number" required min="1" max="60" placeholder="5" />
-        </div>
-        <div>
-          <label>Min Age</label>
-          <input name="ageMin" type="number" required min="1" max="10" placeholder="2" />
-        </div>
-        <div>
-          <label>Max Age</label>
-          <input name="ageMax" type="number" required min="1" max="10" placeholder="5" />
-        </div>
-        <div style="grid-column:1/-1">
-          <label>Description</label>
-          <textarea name="description" required placeholder="A short, warm description for parents and kids\u2026"></textarea>
-        </div>
-        <div style="grid-column:1/-1">
-          <label>Thumbnail URL (image)</label>
-          <input name="thumbnailUrl" type="url" placeholder="https://\u2026 (PNG, JPG, WebP)" />
-        </div>
-        <div style="grid-column:1/-1">
-          <label>Audio URL (MP3 or M4A)</label>
-          <input name="audioUrl" type="url" placeholder="https://\u2026 (MP3, M4A)" />
-        </div>
-        <div style="grid-column:1/-1">
-          <label>Video URL (optional)</label>
-          <input name="videoUrl" type="url" placeholder="https://\u2026 (MP4)" />
-        </div>
-      </div>
-      <div class="row">
-        <button type="submit" class="btn btn-primary">Add Story</button>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
-          <input type="checkbox" name="published" value="true" checked style="width:auto" />
-          Publish immediately
-        </label>
-      </div>
-    </form>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('audio')">\u{1F4FB} Audio Stories</button>
+    <button class="tab-btn" onclick="switchTab('interactive')">\u{1F3AE} Interactive Stories</button>
   </div>
 
-  <div class="card">
-    <h2>Bulk Import (JSON)</h2>
-    <p style="font-size:13px;color:#888;margin-bottom:12px">Paste a JSON array of stories. Each item needs: id, title, category, duration, ageMin, ageMax, description. audioUrl and thumbnailUrl are optional.</p>
-    <textarea id="importJson" class="import-area" placeholder='[
+  <!-- \u2500\u2500 Audio Stories Tab \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 -->
+  <div class="tab-panel active" id="tab-audio">
+
+    <div class="card">
+      <h2>Add New Story</h2>
+      <form method="POST" action="/api/admin/stories">
+        <div class="grid">
+          <div>
+            <label>Story ID (unique slug)</label>
+            <input name="id" required placeholder="e.g. s21" />
+          </div>
+          <div>
+            <label>Title</label>
+            <input name="title" required placeholder="The Little Star" />
+          </div>
+          <div>
+            <label>Category</label>
+            <select name="category" required>${catOptions}</select>
+          </div>
+          <div>
+            <label>Duration (minutes)</label>
+            <input name="duration" type="number" required min="1" max="60" placeholder="5" />
+          </div>
+          <div>
+            <label>Min Age</label>
+            <input name="ageMin" type="number" required min="1" max="10" placeholder="2" />
+          </div>
+          <div>
+            <label>Max Age</label>
+            <input name="ageMax" type="number" required min="1" max="10" placeholder="5" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Description</label>
+            <textarea name="description" required placeholder="A short, warm description for parents and kids\u2026"></textarea>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Thumbnail URL (image)</label>
+            <input name="thumbnailUrl" type="url" placeholder="https://\u2026 (PNG, JPG, WebP)" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Audio URL (MP3 or M4A)</label>
+            <input name="audioUrl" type="url" placeholder="https://\u2026 (MP3, M4A)" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Video URL (optional)</label>
+            <input name="videoUrl" type="url" placeholder="https://\u2026 (MP4)" />
+          </div>
+        </div>
+        <div class="row">
+          <button type="submit" class="btn btn-primary">Add Story</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" name="published" value="true" checked style="width:auto" />
+            Publish immediately
+          </label>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Bulk Import (JSON)</h2>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Paste a JSON array of stories. Each item needs: id, title, category, duration, ageMin, ageMax, description. audioUrl and thumbnailUrl are optional.</p>
+      <textarea id="importJson" class="import-area" placeholder='[
   {
     "id": "s21",
     "title": "The Brave Little Cloud",
@@ -82062,44 +82205,52 @@ function adminPage(stories, message) {
     "published": true
   }
 ]'></textarea>
-    <div class="row" style="margin-top:12px">
-      <button class="btn btn-import" onclick="runImport()">Import All</button>
-      <span id="importSpinner" style="font-size:13px;color:#888;display:none">Importing\u2026</span>
-    </div>
-    <div id="importResult" class="import-result"></div>
-  </div>
-
-  <div class="card">
-    <h2>\u{1F510} Test OTP (No SMS)</h2>
-    <p style="font-size:13px;color:#888;margin-bottom:12px">Generate a real OTP for any phone number without sending an SMS. Use this to test login in the APK when MSG91 is not configured.</p>
-    <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Phone Number</label>
-        <input id="testOtpPhone" type="text" placeholder="+919876543210" style="width:100%;box-sizing:border-box" />
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-import" onclick="runImport()">Import All</button>
+        <span id="importSpinner" style="font-size:13px;color:#888;display:none">Importing\u2026</span>
       </div>
-      <button class="btn btn-primary" onclick="generateTestOtp()" style="white-space:nowrap">Get OTP</button>
+      <div id="importResult" class="import-result"></div>
     </div>
-    <div id="testOtpResult" style="margin-top:12px;display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px">
-      <div style="font-size:13px;color:#555;margin-bottom:4px">Enter this OTP in the app:</div>
-      <div id="testOtpCode" style="font-size:36px;font-weight:700;letter-spacing:8px;color:#166534;font-family:monospace"></div>
-      <div id="testOtpExpiry" style="font-size:12px;color:#888;margin-top:6px"></div>
+
+    <div class="card">
+      <h2>\u{1F510} Test OTP (No SMS)</h2>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Generate a real OTP for any phone number without sending an SMS. Use this to test login in the APK when MSG91 is not configured.</p>
+      <div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Phone Number</label>
+          <input id="testOtpPhone" type="text" placeholder="+919876543210" style="width:100%;box-sizing:border-box" />
+        </div>
+        <button class="btn btn-primary" onclick="generateTestOtp()" style="white-space:nowrap">Get OTP</button>
+      </div>
+      <div id="testOtpResult" style="margin-top:12px;display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px">
+        <div style="font-size:13px;color:#555;margin-bottom:4px">Enter this OTP in the app:</div>
+        <div id="testOtpCode" style="font-size:36px;font-weight:700;letter-spacing:8px;color:#166534;font-family:monospace"></div>
+        <div id="testOtpExpiry" style="font-size:12px;color:#888;margin-top:6px"></div>
+      </div>
+      <div id="testOtpError" style="margin-top:12px;display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;font-size:13px;color:#991b1b"></div>
     </div>
-    <div id="testOtpError" style="margin-top:12px;display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;font-size:13px;color:#991b1b"></div>
+
+    <div class="card">
+      <h2>All Stories (${stories.length})</h2>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Title</th><th>Category</th><th>Duration</th>
+          <th>Age</th><th>Audio</th><th>Cover</th><th>Live</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab-audio -->
+
+  <!-- \u2500\u2500 Interactive Stories Tab \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 -->
+  <div class="tab-panel" id="tab-interactive">
+    ${interactiveStoriesSection(iStories)}
   </div>
 
-  <div class="card">
-    <h2>All Stories (${stories.length})</h2>
-    <table>
-      <thead><tr>
-        <th>ID</th><th>Title</th><th>Category</th><th>Duration</th>
-        <th>Age</th><th>Audio</th><th>Cover</th><th>Live</th><th>Actions</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>
 </main>
 
-<!-- Edit modal -->
+<!-- Edit audio story modal -->
 <div class="modal-overlay" id="editOverlay">
   <div class="modal">
     <button class="modal-close" onclick="closeEdit()">\u2715</button>
@@ -82152,7 +82303,73 @@ function adminPage(stories, message) {
   </div>
 </div>
 
+<!-- Interactive story editor modal -->
+<div class="modal-overlay" id="isOverlay">
+  <div class="modal" style="width:760px">
+    <button class="modal-close" onclick="closeIS()">\u2715</button>
+    <h2 id="is_modal_title">New Interactive Story</h2>
+
+    <div class="grid" style="margin-bottom:16px">
+      <div>
+        <label>Story ID (unique slug)</label>
+        <input id="is_id" placeholder="e.g. is-rabbit-meal" />
+      </div>
+      <div>
+        <label>Title</label>
+        <input id="is_title" placeholder="Hoppy's Lunch" />
+      </div>
+      <div>
+        <label>Language</label>
+        <select id="is_language">
+          <option value="en">English</option>
+          <option value="ml">Malayalam</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><label>Min Age</label><input id="is_ageMin" type="number" min="1" max="5" value="2" /></div>
+        <div style="flex:1"><label>Max Age</label><input id="is_ageMax" type="number" min="1" max="5" value="5" /></div>
+      </div>
+      <div style="grid-column:1/-1">
+        <label>Thumbnail URL</label>
+        <input id="is_thumbnail" type="url" placeholder="https://\u2026 (PNG, JPG)" />
+      </div>
+      <div style="grid-column:1/-1">
+        <label>Description</label>
+        <textarea id="is_description" rows="2" placeholder="A short description for parents\u2026"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <strong style="font-size:14px">Segments</strong>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-outline" onclick="addSegment('narration')">+ Narration</button>
+        <button class="btn btn-sm btn-outline" onclick="addSegment('checkpoint')">+ Checkpoint</button>
+      </div>
+    </div>
+    <div id="is_segments"></div>
+
+    <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+      <button class="btn btn-secondary" onclick="saveIS()">Save Story</button>
+      <button class="btn btn-outline" onclick="closeIS()">Cancel</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer;margin-left:auto">
+        <input type="checkbox" id="is_published" style="width:auto" />
+        Published
+      </label>
+      <div id="is_save_msg" style="font-size:13px;display:none"></div>
+    </div>
+  </div>
+</div>
+
 <script>
+// \u2500\u2500 Tab switching \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// \u2500\u2500 Audio story edit/delete \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function openEdit(s) {
   document.getElementById('e_title').value = s.title;
   document.getElementById('e_category').value = s.category;
@@ -82188,8 +82405,24 @@ document.addEventListener('click', async function(e) {
     if (res.ok || res.status === 204) location.reload();
     else alert('Delete failed');
   }
+  // Interactive story delete
+  const isDeleteBtn = e.target.closest('.is-delete-btn');
+  if (isDeleteBtn) {
+    const id = isDeleteBtn.dataset.id;
+    const title = isDeleteBtn.dataset.title;
+    if (!confirm('Delete "' + title + '"? All segments and options will be removed.')) return;
+    const res = await fetch('/api/admin/interactive-stories/' + encodeURIComponent(id), { method: 'DELETE' });
+    if (res.ok || res.status === 204) location.reload();
+    else alert('Delete failed');
+  }
+  // Interactive story edit
+  const isEditBtn = e.target.closest('.is-edit-btn');
+  if (isEditBtn) {
+    loadISForEdit(isEditBtn.dataset.id);
+  }
 });
 
+// \u2500\u2500 Bulk import \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function runImport() {
   const raw = document.getElementById('importJson').value.trim();
   const result = document.getElementById('importResult');
@@ -82220,6 +82453,7 @@ async function runImport() {
   }
 }
 
+// \u2500\u2500 Test OTP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function generateTestOtp() {
   const phone = document.getElementById('testOtpPhone').value.trim();
   const resultBox = document.getElementById('testOtpResult');
@@ -82246,6 +82480,228 @@ async function generateTestOtp() {
   } catch (e) {
     errorBox.textContent = 'Network error: ' + e.message;
     errorBox.style.display = 'block';
+  }
+}
+
+// \u2500\u2500 Interactive Story Editor \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let isEditingId = null;
+let isSegments = [];
+
+function uid() {
+  return 'seg-' + Math.random().toString(36).slice(2, 9);
+}
+function optUid() {
+  return 'opt-' + Math.random().toString(36).slice(2, 9);
+}
+
+function openNewIS() {
+  isEditingId = null;
+  isSegments = [];
+  document.getElementById('is_modal_title').textContent = 'New Interactive Story';
+  document.getElementById('is_id').value = '';
+  document.getElementById('is_id').disabled = false;
+  document.getElementById('is_title').value = '';
+  document.getElementById('is_language').value = 'en';
+  document.getElementById('is_ageMin').value = '2';
+  document.getElementById('is_ageMax').value = '5';
+  document.getElementById('is_thumbnail').value = '';
+  document.getElementById('is_description').value = '';
+  document.getElementById('is_published').checked = false;
+  document.getElementById('is_save_msg').style.display = 'none';
+  renderSegments();
+  document.getElementById('isOverlay').classList.add('open');
+}
+
+async function loadISForEdit(id) {
+  try {
+    const res = await fetch('/api/interactive-stories/' + encodeURIComponent(id));
+    if (!res.ok) {
+      // Try fetching from admin endpoint (story may be unpublished)
+      const res2 = await fetch('/api/admin/interactive-stories/' + encodeURIComponent(id));
+      if (!res2.ok) { alert('Could not load story'); return; }
+      var data = await res2.json();
+    } else {
+      var data = await res.json();
+    }
+    isEditingId = data.id;
+    isSegments = (data.segments || []).map(seg => ({
+      ...seg,
+      options: seg.options || []
+    }));
+    document.getElementById('is_modal_title').textContent = 'Edit: ' + data.title;
+    document.getElementById('is_id').value = data.id;
+    document.getElementById('is_id').disabled = true;
+    document.getElementById('is_title').value = data.title || '';
+    document.getElementById('is_language').value = data.language || 'en';
+    document.getElementById('is_ageMin').value = data.ageMin || 2;
+    document.getElementById('is_ageMax').value = data.ageMax || 5;
+    document.getElementById('is_thumbnail').value = data.thumbnailUrl || '';
+    document.getElementById('is_description').value = data.description || '';
+    document.getElementById('is_published').checked = !!data.published;
+    document.getElementById('is_save_msg').style.display = 'none';
+    renderSegments();
+    document.getElementById('isOverlay').classList.add('open');
+  } catch(e) { alert('Error loading story: ' + e.message); }
+}
+
+function closeIS() {
+  document.getElementById('isOverlay').classList.remove('open');
+}
+document.getElementById('isOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeIS();
+});
+
+function addSegment(type) {
+  isSegments.push({
+    id: uid(),
+    orderIndex: isSegments.length,
+    type,
+    audioUrl: '',
+    sceneImageUrl: '',
+    questionText: '',
+    options: type === 'checkpoint' ? [
+      { id: optUid(), label: '', emoji: '', imageUrl: '', isCorrect: true, displayOrder: 0 },
+      { id: optUid(), label: '', emoji: '', imageUrl: '', isCorrect: false, displayOrder: 1 },
+    ] : []
+  });
+  renderSegments();
+}
+
+function removeSegment(segId) {
+  isSegments = isSegments.filter(s => s.id !== segId);
+  isSegments.forEach((s, i) => s.orderIndex = i);
+  renderSegments();
+}
+
+function addOption(segId) {
+  const seg = isSegments.find(s => s.id === segId);
+  if (!seg) return;
+  seg.options.push({ id: optUid(), label: '', emoji: '', imageUrl: '', isCorrect: false, displayOrder: seg.options.length });
+  renderSegments();
+}
+
+function removeOption(segId, optId) {
+  const seg = isSegments.find(s => s.id === segId);
+  if (!seg) return;
+  seg.options = seg.options.filter(o => o.id !== optId);
+  seg.options.forEach((o, i) => o.displayOrder = i);
+  renderSegments();
+}
+
+function renderSegments() {
+  const container = document.getElementById('is_segments');
+  if (isSegments.length === 0) {
+    container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:12px 0;text-align:center">No segments yet. Add a Narration or Checkpoint segment above.</div>';
+    return;
+  }
+  container.innerHTML = isSegments.map((seg, idx) => {
+    const badge = seg.type === 'narration'
+      ? '<span class="segment-badge badge-narration">\u{1F50A} Narration</span>'
+      : '<span class="segment-badge badge-checkpoint">\u2753 Checkpoint</span>';
+
+    const optionsHtml = seg.type === 'checkpoint' ? \`
+      <div style="margin-top:10px">
+        <label style="font-size:12px;font-weight:700;color:#666;margin-bottom:6px">Options (radio = correct answer)</label>
+        \${seg.options.map(opt => \`
+          <div class="option-row">
+            <input type="radio" class="correct-radio" name="correct_\${seg.id}" \${opt.isCorrect ? 'checked' : ''} onchange="setCorrect('\${seg.id}', '\${opt.id}')" />
+            <input style="width:80px" placeholder="Emoji" value="\${opt.emoji}" oninput="updateOpt('\${seg.id}','\${opt.id}','emoji',this.value)" />
+            <input style="flex:1" placeholder="Label (e.g. Carrot)" value="\${opt.label}" oninput="updateOpt('\${seg.id}','\${opt.id}','label',this.value)" />
+            <input style="flex:2" placeholder="Image URL (optional)" value="\${opt.imageUrl}" oninput="updateOpt('\${seg.id}','\${opt.id}','imageUrl',this.value)" />
+            <button onclick="removeOption('\${seg.id}','\${opt.id}')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;padding:0 4px">\u2715</button>
+          </div>
+        \`).join('')}
+        <button class="btn btn-sm btn-outline" style="margin-top:6px" onclick="addOption('\${seg.id}')">+ Add Option</button>
+      </div>
+    \` : '';
+
+    return \`
+      <div class="segment-card">
+        <div class="segment-header">
+          <span style="color:#aaa;font-size:13px;font-weight:700">#\${idx + 1}</span>
+          \${badge}
+          <button onclick="removeSegment('\${seg.id}')" style="margin-left:auto;background:none;border:none;color:#c0392b;cursor:pointer;font-size:15px">Remove</button>
+        </div>
+        <div class="grid">
+          <div style="grid-column:1/-1">
+            <label>Audio URL</label>
+            <input placeholder="https://\u2026 (MP3, M4A)" value="\${seg.audioUrl}" oninput="updateSeg('\${seg.id}','audioUrl',this.value)" />
+          </div>
+          \${seg.type === 'narration' ? \`
+          <div style="grid-column:1/-1">
+            <label>Scene Image URL (optional)</label>
+            <input placeholder="https://\u2026 (PNG, JPG)" value="\${seg.sceneImageUrl}" oninput="updateSeg('\${seg.id}','sceneImageUrl',this.value)" />
+          </div>\` : \`
+          <div style="grid-column:1/-1">
+            <label>Question Text (read aloud)</label>
+            <input placeholder="Which one should Hoppy eat?" value="\${seg.questionText}" oninput="updateSeg('\${seg.id}','questionText',this.value)" />
+          </div>\`}
+        </div>
+        \${optionsHtml}
+      </div>
+    \`;
+  }).join('');
+}
+
+function updateSeg(segId, field, value) {
+  const seg = isSegments.find(s => s.id === segId);
+  if (seg) seg[field] = value;
+}
+
+function updateOpt(segId, optId, field, value) {
+  const seg = isSegments.find(s => s.id === segId);
+  if (!seg) return;
+  const opt = seg.options.find(o => o.id === optId);
+  if (opt) opt[field] = value;
+}
+
+function setCorrect(segId, optId) {
+  const seg = isSegments.find(s => s.id === segId);
+  if (!seg) return;
+  seg.options.forEach(o => o.isCorrect = o.id === optId);
+}
+
+async function saveIS() {
+  const msg = document.getElementById('is_save_msg');
+  const id = document.getElementById('is_id').value.trim();
+  const title = document.getElementById('is_title').value.trim();
+  if (!id || !title) { msg.style.display='inline'; msg.style.color='#c0392b'; msg.textContent='ID and Title are required.'; return; }
+
+  const payload = {
+    id,
+    title,
+    language: document.getElementById('is_language').value,
+    ageMin: parseInt(document.getElementById('is_ageMin').value),
+    ageMax: parseInt(document.getElementById('is_ageMax').value),
+    thumbnailUrl: document.getElementById('is_thumbnail').value.trim(),
+    description: document.getElementById('is_description').value.trim(),
+    published: document.getElementById('is_published').checked,
+    segments: isSegments,
+  };
+
+  const url = isEditingId
+    ? '/api/admin/interactive-stories/' + encodeURIComponent(isEditingId)
+    : '/api/admin/interactive-stories';
+  const method = isEditingId ? 'PUT' : 'POST';
+
+  msg.style.display = 'inline';
+  msg.style.color = '#888';
+  msg.textContent = 'Saving\u2026';
+
+  try {
+    const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (res.ok || res.status === 201) {
+      msg.style.color = '#155724';
+      msg.textContent = 'Saved!';
+      setTimeout(() => { closeIS(); location.reload(); }, 800);
+    } else {
+      msg.style.color = '#c0392b';
+      msg.textContent = data.error || 'Save failed';
+    }
+  } catch(e) {
+    msg.style.color = '#c0392b';
+    msg.textContent = 'Network error: ' + e.message;
   }
 }
 </script>
@@ -82283,9 +82739,28 @@ router3.post("/admin/logout", (_req, res) => {
   res.redirect("/api/admin/login");
 });
 router3.get("/admin", requireAdminAuth, async (req, res) => {
-  const stories = await db.select().from(storiesTable).orderBy(storiesTable.publishedAt);
+  const [stories, iStories] = await Promise.all([
+    db.select().from(storiesTable).orderBy(storiesTable.publishedAt),
+    db.select().from(interactiveStoriesTable).orderBy(interactiveStoriesTable.createdAt)
+  ]);
   res.setHeader("Content-Type", "text/html");
-  res.send(adminPage(stories, req.query.msg));
+  res.send(adminPage(stories, iStories, req.query.msg));
+});
+router3.get("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+  const storyId = String(req.params["id"]);
+  const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).limit(1);
+  if (!story) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const segments = await db.select().from(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId)).orderBy(asc(storySegmentsTable.orderIndex));
+  const segIds = segments.map((s) => s.id);
+  const options = segIds.length > 0 ? await db.select().from(storyOptionsTable).where(inArray(storyOptionsTable.segmentId, segIds)).orderBy(asc(storyOptionsTable.displayOrder)) : [];
+  const bySegment = options.reduce((a, o) => {
+    (a[o.segmentId] ??= []).push(o);
+    return a;
+  }, {});
+  res.json({ ...story, segments: segments.map((s) => ({ ...s, options: bySegment[s.id] ?? [] })) });
 });
 router3.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
   const { stories } = req.body;
@@ -85128,21 +85603,171 @@ router12.delete("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) 
 });
 var flashcards_default = router12;
 
-// src/routes/index.ts
+// src/routes/interactive-stories.ts
+var import_express13 = __toESM(require_express2(), 1);
 var router13 = (0, import_express13.Router)();
-router13.use(health_default);
-router13.use(auth_default);
-router13.use(stories_default);
-router13.use(flashcards_default);
-router13.use(children_default);
-router13.use(listening_default);
-router13.use(dashboard_default);
-router13.use(push_default);
-router13.use(webhooks_default);
-router13.use(subscriptions_default);
-router13.use(users_default);
-router13.use(admin_default);
-var routes_default = router13;
+router13.get("/interactive-stories", async (req, res) => {
+  try {
+    const stories = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.published, true)).orderBy(asc(interactiveStoriesTable.createdAt));
+    res.json(stories);
+  } catch (err) {
+    req.log.error(err, "Failed to list interactive stories");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.get("/interactive-stories/:id", async (req, res) => {
+  const storyId = String(req.params["id"]);
+  try {
+    const [story] = await db.select().from(interactiveStoriesTable).where(
+      and(
+        eq(interactiveStoriesTable.id, storyId),
+        eq(interactiveStoriesTable.published, true)
+      )
+    ).limit(1);
+    if (!story) {
+      res.status(404).json({ error: "Interactive story not found" });
+      return;
+    }
+    const segments = await db.select().from(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId)).orderBy(asc(storySegmentsTable.orderIndex));
+    const segmentIds = segments.map((s) => s.id);
+    const options = segmentIds.length > 0 ? await db.select().from(storyOptionsTable).where(inArray(storyOptionsTable.segmentId, segmentIds)).orderBy(asc(storyOptionsTable.displayOrder)) : [];
+    const optionsBySegment = options.reduce((acc, opt) => {
+      if (!acc[opt.segmentId]) acc[opt.segmentId] = [];
+      acc[opt.segmentId].push(opt);
+      return acc;
+    }, {});
+    const segmentsWithOptions = segments.map((seg) => ({
+      ...seg,
+      options: optionsBySegment[seg.id] ?? []
+    }));
+    res.json({ ...story, segments: segmentsWithOptions });
+  } catch (err) {
+    req.log.error(err, "Failed to get interactive story");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+var optionSchema = external_exports.object({
+  id: external_exports.string().min(1),
+  label: external_exports.string().min(1).max(40),
+  emoji: external_exports.string().max(10).default(""),
+  imageUrl: external_exports.string().default(""),
+  isCorrect: external_exports.boolean().default(false),
+  displayOrder: external_exports.number().int().default(0)
+});
+var segmentSchema = external_exports.object({
+  id: external_exports.string().min(1),
+  orderIndex: external_exports.number().int().min(0),
+  type: external_exports.enum(["narration", "checkpoint"]),
+  audioUrl: external_exports.string().default(""),
+  sceneImageUrl: external_exports.string().default(""),
+  questionText: external_exports.string().default(""),
+  options: external_exports.array(optionSchema).default([])
+});
+var interactiveStoryBodySchema = external_exports.object({
+  id: external_exports.string().min(1).max(40),
+  title: external_exports.string().min(1).max(120),
+  language: external_exports.enum(["en", "ml"]).default("en"),
+  description: external_exports.string().max(500).default(""),
+  thumbnailUrl: external_exports.string().default(""),
+  ageMin: external_exports.number().int().min(1).max(5).default(2),
+  ageMax: external_exports.number().int().min(1).max(5).default(5),
+  published: external_exports.boolean().default(false),
+  segments: external_exports.array(segmentSchema).default([])
+});
+var updateInteractiveStoryBodySchema = interactiveStoryBodySchema.partial().omit({ id: true }).extend({
+  segments: external_exports.array(segmentSchema).optional()
+});
+router13.post("/admin/interactive-stories", requireAdminAuth, async (req, res) => {
+  const parsed = interactiveStoryBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
+    return;
+  }
+  const { segments, ...storyData } = parsed.data;
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(interactiveStoriesTable).values(storyData);
+      for (const seg of segments) {
+        const { options, ...segData } = seg;
+        await tx.insert(storySegmentsTable).values({ ...segData, storyId: storyData.id });
+        for (const opt of options) {
+          await tx.insert(storyOptionsTable).values({ ...opt, segmentId: seg.id });
+        }
+      }
+    });
+    const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyData.id));
+    res.status(201).json(story);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("duplicate key")) {
+      res.status(400).json({ error: "A story with this ID already exists" });
+      return;
+    }
+    req.log.error(err, "Failed to create interactive story");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.put("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+  const storyId = String(req.params["id"]);
+  const parsed = updateInteractiveStoryBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
+    return;
+  }
+  const { segments, ...storyData } = parsed.data;
+  try {
+    const [updated] = await db.transaction(async (tx) => {
+      const rows = await tx.update(interactiveStoriesTable).set({ ...storyData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(interactiveStoriesTable.id, storyId)).returning();
+      if (!rows[0]) return [];
+      if (segments !== void 0) {
+        await tx.delete(storySegmentsTable).where(eq(storySegmentsTable.storyId, storyId));
+        for (const seg of segments) {
+          const { options, ...segData } = seg;
+          await tx.insert(storySegmentsTable).values({ ...segData, storyId });
+          for (const opt of options) {
+            await tx.insert(storyOptionsTable).values({ ...opt, segmentId: seg.id });
+          }
+        }
+      }
+      return rows;
+    });
+    if (!updated) {
+      res.status(404).json({ error: "Interactive story not found" });
+      return;
+    }
+    res.json(updated);
+  } catch (err) {
+    req.log.error(err, "Failed to update interactive story");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.delete("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+  const storyId = String(req.params["id"]);
+  const [deleted] = await db.delete(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Interactive story not found" });
+    return;
+  }
+  res.status(204).send();
+});
+var interactive_stories_default = router13;
+
+// src/routes/index.ts
+var router14 = (0, import_express14.Router)();
+router14.use(health_default);
+router14.use(auth_default);
+router14.use(stories_default);
+router14.use(flashcards_default);
+router14.use(interactive_stories_default);
+router14.use(children_default);
+router14.use(listening_default);
+router14.use(dashboard_default);
+router14.use(push_default);
+router14.use(webhooks_default);
+router14.use(subscriptions_default);
+router14.use(users_default);
+router14.use(admin_default);
+var routes_default = router14;
 
 // src/jobs/index.ts
 var import_node_cron = __toESM(require_node_cron(), 1);
@@ -85357,7 +85982,7 @@ function getTimezoneOffsetMinutes(tz, at) {
 }
 
 // src/app.ts
-var app = (0, import_express14.default)();
+var app = (0, import_express15.default)();
 app.set("trust proxy", 1);
 app.use(
   helmet({
@@ -85395,7 +86020,7 @@ app.use(
 var SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 app.use((0, import_cookie_parser.default)(SESSION_SECRET));
 app.use(
-  import_express14.default.json({
+  import_express15.default.json({
     verify: (req, _res, buf) => {
       if (req.path.includes("/webhooks/razorpay")) {
         req.rawBody = buf;
@@ -85403,7 +86028,7 @@ app.use(
     }
   })
 );
-app.use(import_express14.default.urlencoded({ extended: true }));
+app.use(import_express15.default.urlencoded({ extended: true }));
 var globalLimiter = rate_limit_default({
   windowMs: 60 * 1e3,
   limit: 100,
