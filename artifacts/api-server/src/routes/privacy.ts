@@ -9,7 +9,7 @@ router.get("/privacy", (_req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — Storytime</title>
+  <title>Privacy Policy — StoryLamp</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -41,11 +41,11 @@ router.get("/privacy", (_req, res) => {
 <body>
 <div class="container">
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Storytime — Kids Audio Stories &nbsp;|&nbsp; Last updated: July 12, 2026</p>
+  <p class="subtitle">StoryLamp — Kids Audio Stories &nbsp;|&nbsp; Last updated: July 12, 2026</p>
   <span class="badge">Designed for Families</span>
 
   <p>
-    Storytime ("we", "our", or "us") is an audio storytelling app for children. We take the privacy
+    StoryLamp ("we", "our", or "us") is an audio storytelling app for children. We take the privacy
     of children and families very seriously. This policy explains what data we collect, why we collect
     it, and how we protect it — in compliance with the Children's Online Privacy Protection Act
     (COPPA), the General Data Protection Regulation (GDPR), and Google Play's Families policy.
@@ -53,7 +53,7 @@ router.get("/privacy", (_req, res) => {
 
   <h2>1. Who This App Is For</h2>
   <p>
-    Storytime is designed for children aged 2–12, used under parental supervision. A parent or
+    StoryLamp is designed for children aged 2–12, used under parental supervision. A parent or
     guardian must create an account and may set up child profiles on their device. We do not
     knowingly allow children to create their own accounts without parental involvement.
   </p>
@@ -102,10 +102,10 @@ router.get("/privacy", (_req, res) => {
 
   <h2>5. COPPA Compliance</h2>
   <p>
-    Storytime complies with COPPA. We do not collect personal information directly from children.
+    StoryLamp complies with COPPA. We do not collect personal information directly from children.
     All accounts are created and controlled by a parent or guardian. If you believe a child under 13
     has created an account without parental consent, please contact us immediately at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a> and we will delete the
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a> and we will delete the
     account and associated data promptly.
   </p>
 
@@ -122,7 +122,7 @@ router.get("/privacy", (_req, res) => {
   <p>
     We retain your account data for as long as your account is active. You may delete your account
     and all associated data at any time by contacting us at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>. We will process deletion
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>. We will process deletion
     requests within 30 days.
   </p>
 
@@ -137,7 +137,7 @@ router.get("/privacy", (_req, res) => {
   <p>
     Depending on your jurisdiction, you may have the right to access, correct, or delete personal
     data we hold about you. To exercise these rights, contact us at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>.
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>.
   </p>
 
   <h2>10. Changes to This Policy</h2>
@@ -149,12 +149,12 @@ router.get("/privacy", (_req, res) => {
   <h2>11. Contact Us</h2>
   <p>
     If you have questions about this privacy policy or our data practices, please contact:<br />
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>
   </p>
 
   <hr />
   <p style="font-size:0.85rem; color:#999;">
-    &copy; 2026 Storytime. All rights reserved. This app is rated for all ages and is part of
+    &copy; 2026 StoryLamp. All rights reserved. This app is rated for all ages and is part of
     Google Play's Families programme.
   </p>
 </div>
