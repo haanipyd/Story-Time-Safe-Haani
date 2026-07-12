@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import privacyRouter from "./privacy";
+import deleteAccountRouter from "./delete-account";
 import storiesRouter from "./stories";
 import adminRouter from "./admin";
 import authRouter from "./auth";
@@ -18,6 +19,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(privacyRouter);
+router.use(deleteAccountRouter);
 router.use(authRouter);
 router.use(storiesRouter);
 router.use(flashcardsRouter);
