@@ -95,3 +95,27 @@ id = "--szLha0QeXQ_L_wPUOyK"
 uri = "file://artifacts/mobile/assets/store/tablet-screenshot-flashcards.jpg"
 type = "image"
 title = "🖥️ Tablet — Flashcards"
+
+[[outputs]]
+id = "51uGO3Oo4EDVZhmhVMTcb"
+uri = "file://artifacts/mobile/assets/store/tablet7-screenshot-home.jpg"
+type = "image"
+title = "7-inch Tablet — Home"
+
+[[outputs]]
+id = "t5RZB2ZS3uo-Lk67wShW4"
+uri = "file://artifacts/mobile/assets/store/tablet7-screenshot-flashcards.jpg"
+type = "image"
+title = "7-inch Tablet — Flashcards"
+
+[[outputs]]
+id = "rXf9qpnU_JcYQwRKafyo7"
+uri = "file://artifacts/mobile/assets/store/tablet10-screenshot-home.jpg"
+type = "image"
+title = "10-inch Tablet — Home"
+
+[[outputs]]
+id = "UjMP5uiPypV-nGb1osc7A"
+uri = "file://artifacts/mobile/assets/store/tablet10-screenshot-flashcards.jpg"
+type = "image"
+title = "10-inch Tablet — Flashcards"
