@@ -17,8 +17,10 @@ import FlashcardPlayer from "@/components/FlashcardPlayer";
 import SectionRow from "@/components/SectionRow";
 import StoryCard from "@/components/StoryCard";
 import StoryGrid from "@/components/StoryGrid";
+import InteractiveStoryCard from "@/components/InteractiveStoryCard";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile, type ChildProfile } from "@/context/ProfileContext";
+import { useInteractiveStories } from "@/context/InteractiveStoriesContext";
 import { useColors } from "@/hooks/useColors";
 import { useStories, type RemoteStory } from "@/hooks/useStories";
 
@@ -85,13 +87,22 @@ function getGreetingEmoji() {
   return "🌙";
 }
 
+type Tab = "stories" | "learn" | "flashcards";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "stories", label: "🎧 Listen" },
+  { id: "learn", label: "📚 Learn" },
+  { id: "flashcards", label: "🃏 Flashcards" },
+];
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { currentProfile } = useProfile();
   const { isPremium } = useAuth();
   const { stories, loading, error, refresh, getStoryById } = useStories();
-  const [activeTab, setActiveTab] = useState<"stories" | "flashcards">("stories");
+  const { stories: interactiveStories, loading: isLoading } = useInteractiveStories();
+  const [activeTab, setActiveTab] = useState<Tab>("stories");
 
   const effectiveProfile = currentProfile ?? GUEST_PROFILE;
 
@@ -117,7 +128,7 @@ export default function HomeScreen() {
   const name = effectiveProfile.name;
   const greetEmoji = getGreetingEmoji();
 
-  if (stories.length === 0) {
+  if (stories.length === 0 && activeTab === "stories") {
     if (error) {
       return (
         <View style={[styles.root, styles.center, { backgroundColor: colors.background }]}>
@@ -144,7 +155,7 @@ export default function HomeScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header — always visible on both tabs */}
+      {/* Header — always visible on all tabs */}
       <View
         style={[
           styles.header,
@@ -168,19 +179,19 @@ export default function HomeScreen() {
         <StreakWidget />
       </View>
 
-      {/* Top Tab Bar — toggles content, no navigation */}
+      {/* Top Tab Bar — Listen | Learn | Flashcards */}
       <View style={[styles.topTabBar, { borderBottomColor: colors.muted }]}>
-        {(["stories", "flashcards"] as const).map((tab) => {
-          const active = activeTab === tab;
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id;
           return (
             <TouchableOpacity
-              key={tab}
+              key={tab.id}
               style={styles.topTabItem}
-              onPress={() => setActiveTab(tab)}
+              onPress={() => setActiveTab(tab.id)}
               activeOpacity={0.7}
             >
               <Text style={[styles.topTabText, { color: active ? colors.coral : colors.mutedForeground }]}>
-                {tab === "stories" ? "🎧 AudioStory" : "🃏 Flashcards"}
+                {tab.label}
               </Text>
               {active && (
                 <View style={[styles.topTabUnderline, { backgroundColor: colors.coral }]} />
@@ -190,10 +201,52 @@ export default function HomeScreen() {
         })}
       </View>
 
-      {/* Content area */}
-      {activeTab === "flashcards" ? (
+      {/* ── Flashcards tab ── */}
+      {activeTab === "flashcards" && (
         <FlashcardPlayer extraBottomPadding={8} />
-      ) : (
+      )}
+
+      {/* ── Learn tab ── */}
+      {activeTab === "learn" && (
+        <ScrollView
+          contentContainerStyle={[
+            styles.learnScroll,
+            { paddingBottom: insets.bottom + 140 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.learnHeader}>
+            <Text style={[styles.learnTitle, { color: colors.navy }]}>
+              Interactive Stories
+            </Text>
+            <Text style={[styles.learnSubtitle, { color: colors.mutedForeground }]}>
+              Listen, think, and answer to discover the world! 🌍
+            </Text>
+          </View>
+
+          {isLoading && interactiveStories.length === 0 ? (
+            <View style={styles.learnEmpty}>
+              <ActivityIndicator size="large" color={colors.coral} />
+            </View>
+          ) : interactiveStories.length === 0 ? (
+            <View style={styles.learnEmpty}>
+              <Text style={{ fontSize: 48 }}>📚</Text>
+              <Text style={[styles.learnEmptyText, { color: colors.mutedForeground }]}>
+                New interactive stories coming soon!
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.cardList}>
+              {interactiveStories.map((story, i) => (
+                <InteractiveStoryCard key={story.id} story={story} index={i} />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* ── AudioStory tab ── */}
+      {activeTab === "stories" && (
         <>
           {curated ? (
             <ScrollView
@@ -356,19 +409,9 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_800ExtraBold",
     lineHeight: 33,
   },
-  premiumBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  premiumBadgeText: {
-    fontSize: 12,
-    fontFamily: "Nunito_700Bold",
-    color: "#D97706",
-  },
   topTabBar: {
     flexDirection: "row",
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderBottomWidth: 1,
   },
   topTabItem: {
@@ -378,14 +421,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   topTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Nunito_700Bold",
   },
   topTabUnderline: {
     position: "absolute",
     bottom: 0,
-    left: 8,
-    right: 8,
+    left: 4,
+    right: 4,
     height: 3,
     borderRadius: 3,
   },
@@ -426,5 +469,37 @@ const styles = StyleSheet.create({
   namedTitle: {
     fontSize: 19,
     fontFamily: "Nunito_800ExtraBold",
+  },
+  learnScroll: {
+    paddingTop: 16,
+  },
+  learnHeader: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 4,
+  },
+  learnTitle: {
+    fontSize: 22,
+    fontFamily: "Nunito_800ExtraBold",
+  },
+  learnSubtitle: {
+    fontSize: 14,
+    fontFamily: "Nunito_600SemiBold",
+    lineHeight: 20,
+  },
+  learnEmpty: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: 12,
+  },
+  learnEmptyText: {
+    fontSize: 15,
+    fontFamily: "Nunito_600SemiBold",
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
+  cardList: {
+    paddingHorizontal: 16,
   },
 });

@@ -19,6 +19,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { ProgressProvider, useProgress } from "@/context/ProgressContext";
 import { StoriesProvider } from "@/context/StoriesContext";
+import { InteractiveStoriesProvider } from "@/context/InteractiveStoriesContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -144,14 +145,16 @@ export default function RootLayout() {
         <AuthProvider>
           <ProfileProvider>
             <StoriesProvider>
-              <ProgressProvider>
-                <AudioProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <RootLayoutNav />
-                    <GlobalCelebration />
-                  </GestureHandlerRootView>
-                </AudioProvider>
-              </ProgressProvider>
+              <InteractiveStoriesProvider>
+                <ProgressProvider>
+                  <AudioProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <RootLayoutNav />
+                      <GlobalCelebration />
+                    </GestureHandlerRootView>
+                  </AudioProvider>
+                </ProgressProvider>
+              </InteractiveStoriesProvider>
             </StoriesProvider>
           </ProfileProvider>
         </AuthProvider>

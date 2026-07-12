@@ -10,6 +10,10 @@ export default function TabLayout() {
         name="player"
         options={{ animation: "fade", gestureEnabled: true }}
       />
+      <Stack.Screen
+        name="interactive-player"
+        options={{ animation: "slide_from_bottom", gestureEnabled: true }}
+      />
       <Stack.Screen name="settings" options={{ animation: "slide_from_right" }} />
     </Stack>
   );
