@@ -21,7 +21,7 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.storytime.kids",
+      "package": "com.storylamp.kids",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.RECEIVE_BOOT_COMPLETED",
