@@ -59,3 +59,21 @@ id = "l-bXSiKgxGOPiPSCiDGO6"
 uri = "file://storytime-build.tar.gz"
 type = "unspecified"
 title = "Storytime — Complete Build Package"
+
+[[outputs]]
+id = "auWvedykMxqklsaoiez8b"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "App Icon (512×512)"
+
+[[outputs]]
+id = "8dpit_aEc0N5qcCNf8_N6"
+uri = "file://artifacts/mobile/assets/store/feature-graphic.png"
+type = "image"
+title = "Feature Graphic (Play Store banner)"
+
+[[outputs]]
+id = "bY2LU_ekutHojaiHyJEP9"
+uri = "file://artifacts/mobile/assets/store/screenshot-home.jpg"
+type = "image"
+title = "Screenshot — Home Screen"
