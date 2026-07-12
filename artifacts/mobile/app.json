@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Storytime",
-    "slug": "mobile",
+    "slug": "storybox",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -35,7 +35,8 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -43,8 +44,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "81f7b1ff-f137-4b6c-b245-a1aa6141387c"
+        "projectId": "38ae98dd-fbd4-4049-b619-58df4266e226"
       }
-    }
+    },
+    "owner": "haanipyds-organization"
   }
 }

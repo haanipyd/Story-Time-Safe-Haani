@@ -50,8 +50,9 @@
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
-    "@sentry/react-native": "^8.18.0",
+    "@sentry/react-native": "^7.2.0",
     "expo-av": "^16.0.8",
+    "expo-dev-client": "~6.0.21",
     "expo-speech": "^14.0.8",
     "react-native-webview": "13.15.0"
   }

@@ -1,12 +1,10 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "f07a8560-1b71-40fe-9ce0-7e5e7516b91f"
-      }
-    },
+    "extra": {},
     "android": {
-      "package": "com.haanipyd.workspace"
-    }
+      "package": "com.haanipyd.storybox"
+    },
+    "name": "storybox",
+    "slug": "storybox"
   }
 }
