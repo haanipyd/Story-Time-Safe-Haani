@@ -262,7 +262,7 @@ export default function PlayerScreen() {
     : null;
 
   const doPlayStory = useCallback((s: Story) => {
-    if (freePlayCount >= 5 && !isPremium) { setPendingStory(s); setShowPaywall(true); return; }
+    if (freePlayCount >= 3 && !isPremium) { setPendingStory(s); setShowPaywall(true); return; }
     incrementPlayCount(); addToHistory(s.id); playStory(s);
   }, [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]);
 

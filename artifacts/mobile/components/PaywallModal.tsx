@@ -142,7 +142,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
 
             <Text style={[styles.title, { color: colors.navy }]}>StoryLamp Premium</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Unlimited stories for your little one.{"\n"}Start with just ₹1 for 1 day.
+  You&apos;ve enjoyed your 3 free stories!{"\n"}Unlock unlimited for your little one.
             </Text>
 
             <View style={[styles.featuresBox, { backgroundColor: colors.muted }]}>

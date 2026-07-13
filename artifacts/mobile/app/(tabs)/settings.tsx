@@ -545,7 +545,7 @@ export default function SettingsScreen() {
         ) : (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Row label="Plan" colors={colors}>
-              <Text style={[styles.valueText, { color: colors.mutedForeground }]}>Free (5 stories)</Text>
+              <Text style={[styles.valueText, { color: colors.mutedForeground }]}>Free (3 stories)</Text>
             </Row>
             <Divider colors={colors} />
             <TouchableOpacity onPress={() => setShowPaywall(true)} style={styles.upgradeRow}>
