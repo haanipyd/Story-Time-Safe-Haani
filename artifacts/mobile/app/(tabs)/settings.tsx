@@ -43,7 +43,7 @@ export default function SettingsScreen() {
     addProfile,
     updateSettings,
   } = useProfile();
-  const { user, isPremium, subscription, token, logout, refreshSubscription } = useAuth();
+  const { user, isPremium, subscription, token, logout, refreshSubscription, apiFetch } = useAuth();
   const {
     audioStreak,
     cardStreak,
@@ -60,6 +60,10 @@ export default function SettingsScreen() {
   const [newName, setNewName] = useState("");
   const [newAge, setNewAge] = useState<number>(3);
   const [newPrefs, setNewPrefs] = useState<string[]>([]);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<"suggestion" | "feature" | "bug" | "other">("suggestion");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -96,6 +100,24 @@ export default function SettingsScreen() {
     setNewName("");
     setNewAge(3);
     setNewPrefs([]);
+  };
+
+  const sendFeedback = async () => {
+    if (feedbackMessage.trim().length < 5) return;
+    setFeedbackSending(true);
+    try {
+      await apiFetch("/feedback", {
+        method: "POST",
+        body: JSON.stringify({ type: feedbackType, message: feedbackMessage.trim() }),
+      });
+      setShowFeedback(false);
+      setFeedbackMessage("");
+      setFeedbackType("suggestion");
+      Alert.alert("Thank you! 🙏", "Your feedback helps us make StoryLamp better.");
+    } catch {
+      Alert.alert("Error", "Could not send feedback. Please try again.");
+    }
+    setFeedbackSending(false);
   };
 
   const recentActivity = getRecentActivity(7);
@@ -454,6 +476,16 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ── Feedback ── */}
+        <SectionLabel label="Help Us Improve" colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity onPress={() => setShowFeedback(true)} style={styles.linkRow}>
+            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.navy} />
+            <Text style={[styles.linkText, { color: colors.navy }]}>Share Feedback</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── Subscription ── */}
         <SectionLabel label="Subscription" colors={colors} />
         {isPremium && subscription ? (
@@ -523,6 +555,53 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <BottomTabBar />
+
+      {/* ── Feedback Modal ── */}
+      <Modal visible={showFeedback} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalRoot, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => { setShowFeedback(false); setFeedbackMessage(""); }}>
+              <Text style={[styles.modalCancel, { color: colors.mutedForeground }]}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.navy }]}>Share Feedback</Text>
+            <TouchableOpacity onPress={sendFeedback} disabled={feedbackMessage.trim().length < 5 || feedbackSending}>
+              <Text style={[styles.modalDone, { color: feedbackMessage.trim().length < 5 || feedbackSending ? colors.mutedForeground : colors.coral }]}>
+                Send
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <Text style={[styles.modalLabel, { color: colors.navy }]}>Type</Text>
+            <View style={styles.feedbackTypeRow}>
+              {(["suggestion", "feature", "bug", "other"] as const).map((t) => {
+                const labels: Record<string, string> = { suggestion: "💡 Suggestion", feature: "✨ Feature", bug: "🐛 Bug", other: "💬 Other" };
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => setFeedbackType(t)}
+                    style={[styles.feedbackTypeBtn, { backgroundColor: feedbackType === t ? colors.coral : colors.muted, borderColor: feedbackType === t ? colors.coral : colors.border }]}
+                  >
+                    <Text style={[styles.feedbackTypeBtnText, { color: feedbackType === t ? "#fff" : colors.navy }]}>{labels[t]}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={[styles.modalLabel, { color: colors.navy }]}>Message</Text>
+            <TextInput
+              value={feedbackMessage}
+              onChangeText={setFeedbackMessage}
+              placeholder="Tell us what you think, what you'd love to see, or what's not working..."
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={6}
+              style={[styles.feedbackInput, { borderColor: colors.border, color: colors.navy, backgroundColor: colors.card }]}
+            />
+            <Text style={[styles.feedbackHint, { color: colors.mutedForeground }]}>
+              {feedbackMessage.trim().length}/2000 characters
+            </Text>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* ── Add Child Modal ── */}
       <Modal visible={showAddChild} animationType="slide" presentationStyle="pageSheet">
@@ -1046,6 +1125,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Nunito_600SemiBold",
   },
+
+  /* Feedback */
+  feedbackTypeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 4,
+  },
+  feedbackTypeBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  feedbackTypeBtnText: { fontSize: 13, fontFamily: "Nunito_700Bold" },
+  feedbackInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Nunito_400Regular",
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
+  feedbackHint: { fontSize: 12, fontFamily: "Nunito_400Regular", marginTop: 6, textAlign: "right" },
 
   /* Modal */
   modalRoot: { flex: 1 },

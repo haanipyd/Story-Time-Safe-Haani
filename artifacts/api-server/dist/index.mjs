@@ -18908,14 +18908,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto7.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto8.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -20662,27 +20662,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router17;
+    module.exports = Router18;
     module.exports.Route = Route;
-    function Router17(options) {
-      if (!(this instanceof Router17)) {
-        return new Router17(options);
+    function Router18(options) {
+      if (!(this instanceof Router18)) {
+        return new Router18(options);
       }
       const opts = options || {};
-      function router17(req, res, next) {
-        router17.handle(req, res, next);
+      function router18(req, res, next) {
+        router18.handle(req, res, next);
       }
-      Object.setPrototypeOf(router17, this);
-      router17.caseSensitive = opts.caseSensitive;
-      router17.mergeParams = opts.mergeParams;
-      router17.params = {};
-      router17.strict = opts.strict;
-      router17.stack = [];
-      return router17;
+      Object.setPrototypeOf(router18, this);
+      router18.caseSensitive = opts.caseSensitive;
+      router18.mergeParams = opts.mergeParams;
+      router18.params = {};
+      router18.strict = opts.strict;
+      router18.stack = [];
+      return router18;
     }
-    Router17.prototype = function() {
+    Router18.prototype = function() {
     };
-    Router17.prototype.param = function param(name, fn) {
+    Router18.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20702,7 +20702,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router17.prototype.handle = function handle(req, res, callback) {
+    Router18.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20829,7 +20829,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router17.prototype.use = function use(handler) {
+    Router18.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20862,7 +20862,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router17.prototype.route = function route(path) {
+    Router18.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20877,7 +20877,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router17.prototype[method] = function(path) {
+      Router18.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21060,13 +21060,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router17 = require_router();
+    var Router18 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router17 = null;
+      var router18 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21075,13 +21075,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router17 === null) {
-            router17 = new Router17({
+          if (router18 === null) {
+            router18 = new Router18({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router17;
+          return router18;
         }
       });
     };
@@ -21152,15 +21152,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router17 = this.router;
+      var router18 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router17.use(path, fn2);
+          return router18.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router17.use(path, function mounted_app(req, res, next) {
+        router18.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -22368,17 +22368,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto7.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto7.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto8.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -23687,7 +23687,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router17 = require_router();
+    var Router18 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23709,8 +23709,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router17.Route;
-    exports.Router = Router17;
+    exports.Route = Router18.Route;
+    exports.Router = Router18;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -24008,11 +24008,11 @@ var require_lib3 = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature2 = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports) {
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto7.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -24021,7 +24021,7 @@ var require_cookie_signature2 = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto7.createHash("sha1").update(str).digest("hex");
+      return crypto8.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -31975,7 +31975,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "../../node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports, module) {
     "use strict";
-    var crypto7 = require_utils5();
+    var crypto8 = require_utils5();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -31987,7 +31987,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto7.randomBytes(18).toString("base64");
+      const clientNonce = crypto8.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -32022,20 +32022,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto7.hashByName(hashName, peerCert);
+        const certHash = await crypto8.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto7.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto7.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto7.sha256(clientKey);
-      const clientSignature = await crypto7.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto8.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto8.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto8.sha256(clientKey);
+      const clientSignature = await crypto8.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto7.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto7.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto8.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto8.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -34203,7 +34203,7 @@ var require_client = __commonJS({
     var Query2 = require_query();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
-    var crypto7 = require_utils5();
+    var crypto8 = require_utils5();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -34438,7 +34438,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto7.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto8.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -36011,14 +36011,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "../../node_modules/.pnpm/jwa@2.0.1/node_modules/jwa/index.js"(exports, module) {
     var Buffer3 = require_safe_buffer().Buffer;
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util2 = __require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto7.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto8.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -36108,17 +36108,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto7.createHmac("sha" + bits, secret);
+        var hmac = crypto8.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto7 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto8 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto7.timingSafeEqual(a, b);
+      return crypto8.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -36135,7 +36135,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto7.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -36145,7 +36145,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto7.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -36154,11 +36154,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto7.createSign("RSA-SHA" + bits);
+        var signer = crypto8.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto7.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto7.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -36168,12 +36168,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto7.createVerify("RSA-SHA" + bits);
+        var verifier = crypto8.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto7.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto7.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -48611,7 +48611,7 @@ var require_form_data = __commonJS({
     var parseUrl = __require("url").parse;
     var fs = __require("fs");
     var Stream = __require("stream").Stream;
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     var mime = require_mime_types2();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -48817,7 +48817,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData2.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto7.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto8.randomBytes(12).toString("hex");
     };
     FormData2.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -49454,7 +49454,7 @@ var require_axios = __commonJS({
   "../../node_modules/.pnpm/axios@1.16.0/node_modules/axios/dist/node/axios.cjs"(exports, module) {
     "use strict";
     var FormData$1 = require_form_data();
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     var url2 = __require("url");
     var http = __require("http");
     var https = __require("https");
@@ -50580,7 +50580,7 @@ var require_axios = __commonJS({
         length
       } = alphabet;
       const randomValues = new Uint32Array(size);
-      crypto7.randomFillSync(randomValues);
+      crypto8.randomFillSync(randomValues);
       for (let i = 0; i < size; i++) {
         str += alphabet[randomValues[i] % length];
       }
@@ -53533,7 +53533,7 @@ var require_razorpay_utils = __commonJS({
     } : function(obj) {
       return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
     };
-    var crypto7 = __require("crypto");
+    var crypto8 = __require("crypto");
     function getDateInSecs(date6) {
       return +new Date(date6) / 1e3;
     }
@@ -53570,12 +53570,12 @@ var require_razorpay_utils = __commonJS({
       return new Error("\n" + summary + "\n" + ("Expected(" + (typeof expectedVal === "undefined" ? "undefined" : _typeof(expectedVal)) + ")\n" + prettify(expectedVal) + "\n\n") + ("Got(" + (typeof gotVal === "undefined" ? "undefined" : _typeof(gotVal)) + ")\n" + prettify(gotVal)));
     }
     function validateWebhookSignature(body, signature, secret) {
-      var crypto8 = __require("crypto");
+      var crypto9 = __require("crypto");
       if (!isDefined(body) || !isDefined(signature) || !isDefined(secret)) {
         throw Error("Invalid Parameters: Please give request body,signature sent in X-Razorpay-Signature header and webhook secret from dashboard as parameters");
       }
       body = body.toString();
-      var expectedSignature = crypto8.createHmac("sha256", secret).update(body).digest("hex");
+      var expectedSignature = crypto9.createHmac("sha256", secret).update(body).digest("hex");
       return expectedSignature === signature;
     }
     function validatePaymentVerification() {
@@ -53613,7 +53613,7 @@ var require_razorpay_utils = __commonJS({
         var keyBytes = Buffer.from(secret.slice(0, 16), "utf8");
         var iv = Buffer.alloc(12);
         keyBytes.copy(iv, 0, 0, 12);
-        var cipher = crypto7.createCipheriv("aes-128-gcm", keyBytes, iv);
+        var cipher = crypto8.createCipheriv("aes-128-gcm", keyBytes, iv);
         var encryptedData = cipher.update(dataToEncrypt, "utf8");
         encryptedData = Buffer.concat([encryptedData, cipher.final()]);
         var authTag = cipher.getAuthTag();
@@ -57267,7 +57267,7 @@ var require_node_cron = __commonJS({
 });
 
 // src/app.ts
-var import_express17 = __toESM(require_express2(), 1);
+var import_express18 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../../node_modules/.pnpm/helmet@8.1.0/node_modules/helmet/index.mjs
@@ -58770,7 +58770,7 @@ var rateLimit = (passedOptions) => {
 var rate_limit_default = rateLimit;
 
 // src/routes/index.ts
-var import_express16 = __toESM(require_express2(), 1);
+var import_express17 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -70197,6 +70197,7 @@ var schema_exports = {};
 __export(schema_exports, {
   childrenTable: () => childrenTable,
   dailyPicksTable: () => dailyPicksTable,
+  feedbackTable: () => feedbackTable,
   flashcardSetsTable: () => flashcardSetsTable,
   flashcardsTable: () => flashcardsTable,
   insertFlashcardSchema: () => insertFlashcardSchema,
@@ -81913,6 +81914,22 @@ var insertInteractiveStorySchema = createInsertSchema(interactiveStoriesTable).o
 var insertStorySegmentSchema = createInsertSchema(storySegmentsTable);
 var insertStoryOptionSchema = createInsertSchema(storyOptionsTable);
 
+// ../../lib/db/src/schema/feedback.ts
+var feedbackTable = pgTable(
+  "feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+    type: text("type").notNull().default("suggestion"),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (t) => [
+    index("feedback_user_id_idx").on(t.userId),
+    index("feedback_created_at_idx").on(t.createdAt)
+  ]
+);
+
 // ../../lib/db/src/index.ts
 var { Pool: Pool3 } = esm_default;
 if (!process.env.DATABASE_URL) {
@@ -85147,9 +85164,10 @@ var import_express7 = __toESM(require_express2(), 1);
 var import_razorpay = __toESM(require_razorpay(), 1);
 import crypto5 from "crypto";
 var router7 = (0, import_express7.Router)();
-var ANNUAL_AMOUNT_PAISE = 59900;
-var TRIAL_AMOUNT_PAISE = 200;
-var TRIAL_DAYS = 7;
+var MONTHLY_AMOUNT_PAISE = 14900;
+var ANNUAL_AMOUNT_PAISE = 99900;
+var TRIAL_AMOUNT_PAISE = 100;
+var TRIAL_DAYS = 1;
 function getRazorpay() {
   const key_id = process.env["RAZORPAY_KEY_ID"];
   const key_secret = process.env["RAZORPAY_KEY_SECRET"];
@@ -85164,7 +85182,23 @@ function rzpAuth() {
   const key_secret = process.env["RAZORPAY_KEY_SECRET"] ?? "";
   return "Basic " + Buffer.from(`${key_id}:${key_secret}`).toString("base64");
 }
-async function getOrCreateRazorpayPlan() {
+async function getOrCreateMonthlyPlan() {
+  const planId = process.env["RAZORPAY_MONTHLY_PLAN_ID"];
+  if (planId) return planId;
+  const rzp = getRazorpay();
+  const plan = await rzp.plans.create({
+    period: "monthly",
+    interval: 1,
+    item: {
+      name: "StoryLamp Monthly",
+      amount: MONTHLY_AMOUNT_PAISE,
+      currency: "INR",
+      description: "Unlimited stories for kids"
+    }
+  });
+  return plan.id;
+}
+async function getOrCreateAnnualPlan() {
   const planId = process.env["RAZORPAY_PLAN_ID"];
   if (planId) return planId;
   const rzp = getRazorpay();
@@ -85172,7 +85206,7 @@ async function getOrCreateRazorpayPlan() {
     period: "yearly",
     interval: 1,
     item: {
-      name: "Storytime Annual",
+      name: "StoryLamp Annual",
       amount: ANNUAL_AMOUNT_PAISE,
       currency: "INR",
       description: "Unlimited stories for kids"
@@ -85199,44 +85233,46 @@ router7.get("/subscription/me", requireAuth, async (req, res) => {
   });
 });
 router7.post("/subscription/create", requireAuth, async (req, res) => {
-  const schema = external_exports.object({ plan: external_exports.literal("annual") });
+  const schema = external_exports.object({ plan: external_exports.enum(["monthly", "annual"]).default("annual") });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "plan must be 'annual'" } });
+    res.status(400).json({ error: { code: "INVALID_INPUT", message: "plan must be 'monthly' or 'annual'" } });
     return;
   }
   const userId = req.auth.sub;
+  const selectedPlan = parsed.data.plan;
   try {
-    const planId = await getOrCreateRazorpayPlan();
+    const planId = selectedPlan === "monthly" ? await getOrCreateMonthlyPlan() : await getOrCreateAnnualPlan();
     const rzp = getRazorpay();
     const trialStartAt = Math.floor(Date.now() / 1e3);
     const trialEndAt = trialStartAt + TRIAL_DAYS * 24 * 3600;
+    const totalCount = selectedPlan === "monthly" ? 12 : 1;
     const rzpSub = await rzp.subscriptions.create({
       plan_id: planId,
-      total_count: 12,
+      total_count: totalCount,
       quantity: 1,
       customer_notify: 1,
       start_at: trialEndAt,
       addons: [
         {
           item: {
-            name: "7-day trial",
+            name: "1-day trial",
             amount: TRIAL_AMOUNT_PAISE,
             currency: "INR"
           }
         }
       ],
-      notes: { userId, plan: "annual" }
+      notes: { userId, plan: selectedPlan }
     });
     const subId = generateId();
     await db.insert(subscriptionsTable).values({
       id: subId,
       userId,
       state: "free",
-      plan: "annual",
+      plan: selectedPlan,
       razorpaySubscriptionId: rzpSub.id
     });
-    req.log.info({ userId, rzpSubId: rzpSub.id }, "Razorpay subscription created");
+    req.log.info({ userId, rzpSubId: rzpSub.id, plan: selectedPlan }, "Razorpay subscription created");
     res.json({
       subscription_id: subId,
       razorpay_subscription_id: rzpSub.id,
@@ -86079,24 +86115,55 @@ router15.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) =
 });
 var interactive_stories_default = router15;
 
-// src/routes/index.ts
+// src/routes/feedback.ts
+var import_express16 = __toESM(require_express2(), 1);
+import crypto7 from "crypto";
 var router16 = (0, import_express16.Router)();
-router16.use(health_default);
-router16.use(privacy_default);
-router16.use(delete_account_default);
-router16.use(auth_default);
-router16.use(stories_default);
-router16.use(flashcards_default);
-router16.use(interactive_stories_default);
-router16.use(children_default);
-router16.use(listening_default);
-router16.use(dashboard_default);
-router16.use(push_default);
-router16.use(webhooks_default);
-router16.use(subscriptions_default);
-router16.use(users_default);
-router16.use(admin_default);
-var routes_default = router16;
+var feedbackSchema = external_exports.object({
+  type: external_exports.enum(["suggestion", "feature", "bug", "other"]).default("suggestion"),
+  message: external_exports.string().min(5).max(2e3)
+});
+router16.post("/feedback", async (req, res) => {
+  const parsed = feedbackSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: { code: "INVALID_INPUT", message: "Message must be 5\u20132000 characters." } });
+    return;
+  }
+  const userId = req.auth?.sub ?? null;
+  await db.insert(feedbackTable).values({
+    id: crypto7.randomUUID(),
+    userId,
+    type: parsed.data.type,
+    message: parsed.data.message
+  });
+  req.log.info({ userId, type: parsed.data.type }, "Feedback submitted");
+  res.status(201).json({ ok: true });
+});
+router16.get("/admin/feedback", requireAdminAuth, async (req, res) => {
+  const rows = await db.select().from(feedbackTable).orderBy(desc(feedbackTable.createdAt)).limit(200);
+  res.json(rows);
+});
+var feedback_default = router16;
+
+// src/routes/index.ts
+var router17 = (0, import_express17.Router)();
+router17.use(health_default);
+router17.use(privacy_default);
+router17.use(delete_account_default);
+router17.use(auth_default);
+router17.use(stories_default);
+router17.use(flashcards_default);
+router17.use(interactive_stories_default);
+router17.use(children_default);
+router17.use(listening_default);
+router17.use(dashboard_default);
+router17.use(push_default);
+router17.use(webhooks_default);
+router17.use(subscriptions_default);
+router17.use(users_default);
+router17.use(feedback_default);
+router17.use(admin_default);
+var routes_default = router17;
 
 // src/jobs/index.ts
 var import_node_cron = __toESM(require_node_cron(), 1);
@@ -86311,7 +86378,7 @@ function getTimezoneOffsetMinutes(tz, at) {
 }
 
 // src/app.ts
-var app = (0, import_express17.default)();
+var app = (0, import_express18.default)();
 app.set("trust proxy", 1);
 app.use(
   helmet({
@@ -86349,7 +86416,7 @@ app.use(
 var SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 app.use((0, import_cookie_parser.default)(SESSION_SECRET));
 app.use(
-  import_express17.default.json({
+  import_express18.default.json({
     verify: (req, _res, buf) => {
       if (req.path.includes("/webhooks/razorpay")) {
         req.rawBody = buf;
@@ -86357,7 +86424,7 @@ app.use(
     }
   })
 );
-app.use(import_express17.default.urlencoded({ extended: true }));
+app.use(import_express18.default.urlencoded({ extended: true }));
 var globalLimiter = rate_limit_default({
   windowMs: 60 * 1e3,
   limit: 100,

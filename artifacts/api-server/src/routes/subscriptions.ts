@@ -8,9 +8,10 @@ import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
-const ANNUAL_AMOUNT_PAISE = 59900;
-const TRIAL_AMOUNT_PAISE = 200;
-const TRIAL_DAYS = 7;
+const MONTHLY_AMOUNT_PAISE = 14900;  // ₹149/month
+const ANNUAL_AMOUNT_PAISE = 99900;   // ₹999/year
+const TRIAL_AMOUNT_PAISE = 100;      // ₹1 trial
+const TRIAL_DAYS = 1;                // 1-day trial
 
 function getRazorpay() {
   const key_id = process.env["RAZORPAY_KEY_ID"];
@@ -29,7 +30,25 @@ function rzpAuth(): string {
   return "Basic " + Buffer.from(`${key_id}:${key_secret}`).toString("base64");
 }
 
-async function getOrCreateRazorpayPlan(): Promise<string> {
+async function getOrCreateMonthlyPlan(): Promise<string> {
+  const planId = process.env["RAZORPAY_MONTHLY_PLAN_ID"];
+  if (planId) return planId;
+
+  const rzp = getRazorpay();
+  const plan = await (rzp.plans.create({
+    period: "monthly",
+    interval: 1,
+    item: {
+      name: "StoryLamp Monthly",
+      amount: MONTHLY_AMOUNT_PAISE,
+      currency: "INR",
+      description: "Unlimited stories for kids",
+    },
+  }) as unknown as Promise<{ id: string }>);
+  return plan.id;
+}
+
+async function getOrCreateAnnualPlan(): Promise<string> {
   const planId = process.env["RAZORPAY_PLAN_ID"];
   if (planId) return planId;
 
@@ -74,37 +93,43 @@ router.get("/subscription/me", requireAuth, async (req, res) => {
 });
 
 router.post("/subscription/create", requireAuth, async (req, res) => {
-  const schema = z.object({ plan: z.literal("annual") });
+  const schema = z.object({ plan: z.enum(["monthly", "annual"]).default("annual") });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: { code: "INVALID_INPUT", message: "plan must be 'annual'" } });
+    res.status(400).json({ error: { code: "INVALID_INPUT", message: "plan must be 'monthly' or 'annual'" } });
     return;
   }
   const userId = req.auth!.sub;
+  const selectedPlan = parsed.data.plan;
 
   try {
-    const planId = await getOrCreateRazorpayPlan();
+    const planId = selectedPlan === "monthly"
+      ? await getOrCreateMonthlyPlan()
+      : await getOrCreateAnnualPlan();
+
     const rzp = getRazorpay();
 
     const trialStartAt = Math.floor(Date.now() / 1000);
     const trialEndAt = trialStartAt + TRIAL_DAYS * 24 * 3600;
 
+    const totalCount = selectedPlan === "monthly" ? 12 : 1;
+
     const rzpSub = await (rzp.subscriptions.create({
       plan_id: planId,
-      total_count: 12,
+      total_count: totalCount,
       quantity: 1,
       customer_notify: 1,
       start_at: trialEndAt,
       addons: [
         {
           item: {
-            name: "7-day trial",
+            name: "1-day trial",
             amount: TRIAL_AMOUNT_PAISE,
             currency: "INR",
           },
         },
       ],
-      notes: { userId, plan: "annual" },
+      notes: { userId, plan: selectedPlan },
     }) as unknown as Promise<{ id: string; short_url: string }>);
 
     const subId = generateId();
@@ -112,11 +137,11 @@ router.post("/subscription/create", requireAuth, async (req, res) => {
       id: subId,
       userId,
       state: "free",
-      plan: "annual",
+      plan: selectedPlan,
       razorpaySubscriptionId: rzpSub.id,
     });
 
-    req.log.info({ userId, rzpSubId: rzpSub.id }, "Razorpay subscription created");
+    req.log.info({ userId, rzpSubId: rzpSub.id, plan: selectedPlan }, "Razorpay subscription created");
 
     res.json({
       subscription_id: subId,

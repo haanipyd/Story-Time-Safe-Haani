@@ -21,6 +21,8 @@ interface PaywallModalProps {
   onUnlock: () => void;
 }
 
+type Plan = "annual" | "monthly";
+
 const FEATURES = [
   "Unlimited stories, any time",
   "All 10 story categories",
@@ -28,16 +30,12 @@ const FEATURES = [
   "New stories every week",
 ];
 
-function getApiUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}` : "";
-}
-
 export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModalProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { token, apiFetch, refreshSubscription } = useAuth();
+  const { apiFetch, refreshSubscription } = useAuth();
 
+  const [selectedPlan, setSelectedPlan] = useState<Plan>("annual");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +43,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
     if (!visible) {
       setCheckoutUrl(null);
       setLoading(false);
+      setSelectedPlan("annual");
     }
   }, [visible]);
 
@@ -53,7 +52,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
     try {
       const res = await apiFetch("/subscription/create", {
         method: "POST",
-        body: JSON.stringify({ plan: "annual" }),
+        body: JSON.stringify({ plan: selectedPlan }),
       });
       const data = await res.json() as {
         short_url?: string;
@@ -71,7 +70,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
       Alert.alert("Error", "Could not connect to payment service.");
     }
     setLoading(false);
-  }, [apiFetch]);
+  }, [apiFetch, selectedPlan]);
 
   const handleWebViewNav = useCallback(async (state: WebViewNavigation) => {
     const url = state.url;
@@ -99,6 +98,14 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
     onClose();
   }, [onClose]);
 
+  const selectPlan = (plan: Plan) => {
+    setSelectedPlan(plan);
+    Haptics.selectionAsync();
+  };
+
+  const annualMonthly = Math.round(999 / 12);
+  const annualSaving = Math.round((1 - 999 / (149 * 12)) * 100);
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <View style={styles.overlay}>
@@ -108,7 +115,9 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
               <TouchableOpacity onPress={() => setCheckoutUrl(null)} hitSlop={8}>
                 <Ionicons name="arrow-back" size={24} color={colors.navy} />
               </TouchableOpacity>
-              <Text style={[styles.webviewTitle, { color: colors.navy }]}>Pay ₹199 via UPI</Text>
+              <Text style={[styles.webviewTitle, { color: colors.navy }]}>
+                Pay ₹1 to start trial
+              </Text>
               <View style={{ width: 24 }} />
             </View>
             <WebView
@@ -124,16 +133,16 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
             />
           </View>
         ) : (
-          <View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 24 }]}>
+          <View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
             <View style={[styles.iconCircle, { backgroundColor: colors.coral + "22" }]}>
-              <Ionicons name="star" size={38} color={colors.coral} />
+              <Ionicons name="star" size={36} color={colors.coral} />
             </View>
 
             <Text style={[styles.title, { color: colors.navy }]}>StoryLamp Premium</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              You&apos;ve enjoyed your 5 free stories!{"\n"}Unlock unlimited for your little one.
+              Unlimited stories for your little one.{"\n"}Start with just ₹1 for 1 day.
             </Text>
 
             <View style={[styles.featuresBox, { backgroundColor: colors.muted }]}>
@@ -147,9 +156,67 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
               ))}
             </View>
 
-            <View style={[styles.priceBox, { backgroundColor: colors.coral + "11", borderColor: colors.coral }]}>
-              <Text style={[styles.priceBig, { color: colors.coral }]}>₹199</Text>
-              <Text style={[styles.priceSub, { color: colors.mutedForeground }]}>per month · cancel anytime</Text>
+            {/* Plan Picker */}
+            <View style={styles.planRow}>
+              {/* Annual — hero */}
+              <TouchableOpacity
+                style={[
+                  styles.planCard,
+                  {
+                    borderColor: selectedPlan === "annual" ? colors.coral : colors.border,
+                    backgroundColor: selectedPlan === "annual" ? colors.coral + "0D" : colors.card,
+                    flex: 1.15,
+                  },
+                ]}
+                onPress={() => selectPlan("annual")}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.bestBadge, { backgroundColor: colors.coral, opacity: selectedPlan === "annual" ? 1 : 0 }]}>
+                  <Text style={styles.bestBadgeText}>BEST VALUE</Text>
+                </View>
+                <Text style={[styles.planPrice, { color: selectedPlan === "annual" ? colors.coral : colors.navy }]}>
+                  ₹999
+                </Text>
+                <Text style={[styles.planPeriod, { color: colors.mutedForeground }]}>/ year</Text>
+                <Text style={[styles.planNote, { color: colors.coral }]}>
+                  ₹{annualMonthly}/mo · Save {annualSaving}%
+                </Text>
+                {selectedPlan === "annual" && (
+                  <View style={[styles.selectedDot, { backgroundColor: colors.coral }]}>
+                    <Ionicons name="checkmark" size={10} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Monthly */}
+              <TouchableOpacity
+                style={[
+                  styles.planCard,
+                  {
+                    borderColor: selectedPlan === "monthly" ? colors.coral : colors.border,
+                    backgroundColor: selectedPlan === "monthly" ? colors.coral + "0D" : colors.card,
+                    flex: 1,
+                  },
+                ]}
+                onPress={() => selectPlan("monthly")}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.bestBadge, { backgroundColor: colors.coral, opacity: 0 }]}>
+                  <Text style={styles.bestBadgeText}>MONTHLY</Text>
+                </View>
+                <Text style={[styles.planPrice, { color: selectedPlan === "monthly" ? colors.coral : colors.navy }]}>
+                  ₹149
+                </Text>
+                <Text style={[styles.planPeriod, { color: colors.mutedForeground }]}>/ month</Text>
+                <Text style={[styles.planNote, { color: colors.mutedForeground }]}>
+                  Cancel anytime
+                </Text>
+                {selectedPlan === "monthly" && (
+                  <View style={[styles.selectedDot, { backgroundColor: colors.coral }]}>
+                    <Ionicons name="checkmark" size={10} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
 
             <View style={[styles.upiRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
@@ -167,7 +234,10 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <Text style={styles.primaryBtnText}>Subscribe for ₹199/month</Text>
+                  <Text style={styles.primaryBtnText}>
+                    Start for ₹1 · then{" "}
+                    {selectedPlan === "annual" ? "₹999/year" : "₹149/month"}
+                  </Text>
                   <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </>
               )}
@@ -185,23 +255,52 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingHorizontal: 24, alignItems: "center" },
-  handle: { width: 40, height: 4, borderRadius: 2, marginBottom: 20 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  title: { fontSize: 24, fontFamily: "Nunito_800ExtraBold", marginBottom: 8, textAlign: "center" },
-  subtitle: { fontSize: 14, fontFamily: "Nunito_400Regular", textAlign: "center", lineHeight: 21, marginBottom: 20 },
-  featuresBox: { width: "100%", borderRadius: 16, padding: 14, gap: 10, marginBottom: 16 },
+  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingHorizontal: 20, alignItems: "center" },
+  handle: { width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
+  iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  title: { fontSize: 22, fontFamily: "Nunito_800ExtraBold", marginBottom: 6, textAlign: "center" },
+  subtitle: { fontSize: 13, fontFamily: "Nunito_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 16 },
+  featuresBox: { width: "100%", borderRadius: 14, padding: 12, gap: 8, marginBottom: 14 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  check: { width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  featureText: { fontSize: 14, fontFamily: "Nunito_600SemiBold" },
-  priceBox: { width: "100%", borderRadius: 16, borderWidth: 2, paddingVertical: 14, alignItems: "center", marginBottom: 14 },
-  priceBig: { fontSize: 34, fontFamily: "Nunito_800ExtraBold" },
-  priceSub: { fontSize: 13, fontFamily: "Nunito_400Regular", marginTop: 2 },
-  upiRow: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, borderWidth: 1, paddingVertical: 10, marginBottom: 16 },
-  upiEmoji: { fontSize: 18 },
-  upiText: { fontSize: 13, fontFamily: "Nunito_600SemiBold" },
-  primaryBtn: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 16, marginBottom: 12 },
-  primaryBtnText: { color: "#fff", fontSize: 16, fontFamily: "Nunito_800ExtraBold" },
+  check: { width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  featureText: { fontSize: 13, fontFamily: "Nunito_600SemiBold" },
+  planRow: { flexDirection: "row", width: "100%", gap: 10, marginBottom: 12 },
+  planCard: {
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    position: "relative",
+    minHeight: 110,
+    justifyContent: "center",
+  },
+  bestBadge: {
+    position: "absolute",
+    top: -10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  bestBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Nunito_800ExtraBold", letterSpacing: 0.5 },
+  planPrice: { fontSize: 26, fontFamily: "Nunito_800ExtraBold", marginTop: 4 },
+  planPeriod: { fontSize: 12, fontFamily: "Nunito_400Regular", marginTop: 1 },
+  planNote: { fontSize: 11, fontFamily: "Nunito_600SemiBold", marginTop: 4, textAlign: "center" },
+  selectedDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  upiRow: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, borderWidth: 1, paddingVertical: 9, marginBottom: 12 },
+  upiEmoji: { fontSize: 16 },
+  upiText: { fontSize: 12, fontFamily: "Nunito_600SemiBold" },
+  primaryBtn: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 15, borderRadius: 16, marginBottom: 10 },
+  primaryBtnText: { color: "#fff", fontSize: 15, fontFamily: "Nunito_800ExtraBold" },
   laterBtn: { paddingVertical: 8 },
   laterText: { fontSize: 14, fontFamily: "Nunito_600SemiBold" },
   webviewSheet: { flex: 1, marginTop: 60, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: "hidden" },

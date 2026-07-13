@@ -14,6 +14,7 @@ import webhooksRouter from "./webhooks";
 import usersRouter from "./users";
 import flashcardsRouter from "./flashcards";
 import interactiveStoriesRouter from "./interactive-stories";
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,7 @@ router.use(pushRouter);
 router.use(webhooksRouter);
 router.use(subscriptionsRouter);
 router.use(usersRouter);
+router.use(feedbackRouter);
 router.use(adminRouter);
 
 export default router;
