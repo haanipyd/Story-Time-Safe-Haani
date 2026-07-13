@@ -20662,27 +20662,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router16;
+    module.exports = Router17;
     module.exports.Route = Route;
-    function Router16(options) {
-      if (!(this instanceof Router16)) {
-        return new Router16(options);
+    function Router17(options) {
+      if (!(this instanceof Router17)) {
+        return new Router17(options);
       }
       const opts = options || {};
-      function router16(req, res, next) {
-        router16.handle(req, res, next);
+      function router17(req, res, next) {
+        router17.handle(req, res, next);
       }
-      Object.setPrototypeOf(router16, this);
-      router16.caseSensitive = opts.caseSensitive;
-      router16.mergeParams = opts.mergeParams;
-      router16.params = {};
-      router16.strict = opts.strict;
-      router16.stack = [];
-      return router16;
+      Object.setPrototypeOf(router17, this);
+      router17.caseSensitive = opts.caseSensitive;
+      router17.mergeParams = opts.mergeParams;
+      router17.params = {};
+      router17.strict = opts.strict;
+      router17.stack = [];
+      return router17;
     }
-    Router16.prototype = function() {
+    Router17.prototype = function() {
     };
-    Router16.prototype.param = function param(name, fn) {
+    Router17.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20702,7 +20702,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router16.prototype.handle = function handle(req, res, callback) {
+    Router17.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20829,7 +20829,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router16.prototype.use = function use(handler) {
+    Router17.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20862,7 +20862,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router16.prototype.route = function route(path) {
+    Router17.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20877,7 +20877,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router16.prototype[method] = function(path) {
+      Router17.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21060,13 +21060,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router16 = null;
+      var router17 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21075,13 +21075,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router16 === null) {
-            router16 = new Router16({
+          if (router17 === null) {
+            router17 = new Router17({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router16;
+          return router17;
         }
       });
     };
@@ -21152,15 +21152,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router16 = this.router;
+      var router17 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router16.use(path, fn2);
+          return router17.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router16.use(path, function mounted_app(req, res, next) {
+        router17.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23687,7 +23687,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23709,8 +23709,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router16.Route;
-    exports.Router = Router16;
+    exports.Route = Router17.Route;
+    exports.Router = Router17;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -57267,7 +57267,7 @@ var require_node_cron = __commonJS({
 });
 
 // src/app.ts
-var import_express16 = __toESM(require_express2(), 1);
+var import_express17 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // ../../node_modules/.pnpm/helmet@8.1.0/node_modules/helmet/index.mjs
@@ -58770,7 +58770,7 @@ var rateLimit = (passedOptions) => {
 var rate_limit_default = rateLimit;
 
 // src/routes/index.ts
-var import_express15 = __toESM(require_express2(), 1);
+var import_express16 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -62764,7 +62764,7 @@ router2.get("/privacy", (_req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy \u2014 Storytime</title>
+  <title>Privacy Policy \u2014 StoryLamp</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -62796,11 +62796,11 @@ router2.get("/privacy", (_req, res) => {
 <body>
 <div class="container">
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Storytime \u2014 Kids Audio Stories &nbsp;|&nbsp; Last updated: July 12, 2026</p>
+  <p class="subtitle">StoryLamp \u2014 Kids Audio Stories &nbsp;|&nbsp; Last updated: July 12, 2026</p>
   <span class="badge">Designed for Families</span>
 
   <p>
-    Storytime ("we", "our", or "us") is an audio storytelling app for children. We take the privacy
+    StoryLamp ("we", "our", or "us") is an audio storytelling app for children. We take the privacy
     of children and families very seriously. This policy explains what data we collect, why we collect
     it, and how we protect it \u2014 in compliance with the Children's Online Privacy Protection Act
     (COPPA), the General Data Protection Regulation (GDPR), and Google Play's Families policy.
@@ -62808,7 +62808,7 @@ router2.get("/privacy", (_req, res) => {
 
   <h2>1. Who This App Is For</h2>
   <p>
-    Storytime is designed for children aged 2\u201312, used under parental supervision. A parent or
+    StoryLamp is designed for children aged 2\u201312, used under parental supervision. A parent or
     guardian must create an account and may set up child profiles on their device. We do not
     knowingly allow children to create their own accounts without parental involvement.
   </p>
@@ -62857,10 +62857,10 @@ router2.get("/privacy", (_req, res) => {
 
   <h2>5. COPPA Compliance</h2>
   <p>
-    Storytime complies with COPPA. We do not collect personal information directly from children.
+    StoryLamp complies with COPPA. We do not collect personal information directly from children.
     All accounts are created and controlled by a parent or guardian. If you believe a child under 13
     has created an account without parental consent, please contact us immediately at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a> and we will delete the
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a> and we will delete the
     account and associated data promptly.
   </p>
 
@@ -62877,7 +62877,7 @@ router2.get("/privacy", (_req, res) => {
   <p>
     We retain your account data for as long as your account is active. You may delete your account
     and all associated data at any time by contacting us at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>. We will process deletion
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>. We will process deletion
     requests within 30 days.
   </p>
 
@@ -62892,7 +62892,7 @@ router2.get("/privacy", (_req, res) => {
   <p>
     Depending on your jurisdiction, you may have the right to access, correct, or delete personal
     data we hold about you. To exercise these rights, contact us at
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>.
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>.
   </p>
 
   <h2>10. Changes to This Policy</h2>
@@ -62904,12 +62904,12 @@ router2.get("/privacy", (_req, res) => {
   <h2>11. Contact Us</h2>
   <p>
     If you have questions about this privacy policy or our data practices, please contact:<br />
-    <a href="mailto:privacy@storytime.kids">privacy@storytime.kids</a>
+    <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a>
   </p>
 
   <hr />
   <p style="font-size:0.85rem; color:#999;">
-    &copy; 2026 Storytime. All rights reserved. This app is rated for all ages and is part of
+    &copy; 2026 StoryLamp. All rights reserved. This app is rated for all ages and is part of
     Google Play's Families programme.
   </p>
 </div>
@@ -62918,8 +62918,137 @@ router2.get("/privacy", (_req, res) => {
 });
 var privacy_default = router2;
 
-// src/routes/stories.ts
+// src/routes/delete-account.ts
 var import_express3 = __toESM(require_express2(), 1);
+var router3 = (0, import_express3.Router)();
+router3.get("/delete-account", (_req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Account \u2014 StoryLamp</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fdf6e3;
+      color: #3d2c1e;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 680px; margin: 0 auto; }
+    h1 { font-size: 2rem; margin-bottom: 0.25rem; color: #5b2d8e; }
+    .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; margin-bottom: 0.5rem; color: #5b2d8e; }
+    p, li { margin-bottom: 0.6rem; }
+    ul { padding-left: 1.4rem; }
+    a { color: #5b2d8e; }
+    hr { border: none; border-top: 1px solid #e0d5c1; margin: 2rem 0; }
+    .card {
+      background: #fff;
+      border: 1px solid #e0d5c1;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    .step-num {
+      background: #5b2d8e;
+      color: #fff;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+    .warning {
+      background: #fff4e5;
+      border-left: 4px solid #f59e0b;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+    .email-btn {
+      display: inline-block;
+      background: #5b2d8e;
+      color: #fff;
+      padding: 0.65rem 1.4rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Delete Your Account</h1>
+  <p class="subtitle">StoryLamp \u2014 Kids Audio Stories</p>
+
+  <p>
+    You have the right to delete your StoryLamp account and all associated personal data at any time.
+    This page explains what gets deleted and how to make a request.
+  </p>
+
+  <div class="warning">
+    \u26A0\uFE0F <strong>Account deletion is permanent.</strong> Once deleted, your account, child profiles,
+    listening history, and subscription cannot be recovered.
+  </div>
+
+  <h2>What gets deleted</h2>
+  <ul>
+    <li>Your phone number and account credentials</li>
+    <li>All child profiles and their names / age ranges</li>
+    <li>Your complete listening history and progress</li>
+    <li>Your device push notification token</li>
+    <li>Your subscription record (active subscriptions will not be refunded)</li>
+  </ul>
+
+  <h2>How to request deletion</h2>
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>Send an email to <a href="mailto:privacy@storylamp.app">privacy@storylamp.app</a> with the subject line <strong>"Delete My Account"</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>Include the phone number associated with your account so we can identify it.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>We will confirm deletion within <strong>30 days</strong> and send you a confirmation email.</div>
+    </div>
+    <a class="email-btn" href="mailto:privacy@storylamp.app?subject=Delete%20My%20Account">
+      Email Us to Delete Account
+    </a>
+  </div>
+
+  <hr />
+  <p style="font-size:0.85rem; color:#999;">
+    For questions about your data, see our <a href="/api/privacy">Privacy Policy</a>.<br />
+    &copy; 2026 StoryLamp. All rights reserved.
+  </p>
+</div>
+</body>
+</html>`);
+});
+var delete_account_default = router3;
+
+// src/routes/stories.ts
+var import_express4 = __toESM(require_express2(), 1);
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+pg@8.18.0_pg@8.20.0/node_modules/drizzle-orm/entity.js
 var entityKind = /* @__PURE__ */ Symbol.for("drizzle:entityKind");
@@ -81875,7 +82004,7 @@ async function generateSignedUrl(storageKey, ttlSeconds = 3600) {
 }
 
 // src/routes/stories.ts
-var router3 = (0, import_express3.Router)();
+var router4 = (0, import_express4.Router)();
 function serialize(story) {
   return { ...story, duration: story.durationMin };
 }
@@ -81885,7 +82014,7 @@ function maskAudio(story, isFreeUser) {
   }
   return serialize(story);
 }
-router3.get("/stories", async (req, res) => {
+router4.get("/stories", async (req, res) => {
   try {
     const stories = await db.select().from(storiesTable).where(eq(storiesTable.isActive, true)).orderBy(desc(storiesTable.publishedAt));
     res.json(stories.map(serialize));
@@ -81894,7 +82023,7 @@ router3.get("/stories", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.get("/stories/home", requireAuth, async (req, res) => {
+router4.get("/stories/home", requireAuth, async (req, res) => {
   const { sub: userId, child_id: childId, sub_state: subState } = req.auth;
   const isFreeUser = subState === "free" || subState === "expired";
   if (!childId) {
@@ -81963,7 +82092,7 @@ router3.get("/stories/home", requireAuth, async (req, res) => {
   }
   res.json(result);
 });
-router3.get("/stories/categories/:category", requireAuth, async (req, res) => {
+router4.get("/stories/categories/:category", requireAuth, async (req, res) => {
   const { category } = req.params;
   const { child_id: childId, sub_state: subState } = req.auth;
   const isFreeUser = subState === "free" || subState === "expired";
@@ -81990,7 +82119,7 @@ router3.get("/stories/categories/:category", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.get("/stories/:id/stream-url", requireAuth, async (req, res) => {
+router4.get("/stories/:id/stream-url", requireAuth, async (req, res) => {
   const storyId1 = String(req.params["id"]);
   const { sub_state: subState } = req.auth;
   const [story] = await db.select().from(storiesTable).where(and(eq(storiesTable.id, storyId1), eq(storiesTable.isActive, true))).limit(1);
@@ -82013,7 +82142,7 @@ router3.get("/stories/:id/stream-url", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "INTERNAL", message: "Failed to generate stream URL" } });
   }
 });
-router3.get("/stories/:id", async (req, res) => {
+router4.get("/stories/:id", async (req, res) => {
   const sid = String(req.params["id"]);
   const [story] = await db.select().from(storiesTable).where(and(eq(storiesTable.id, sid), eq(storiesTable.isActive, true)));
   if (!story) {
@@ -82035,7 +82164,7 @@ var insertStorySchema2 = external_exports.object({
   isFree: external_exports.boolean().default(false),
   isActive: external_exports.boolean().default(true)
 });
-router3.post("/stories", requireAuth, async (req, res) => {
+router4.post("/stories", requireAuth, async (req, res) => {
   const parsed = insertStorySchema2.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -82054,7 +82183,7 @@ router3.post("/stories", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.put("/stories/:id", requireAuth, async (req, res) => {
+router4.put("/stories/:id", requireAuth, async (req, res) => {
   const putId = String(req.params["id"]);
   const parsed = insertStorySchema2.partial().omit({ id: true }).safeParse(req.body);
   if (!parsed.success) {
@@ -82073,7 +82202,7 @@ router3.put("/stories/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.delete("/stories/:id", requireAuth, async (req, res) => {
+router4.delete("/stories/:id", requireAuth, async (req, res) => {
   const delId = String(req.params["id"]);
   const [story] = await db.delete(storiesTable).where(eq(storiesTable.id, delId)).returning();
   if (!story) {
@@ -82082,12 +82211,12 @@ router3.delete("/stories/:id", requireAuth, async (req, res) => {
   }
   res.status(204).send();
 });
-var stories_default = router3;
+var stories_default = router4;
 
 // src/routes/admin.ts
-var import_express4 = __toESM(require_express2(), 1);
+var import_express5 = __toESM(require_express2(), 1);
 import crypto3 from "crypto";
-var router4 = (0, import_express4.Router)();
+var router5 = (0, import_express5.Router)();
 function escapeHtml(str) {
   return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
 }
@@ -82875,12 +83004,12 @@ async function saveIS() {
 </body>
 </html>`;
 }
-router4.use("/admin", adminCsp);
-router4.get("/admin/login", (_req, res) => {
+router5.use("/admin", adminCsp);
+router5.get("/admin/login", (_req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(loginPage());
 });
-router4.post("/admin/login", adminLoginLimiter, (req, res) => {
+router5.post("/admin/login", adminLoginLimiter, (req, res) => {
   const { password } = req.body;
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
@@ -82901,11 +83030,11 @@ router4.post("/admin/login", adminLoginLimiter, (req, res) => {
     res.send(loginPage("Incorrect password. Please try again."));
   }
 });
-router4.post("/admin/logout", (_req, res) => {
+router5.post("/admin/logout", (_req, res) => {
   clearAdminCookie(res);
   res.redirect("/api/admin/login");
 });
-router4.get("/admin", requireAdminAuth, async (req, res) => {
+router5.get("/admin", requireAdminAuth, async (req, res) => {
   const [stories, iStories] = await Promise.all([
     db.select().from(storiesTable).orderBy(storiesTable.publishedAt),
     db.select().from(interactiveStoriesTable).orderBy(interactiveStoriesTable.createdAt)
@@ -82913,7 +83042,7 @@ router4.get("/admin", requireAdminAuth, async (req, res) => {
   res.setHeader("Content-Type", "text/html");
   res.send(adminPage(stories, iStories, req.query.msg));
 });
-router4.get("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router5.get("/admin/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).limit(1);
   if (!story) {
@@ -82929,7 +83058,7 @@ router4.get("/admin/interactive-stories/:id", requireAdminAuth, async (req, res)
   }, {});
   res.json({ ...story, segments: segments.map((s) => ({ ...s, options: bySegment[s.id] ?? [] })) });
 });
-router4.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
+router5.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
   const { stories } = req.body;
   if (!Array.isArray(stories) || stories.length === 0) {
     res.status(400).json({ error: "stories must be a non-empty array" });
@@ -82962,7 +83091,7 @@ router4.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
   const message = `Imported ${inserted} stories.${skipped > 0 ? ` ${skipped} skipped (duplicate IDs).` : ""}`;
   res.json({ message, inserted, skipped, errors });
 });
-router4.post("/admin/stories", requireAdminAuth, async (req, res) => {
+router5.post("/admin/stories", requireAdminAuth, async (req, res) => {
   const b = req.body;
   try {
     await db.insert(storiesTable).values({
@@ -82984,7 +83113,7 @@ router4.post("/admin/stories", requireAdminAuth, async (req, res) => {
     res.redirect(`/api/admin?msg=${safe}`);
   }
 });
-router4.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
+router5.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
   const id = String(req.params.id);
   const b = req.body;
   try {
@@ -83006,15 +83135,15 @@ router4.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
     res.redirect(`/api/admin?msg=${safe}`);
   }
 });
-router4.delete("/admin/stories/:id", requireAdminAuth, async (req, res) => {
+router5.delete("/admin/stories/:id", requireAdminAuth, async (req, res) => {
   const id = String(req.params.id);
   await db.delete(storiesTable).where(eq(storiesTable.id, id));
   res.status(204).send();
 });
-var admin_default = router4;
+var admin_default = router5;
 
 // src/routes/auth.ts
-var import_express5 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 import crypto4 from "crypto";
 
 // ../../node_modules/.pnpm/bcryptjs@3.0.3/node_modules/bcryptjs/index.js
@@ -84741,7 +84870,7 @@ var bcryptjs_default = {
 };
 
 // src/routes/auth.ts
-var router5 = (0, import_express5.Router)();
+var router6 = (0, import_express6.Router)();
 var OTP_TTL_MINUTES = 5;
 var OTP_BCRYPT_COST = 10;
 var MAX_OTP_ATTEMPTS = 5;
@@ -84829,7 +84958,7 @@ async function issueTokens(userId, phoneNumber, res) {
     sub_state: subState
   });
 }
-router5.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
+router6.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
   const parsed = requestOtpSchema.safeParse(req.body);
   if (!parsed.success) {
     const issue2 = parsed.error.issues[0];
@@ -84880,7 +85009,7 @@ router5.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
     ...!hasMSG91 ? { devOtp: otp } : {}
   });
 });
-router5.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
+router6.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
   const parsed = verifyOtpSchema.safeParse(req.body);
   if (!parsed.success) {
     const issue2 = parsed.error.issues[0];
@@ -84935,7 +85064,7 @@ router5.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
   req.log.info({ userId }, "User authenticated via OTP");
   await issueTokens(userId, phone_number, res);
 });
-router5.post("/auth/refresh", refreshLimiter, async (req, res) => {
+router6.post("/auth/refresh", refreshLimiter, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -84969,7 +85098,7 @@ router5.post("/auth/refresh", refreshLimiter, async (req, res) => {
   }
   await issueTokens(user.id, user.phoneNumber, res);
 });
-router5.post("/auth/logout", requireAuth, async (req, res) => {
+router6.post("/auth/logout", requireAuth, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (parsed.success) {
     const hashedToken = hashToken(parsed.data.refresh_token);
@@ -84977,7 +85106,7 @@ router5.post("/auth/logout", requireAuth, async (req, res) => {
   }
   res.json({ ok: true });
 });
-router5.get("/auth/me", requireAuth, async (req, res) => {
+router6.get("/auth/me", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user || user.isDeleted) {
@@ -84992,7 +85121,7 @@ router5.get("/auth/me", requireAuth, async (req, res) => {
     created_at: user.createdAt
   });
 });
-router5.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
+router6.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
   const parsed = external_exports.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: { code: "VALIDATION", message: external_exports.prettifyError(parsed.error) } });
@@ -85011,13 +85140,13 @@ router5.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
     warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead."
   });
 });
-var auth_default = router5;
+var auth_default = router6;
 
 // src/routes/subscriptions.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 var import_razorpay = __toESM(require_razorpay(), 1);
 import crypto5 from "crypto";
-var router6 = (0, import_express6.Router)();
+var router7 = (0, import_express7.Router)();
 var ANNUAL_AMOUNT_PAISE = 59900;
 var TRIAL_AMOUNT_PAISE = 200;
 var TRIAL_DAYS = 7;
@@ -85051,7 +85180,7 @@ async function getOrCreateRazorpayPlan() {
   });
   return plan.id;
 }
-router6.get("/subscription/me", requireAuth, async (req, res) => {
+router7.get("/subscription/me", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).orderBy(desc(subscriptionsTable.createdAt)).limit(1);
   if (!sub) {
@@ -85069,7 +85198,7 @@ router6.get("/subscription/me", requireAuth, async (req, res) => {
     cancelled_at: sub.cancelledAt?.toISOString() ?? null
   });
 });
-router6.post("/subscription/create", requireAuth, async (req, res) => {
+router7.post("/subscription/create", requireAuth, async (req, res) => {
   const schema = external_exports.object({ plan: external_exports.literal("annual") });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
@@ -85118,7 +85247,7 @@ router6.post("/subscription/create", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "PAYMENT_ERROR", message: "Could not create subscription. Please try again." } });
   }
 });
-router6.post("/subscription/cancel", requireAuth, async (req, res) => {
+router7.post("/subscription/cancel", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).orderBy(desc(subscriptionsTable.createdAt)).limit(1);
   if (!sub || !sub.razorpaySubscriptionId) {
@@ -85156,7 +85285,7 @@ router6.post("/subscription/cancel", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "PAYMENT_ERROR", message: "Could not cancel subscription. Please try again." } });
   }
 });
-router6.get("/subscriptions/status", requireAuth, async (req, res) => {
+router7.get("/subscriptions/status", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).orderBy(desc(subscriptionsTable.createdAt)).limit(1);
   if (!sub) {
@@ -85173,11 +85302,11 @@ router6.get("/subscriptions/status", requireAuth, async (req, res) => {
     state: sub.state
   });
 });
-var subscriptions_default = router6;
+var subscriptions_default = router7;
 
 // src/routes/children.ts
-var import_express7 = __toESM(require_express2(), 1);
-var router7 = (0, import_express7.Router)();
+var import_express8 = __toESM(require_express2(), 1);
+var router8 = (0, import_express8.Router)();
 var VALID_CATEGORIES = [
   "bedtime",
   "adventure",
@@ -85210,7 +85339,7 @@ function validationError(issue2, res) {
     }
   });
 }
-router7.post("/children", requireAuth, async (req, res) => {
+router8.post("/children", requireAuth, async (req, res) => {
   const parsed = childCreateSchema.safeParse(req.body);
   if (!parsed.success) {
     validationError(parsed.error.issues[0], res);
@@ -85227,7 +85356,7 @@ router7.post("/children", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
   }
 });
-router7.patch("/children/:id", requireAuth, async (req, res) => {
+router8.patch("/children/:id", requireAuth, async (req, res) => {
   const childId = String(req.params["id"]);
   const parsed = childUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -85248,7 +85377,7 @@ router7.patch("/children/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
   }
 });
-router7.get("/children/me/current", requireAuth, async (req, res) => {
+router8.get("/children/me/current", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const childId = req.auth.child_id;
   if (!childId) {
@@ -85258,11 +85387,11 @@ router7.get("/children/me/current", requireAuth, async (req, res) => {
   const [child] = await db.select().from(childrenTable).where(and(eq(childrenTable.id, childId), eq(childrenTable.userId, userId))).limit(1);
   res.json(child ?? null);
 });
-var children_default = router7;
+var children_default = router8;
 
 // src/routes/listening.ts
-var import_express8 = __toESM(require_express2(), 1);
-var router8 = (0, import_express8.Router)();
+var import_express9 = __toESM(require_express2(), 1);
+var router9 = (0, import_express9.Router)();
 var startSchema = external_exports.object({
   story_id: external_exports.string().min(1, "story_id is required").max(20, "story_id too long")
 }).strict();
@@ -85280,7 +85409,7 @@ function validationError2(issue2, res) {
     }
   });
 }
-router8.post("/listening/start", requireAuth, async (req, res) => {
+router9.post("/listening/start", requireAuth, async (req, res) => {
   const parsed = startSchema.safeParse(req.body);
   if (!parsed.success) {
     validationError2(parsed.error.issues[0], res);
@@ -85308,7 +85437,7 @@ router8.post("/listening/start", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
   }
 });
-router8.patch("/listening/:event_id/progress", requireAuth, async (req, res) => {
+router9.patch("/listening/:event_id/progress", requireAuth, async (req, res) => {
   const eventId = Number(req.params["event_id"]);
   if (!Number.isFinite(eventId) || eventId <= 0) {
     res.status(400).json({
@@ -85340,12 +85469,12 @@ router8.patch("/listening/:event_id/progress", requireAuth, async (req, res) => 
   await db.update(listeningEventsTable).set(updates).where(eq(listeningEventsTable.id, eventId));
   res.json({ ok: true });
 });
-var listening_default = router8;
+var listening_default = router9;
 
 // src/routes/dashboard.ts
-var import_express9 = __toESM(require_express2(), 1);
-var router9 = (0, import_express9.Router)();
-router9.get("/dashboard/week", requireAuth, async (req, res) => {
+var import_express10 = __toESM(require_express2(), 1);
+var router10 = (0, import_express10.Router)();
+router10.get("/dashboard/week", requireAuth, async (req, res) => {
   const { sub: userId, child_id: childId } = req.auth;
   if (!childId) {
     res.json({
@@ -85390,11 +85519,11 @@ router9.get("/dashboard/week", requireAuth, async (req, res) => {
     daily_minutes
   });
 });
-var dashboard_default = router9;
+var dashboard_default = router10;
 
 // src/routes/push.ts
-var import_express10 = __toESM(require_express2(), 1);
-var router10 = (0, import_express10.Router)();
+var import_express11 = __toESM(require_express2(), 1);
+var router11 = (0, import_express11.Router)();
 var registerSchema = external_exports.object({
   fcm_token: external_exports.string().min(1, "fcm_token is required").max(4096, "fcm_token too long"),
   platform: external_exports.enum(["android", "ios"])
@@ -85411,7 +85540,7 @@ function validationError3(issue2, res) {
     }
   });
 }
-router10.post("/push/register", requireAuth, async (req, res) => {
+router11.post("/push/register", requireAuth, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     validationError3(parsed.error.issues[0], res);
@@ -85430,7 +85559,7 @@ router10.post("/push/register", requireAuth, async (req, res) => {
     res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
   }
 });
-router10.post("/push/unregister", requireAuth, async (req, res) => {
+router11.post("/push/unregister", requireAuth, async (req, res) => {
   const parsed = unregisterSchema.safeParse(req.body);
   if (!parsed.success) {
     validationError3(parsed.error.issues[0], res);
@@ -85441,10 +85570,10 @@ router10.post("/push/unregister", requireAuth, async (req, res) => {
   await db.update(pushTokensTable).set({ isActive: false, updatedAt: /* @__PURE__ */ new Date() }).where(and(eq(pushTokensTable.userId, userId), eq(pushTokensTable.fcmToken, fcm_token)));
   res.json({ ok: true });
 });
-var push_default = router10;
+var push_default = router11;
 
 // src/routes/webhooks.ts
-var import_express11 = __toESM(require_express2(), 1);
+var import_express12 = __toESM(require_express2(), 1);
 import crypto6 from "crypto";
 
 // src/lib/logger.ts
@@ -85466,7 +85595,7 @@ var logger = (0, import_pino.default)({
 });
 
 // src/routes/webhooks.ts
-var router11 = (0, import_express11.Router)();
+var router12 = (0, import_express12.Router)();
 function verifyRazorpaySignature(body, signature) {
   const secret = process.env["RAZORPAY_WEBHOOK_SECRET"];
   if (!secret) {
@@ -85479,7 +85608,7 @@ function verifyRazorpaySignature(body, signature) {
     Buffer.from(signature, "hex")
   );
 }
-router11.post("/webhooks/razorpay", async (req, res) => {
+router12.post("/webhooks/razorpay", async (req, res) => {
   const signature = req.headers["x-razorpay-signature"];
   const rawBody = req.rawBody ?? Buffer.from(JSON.stringify(req.body));
   if (signature && !verifyRazorpaySignature(rawBody, signature)) {
@@ -85580,18 +85709,18 @@ async function processSubscriptionEvent(eventType, subId, subEntity, _payEntity,
   await db.update(subscriptionsTable).set(updates).where(eq(subscriptionsTable.id, subId));
   log.info({ eventType, subId }, "Subscription state updated via webhook");
 }
-var webhooks_default = router11;
+var webhooks_default = router12;
 
 // src/routes/users.ts
-var import_express12 = __toESM(require_express2(), 1);
-var router12 = (0, import_express12.Router)();
-router12.delete("/users/me/delete", requireAuth, async (req, res) => {
+var import_express13 = __toESM(require_express2(), 1);
+var router13 = (0, import_express13.Router)();
+router13.delete("/users/me/delete", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   await db.update(usersTable).set({ isDeleted: true }).where(eq(usersTable.id, userId));
   req.log.info({ userId }, "User soft-deleted (DPDP right to deletion)");
   res.json({ ok: true, message: "Account marked for deletion. Data will be permanently removed within 30 days." });
 });
-router12.get("/users/me/export", requireAuth, async (req, res) => {
+router13.get("/users/me/export", requireAuth, async (req, res) => {
   const userId = req.auth.sub;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user || user.isDeleted) {
@@ -85623,12 +85752,12 @@ router12.get("/users/me/export", requireAuth, async (req, res) => {
     exported_at: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
-var users_default = router12;
+var users_default = router13;
 
 // src/routes/flashcards.ts
-var import_express13 = __toESM(require_express2(), 1);
-var router13 = (0, import_express13.Router)();
-router13.get("/api/flashcards/sets", async (req, res) => {
+var import_express14 = __toESM(require_express2(), 1);
+var router14 = (0, import_express14.Router)();
+router14.get("/api/flashcards/sets", async (req, res) => {
   try {
     const sets = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.isActive, true)).orderBy(asc(flashcardSetsTable.displayOrder));
     res.json({ sets });
@@ -85637,7 +85766,7 @@ router13.get("/api/flashcards/sets", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch flashcard sets" });
   }
 });
-router13.get("/api/flashcards/sets/:id/cards", async (req, res) => {
+router14.get("/api/flashcards/sets/:id/cards", async (req, res) => {
   try {
     const id = String(req.params["id"] ?? "");
     const [set2] = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.id, id)).limit(1);
@@ -85652,7 +85781,7 @@ router13.get("/api/flashcards/sets/:id/cards", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch flashcards" });
   }
 });
-router13.get("/api/flashcards/all", async (req, res) => {
+router14.get("/api/flashcards/all", async (req, res) => {
   try {
     const sets = await db.select().from(flashcardSetsTable).where(eq(flashcardSetsTable.isActive, true)).orderBy(asc(flashcardSetsTable.displayOrder));
     const cards = await db.select().from(flashcardsTable).where(eq(flashcardsTable.isActive, true)).orderBy(asc(flashcardsTable.displayOrder));
@@ -85662,7 +85791,7 @@ router13.get("/api/flashcards/all", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch all flashcard data" });
   }
 });
-router13.post("/api/flashcards/sets", requireAdminAuth, async (req, res) => {
+router14.post("/api/flashcards/sets", requireAdminAuth, async (req, res) => {
   try {
     const { id, title, emoji: emoji3, color, displayOrder } = req.body;
     if (!id || !title) {
@@ -85683,7 +85812,7 @@ router13.post("/api/flashcards/sets", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to create flashcard set" });
   }
 });
-router13.put("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
+router14.put("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params["id"] ?? "");
     const { title, emoji: emoji3, color, displayOrder, isActive } = req.body;
@@ -85704,7 +85833,7 @@ router13.put("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to update flashcard set" });
   }
 });
-router13.delete("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
+router14.delete("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params["id"] ?? "");
     await db.delete(flashcardSetsTable).where(eq(flashcardSetsTable.id, id));
@@ -85714,7 +85843,7 @@ router13.delete("/api/flashcards/sets/:id", requireAdminAuth, async (req, res) =
     res.status(500).json({ error: "Failed to delete flashcard set" });
   }
 });
-router13.post("/api/flashcards/cards", requireAdminAuth, async (req, res) => {
+router14.post("/api/flashcards/cards", requireAdminAuth, async (req, res) => {
   try {
     const { id, setId, word, emoji: emoji3, color, displayOrder } = req.body;
     if (!id || !setId || !word) {
@@ -85736,7 +85865,7 @@ router13.post("/api/flashcards/cards", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to create flashcard" });
   }
 });
-router13.put("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
+router14.put("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params["id"] ?? "");
     const { word, emoji: emoji3, color, displayOrder, isActive, setId } = req.body;
@@ -85758,7 +85887,7 @@ router13.put("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => 
     res.status(500).json({ error: "Failed to update flashcard" });
   }
 });
-router13.delete("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
+router14.delete("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params["id"] ?? "");
     await db.delete(flashcardsTable).where(eq(flashcardsTable.id, id));
@@ -85768,11 +85897,11 @@ router13.delete("/api/flashcards/cards/:id", requireAdminAuth, async (req, res) 
     res.status(500).json({ error: "Failed to delete flashcard" });
   }
 });
-var flashcards_default = router13;
+var flashcards_default = router14;
 
 // src/routes/interactive-stories.ts
-var import_express14 = __toESM(require_express2(), 1);
-var router14 = (0, import_express14.Router)();
+var import_express15 = __toESM(require_express2(), 1);
+var router15 = (0, import_express15.Router)();
 async function getFullStory(storyId) {
   const [story] = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).limit(1);
   if (!story) return null;
@@ -85791,7 +85920,7 @@ async function getFullStory(storyId) {
     }))
   };
 }
-router14.get("/interactive-stories", async (req, res) => {
+router15.get("/interactive-stories", async (req, res) => {
   try {
     const stories = await db.select().from(interactiveStoriesTable).where(eq(interactiveStoriesTable.published, true)).orderBy(asc(interactiveStoriesTable.createdAt));
     if (stories.length === 0) {
@@ -85815,7 +85944,7 @@ router14.get("/interactive-stories", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.get("/interactive-stories/:id", async (req, res) => {
+router15.get("/interactive-stories/:id", async (req, res) => {
   const storyId = String(req.params["id"]);
   try {
     const story = await getFullStory(storyId);
@@ -85874,7 +86003,7 @@ var interactiveStoryBodySchema = external_exports.object({
   segments: external_exports.array(segmentSchema).default([])
 });
 var updateInteractiveStoryBodySchema = interactiveStoryBodySchema.partial().omit({ id: true }).extend({ segments: external_exports.array(segmentSchema).optional() });
-router14.post("/interactive-stories", requireAdminAuth, async (req, res) => {
+router15.post("/interactive-stories", requireAdminAuth, async (req, res) => {
   const parsed = interactiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -85904,7 +86033,7 @@ router14.post("/interactive-stories", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.put("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router15.put("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const parsed = updateInteractiveStoryBodySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -85939,7 +86068,7 @@ router14.put("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
+router15.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) => {
   const storyId = String(req.params["id"]);
   const [deleted] = await db.delete(interactiveStoriesTable).where(eq(interactiveStoriesTable.id, storyId)).returning();
   if (!deleted) {
@@ -85948,25 +86077,26 @@ router14.delete("/interactive-stories/:id", requireAdminAuth, async (req, res) =
   }
   res.status(204).send();
 });
-var interactive_stories_default = router14;
+var interactive_stories_default = router15;
 
 // src/routes/index.ts
-var router15 = (0, import_express15.Router)();
-router15.use(health_default);
-router15.use(privacy_default);
-router15.use(auth_default);
-router15.use(stories_default);
-router15.use(flashcards_default);
-router15.use(interactive_stories_default);
-router15.use(children_default);
-router15.use(listening_default);
-router15.use(dashboard_default);
-router15.use(push_default);
-router15.use(webhooks_default);
-router15.use(subscriptions_default);
-router15.use(users_default);
-router15.use(admin_default);
-var routes_default = router15;
+var router16 = (0, import_express16.Router)();
+router16.use(health_default);
+router16.use(privacy_default);
+router16.use(delete_account_default);
+router16.use(auth_default);
+router16.use(stories_default);
+router16.use(flashcards_default);
+router16.use(interactive_stories_default);
+router16.use(children_default);
+router16.use(listening_default);
+router16.use(dashboard_default);
+router16.use(push_default);
+router16.use(webhooks_default);
+router16.use(subscriptions_default);
+router16.use(users_default);
+router16.use(admin_default);
+var routes_default = router16;
 
 // src/jobs/index.ts
 var import_node_cron = __toESM(require_node_cron(), 1);
@@ -86181,7 +86311,7 @@ function getTimezoneOffsetMinutes(tz, at) {
 }
 
 // src/app.ts
-var app = (0, import_express16.default)();
+var app = (0, import_express17.default)();
 app.set("trust proxy", 1);
 app.use(
   helmet({
@@ -86219,7 +86349,7 @@ app.use(
 var SESSION_SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 app.use((0, import_cookie_parser.default)(SESSION_SECRET));
 app.use(
-  import_express16.default.json({
+  import_express17.default.json({
     verify: (req, _res, buf) => {
       if (req.path.includes("/webhooks/razorpay")) {
         req.rawBody = buf;
@@ -86227,7 +86357,7 @@ app.use(
     }
   })
 );
-app.use(import_express16.default.urlencoded({ extended: true }));
+app.use(import_express17.default.urlencoded({ extended: true }));
 var globalLimiter = rate_limit_default({
   windowMs: 60 * 1e3,
   limit: 100,
