@@ -95,8 +95,8 @@ export default function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
-    currentStory, isPlaying, isBuffering, progress, elapsedSeconds,
-    sleepTimerSeconds, playStory, togglePlay, seekBy, seekTo, stop, setSleepTimer,
+    currentStory, isPlaying, isBuffering, isLoading, progress, elapsedSeconds,
+    sleepTimerSeconds, playStory, togglePlay, seekBy, seekTo, setIsSeeking, stop, setSleepTimer,
   } = useAudio();
 
   const trackWidthRef = useRef(0);
@@ -188,9 +188,11 @@ export default function PlayerScreen() {
     seekTo(target);
   }, [seekTo, totalSeconds]);
 
-  // Keep a mutable ref so PanResponder (created once) always calls the latest seekFromLocalX
+  // Keep mutable refs so PanResponder (created once) always calls the latest versions
   const seekFromLocalXRef = useRef(seekFromLocalX);
+  const setIsSeekingRef   = useRef(setIsSeeking);
   useEffect(() => { seekFromLocalXRef.current = seekFromLocalX; }, [seekFromLocalX]);
+  useEffect(() => { setIsSeekingRef.current = setIsSeeking; },   [setIsSeeking]);
 
   const progressPanResponder = useRef(
     PanResponder.create({
@@ -198,13 +200,22 @@ export default function PlayerScreen() {
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        isDraggingRef.current = true;
+        setIsSeekingRef.current(true);   // suppress status-callback position updates
         initialLocalXRef.current = evt.nativeEvent.locationX;
         seekFromLocalXRef.current(evt.nativeEvent.locationX);
       },
       onPanResponderMove: (_evt, gestureState) => {
         seekFromLocalXRef.current(initialLocalXRef.current + gestureState.dx);
       },
-      onPanResponderRelease: () => { isDraggingRef.current = false; },
+      onPanResponderRelease: () => {
+        isDraggingRef.current = false;
+        setIsSeekingRef.current(false);  // re-enable status-callback position updates
+      },
+      onPanResponderTerminate: () => {
+        isDraggingRef.current = false;
+        setIsSeekingRef.current(false);
+      },
     })
   ).current;
 
@@ -227,6 +238,7 @@ export default function PlayerScreen() {
       e.preventDefault();
       e.stopPropagation();
       isDraggingRef.current = true;
+      setIsSeekingRef.current(true);      // suppress status-callback position updates
       seekFromLocalXRef.current(getX(e));
 
       const onDocMove = (ev: PointerEvent) => {
@@ -238,6 +250,7 @@ export default function PlayerScreen() {
       };
       const onDocUp = () => {
         isDraggingRef.current = false;
+        setIsSeekingRef.current(false);   // re-enable status-callback position updates
         document.removeEventListener("pointermove", onDocMove);
         document.removeEventListener("pointerup", onDocUp);
         document.removeEventListener("pointercancel", onDocUp);
@@ -266,9 +279,9 @@ export default function PlayerScreen() {
     incrementPlayCount(); addToHistory(s.id); playStory(s);
   }, [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]);
 
-  const handlePrev = () => { if (prevStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); } };
-  const handleNext = () => { if (nextStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); } };
-  const handleToggle = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePlay(); };
+  const handlePrev = () => { if (prevStory && !isLoading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); } };
+  const handleNext = () => { if (nextStory && !isLoading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); } };
+  const handleToggle = () => { if (!isLoading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePlay(); } };
   const handleBack = useCallback(async () => { await stop(); router.back(); }, [stop]);
   const handleTimerOption = (minutes: number | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -472,7 +485,7 @@ export default function PlayerScreen() {
           <TouchableOpacity
             onPress={handleToggle}
             activeOpacity={0.82}
-            disabled={isBuffering}
+            disabled={isBuffering || isLoading}
           >
             <View style={[styles.playBtn, { backgroundColor: accentColor }]}>
               {isBuffering ? (
