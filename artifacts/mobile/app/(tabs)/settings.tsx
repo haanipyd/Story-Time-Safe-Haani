@@ -23,6 +23,7 @@ import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
 import { ACHIEVEMENTS, useProgress } from "@/context/ProgressContext";
 import { useColors } from "@/hooks/useColors";
+import PaywallModal from "@/components/PaywallModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BADGE_TILE_WIDTH = Math.floor((SCREEN_WIDTH - 32 - 16) / 3);
@@ -60,6 +61,7 @@ export default function SettingsScreen() {
   const [newName, setNewName] = useState("");
   const [newAge, setNewAge] = useState<number>(3);
   const [newPrefs, setNewPrefs] = useState<string[]>([]);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState<"suggestion" | "feature" | "bug" | "other">("suggestion");
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -546,7 +548,7 @@ export default function SettingsScreen() {
               <Text style={[styles.valueText, { color: colors.mutedForeground }]}>Free (5 stories)</Text>
             </Row>
             <Divider colors={colors} />
-            <TouchableOpacity onPress={() => router.push("/")} style={styles.upgradeRow}>
+            <TouchableOpacity onPress={() => setShowPaywall(true)} style={styles.upgradeRow}>
               <Ionicons name="star" size={16} color={colors.coral} />
               <Text style={[styles.upgradeText, { color: colors.coral }]}>Upgrade to Premium</Text>
             </TouchableOpacity>
@@ -555,6 +557,12 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <BottomTabBar />
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onUnlock={() => { setShowPaywall(false); refreshSubscription(); }}
+      />
 
       {/* ── Feedback Modal ── */}
       <Modal visible={showFeedback} animationType="slide" presentationStyle="pageSheet">
