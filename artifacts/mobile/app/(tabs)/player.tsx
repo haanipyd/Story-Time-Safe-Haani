@@ -324,7 +324,7 @@ export default function PlayerScreen() {
       </View>
 
       <ScrollView
-        scrollEnabled={true}
+        scrollEnabled={false}
         bounces={false}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}
       >

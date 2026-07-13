@@ -37,6 +37,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sleepTimerRef = useRef<number | null>(null);
+  // Monotonically increasing generation counter — every new playStory call gets a unique gen.
+  // The async createAsync callback checks gen === loadGenRef.current before touching state/refs.
+  const loadGenRef = useRef(0);
 
   const totalSeconds = currentStory ? (Number(currentStory.duration) || 1) * 60 : 1;
   const progress = Math.min(elapsedSeconds / totalSeconds, 1);
@@ -49,12 +52,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const unloadSound = useCallback(async () => {
-    if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch {}
-      soundRef.current = null;
+    const s = soundRef.current;
+    soundRef.current = null;
+    if (s) {
+      try { await s.stopAsync(); } catch {}
+      try { await s.unloadAsync(); } catch {}
     }
   }, []);
 
@@ -64,9 +66,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       staysActiveInBackground: true,
     });
     return () => {
+      loadGenRef.current += 1; // invalidate any in-flight load
       unloadSound();
       clearInterval_();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -78,9 +82,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     intervalRef.current = setInterval(() => {
       if (sleepTimerRef.current !== null) {
         sleepTimerRef.current -= 1;
-        const remaining = sleepTimerRef.current;
-        setSleepTimerSeconds(remaining);
-        if (remaining <= 0) {
+        const rem = sleepTimerRef.current;
+        setSleepTimerSeconds(rem);
+        if (rem <= 0) {
           sleepTimerRef.current = null;
           setIsPlaying(false);
           soundRef.current?.pauseAsync().catch(() => {});
@@ -88,14 +92,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Fallback tick when no real sound is loaded (e.g. missing audio file)
       if (!soundRef.current) {
         setElapsedSeconds((prev) => {
-          const next = prev + 1;
           const storyMax = (Number(currentStory?.duration) || 1) * 60;
-          if (next >= storyMax) {
-            setIsPlaying(false);
-            return storyMax;
-          }
+          const next = prev + 1;
+          if (next >= storyMax) { setIsPlaying(false); return storyMax; }
           return next;
         });
       }
@@ -106,46 +108,66 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const playStory = useCallback(
     async (story: Story) => {
+      // Advance generation — any in-flight createAsync from a previous call will see gen mismatch and bail
+      const gen = ++loadGenRef.current;
+
       clearInterval_();
       await unloadSound();
+
       sleepTimerRef.current = null;
       setSleepTimerSeconds(null);
       setCurrentStory(story);
       setElapsedSeconds(0);
-      setIsBuffering(false);
       setIsPlaying(false);
+      setIsBuffering(false);
 
       const remoteUri = story.audioUrl ?? null;
       const source = remoteUri ? { uri: remoteUri } : STORY_AUDIO[story.id];
 
-      if (source) {
-        setIsBuffering(true);
-        try {
-          const { sound } = await Audio.Sound.createAsync(source, {
-            shouldPlay: true,
-            progressUpdateIntervalMillis: 500,
-          });
-          soundRef.current = sound;
+      if (!source) {
+        // No audio file — just run the progress timer
+        if (gen === loadGenRef.current) setIsPlaying(true);
+        return;
+      }
 
-          sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
-            if (!status.isLoaded) return;
-            setIsBuffering(status.isBuffering ?? false);
-            setElapsedSeconds(Math.floor((status.positionMillis ?? 0) / 1000));
-            setIsPlaying(status.isPlaying);
-            if (status.didJustFinish) {
-              setIsPlaying(false);
-              setIsBuffering(false);
-            }
-          });
+      setIsBuffering(true);
+      try {
+        // shouldPlay: false — we manually call playAsync after the gen check
+        const { sound } = await Audio.Sound.createAsync(source, {
+          shouldPlay: false,
+          progressUpdateIntervalMillis: 500,
+        });
 
-          setIsPlaying(true);
-          setIsBuffering(false);
-        } catch {
-          setIsBuffering(false);
-          setIsPlaying(true);
+        // If a newer playStory call already started while we were awaiting, discard this sound
+        if (gen !== loadGenRef.current) {
+          sound.unloadAsync().catch(() => {});
+          return;
         }
-      } else {
-        setIsPlaying(true);
+
+        soundRef.current = sound;
+
+        sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
+          if (gen !== loadGenRef.current) return; // stale — ignore
+          if (!status.isLoaded) return;
+          setIsBuffering(status.isBuffering ?? false);
+          setElapsedSeconds(Math.floor((status.positionMillis ?? 0) / 1000));
+          setIsPlaying(status.isPlaying);
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+            setIsBuffering(false);
+          }
+        });
+
+        await sound.playAsync();
+        if (gen === loadGenRef.current) {
+          setIsPlaying(true);
+          setIsBuffering(false);
+        }
+      } catch {
+        if (gen === loadGenRef.current) {
+          setIsBuffering(false);
+          setIsPlaying(false);
+        }
       }
     },
     [clearInterval_, unloadSound]
@@ -171,6 +193,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const stop = useCallback(async () => {
+    loadGenRef.current += 1; // invalidate any in-flight load
     clearInterval_();
     await unloadSound();
     sleepTimerRef.current = null;
@@ -211,8 +234,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setElapsedSeconds((prev) => {
         const raw = currentStory ? Number(currentStory.duration) * 60 : 0;
         const storyMax = isFinite(raw) && raw > 0 ? raw : 0;
-        const next = prev + seconds;
-        return Math.max(0, storyMax > 0 ? Math.min(next, storyMax) : next);
+        return Math.max(0, storyMax > 0 ? Math.min(prev + seconds, storyMax) : prev + seconds);
       });
     }
   }, [currentStory, safeSetPosition]);

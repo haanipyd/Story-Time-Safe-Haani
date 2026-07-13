@@ -1,0 +1,1 @@
+- [Audio double-play race condition](audio-double-play.md) — React effects fire twice in dev (Strict Mode); fix with a generation counter in AudioContext.
