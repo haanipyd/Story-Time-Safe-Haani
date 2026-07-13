@@ -96,7 +96,7 @@ export default function PlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
     currentStory, isPlaying, isBuffering, progress, elapsedSeconds,
-    sleepTimerSeconds, playStory, togglePlay, seekBy, seekTo, setSleepTimer,
+    sleepTimerSeconds, playStory, togglePlay, seekBy, seekTo, stop, setSleepTimer,
   } = useAudio();
 
   const trackWidthRef = useRef(0);
@@ -269,7 +269,7 @@ export default function PlayerScreen() {
   const handlePrev = () => { if (prevStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); } };
   const handleNext = () => { if (nextStory) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); } };
   const handleToggle = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePlay(); };
-  const handleBack = () => router.back();
+  const handleBack = useCallback(async () => { await stop(); router.back(); }, [stop]);
   const handleTimerOption = (minutes: number | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSleepTimer(minutes);
@@ -324,7 +324,7 @@ export default function PlayerScreen() {
       </View>
 
       <ScrollView
-        scrollEnabled={false}
+        scrollEnabled={true}
         bounces={false}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 64, paddingBottom: bottomPadding + 16 }]}
       >

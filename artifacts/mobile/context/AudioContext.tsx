@@ -10,10 +10,6 @@ import React, {
 import { STORY_AUDIO } from "@/data/audioMap";
 import { type Story } from "@/data/stories";
 
-// Replace with your preferred ambient background music URL
-const BG_MUSIC_URL =
-  "https://cdn.pixabay.com/audio/2023/01/12/audio_4d01f66cb1.mp3";
-
 interface AudioContextValue {
   currentStory: Story | null;
   isPlaying: boolean;
@@ -21,14 +17,12 @@ interface AudioContextValue {
   progress: number;
   elapsedSeconds: number;
   sleepTimerSeconds: number | null;
-  bgMusicEnabled: boolean;
   playStory: (story: Story) => void;
   togglePlay: () => void;
   seekBy: (seconds: number) => Promise<void>;
   seekTo: (seconds: number) => Promise<void>;
   stop: () => void;
   setSleepTimer: (minutes: number | null) => void;
-  toggleBgMusic: () => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -39,11 +33,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isBuffering, setIsBuffering] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [sleepTimerSeconds, setSleepTimerSeconds] = useState<number | null>(null);
-  const [bgMusicEnabled, setBgMusicEnabled] = useState(true);
 
   const soundRef = useRef<Audio.Sound | null>(null);
-  const bgSoundRef = useRef<Audio.Sound | null>(null);
-  const bgMusicEnabledRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sleepTimerRef = useRef<number | null>(null);
 
@@ -67,52 +58,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const pauseBgMusic = useCallback(async () => {
-    try {
-      if (bgSoundRef.current) {
-        const status = await bgSoundRef.current.getStatusAsync();
-        if (status.isLoaded && status.isPlaying) {
-          await bgSoundRef.current.pauseAsync();
-        }
-      }
-    } catch {}
-  }, []);
-
-  const resumeBgMusic = useCallback(async () => {
-    if (!bgMusicEnabledRef.current) return;
-    try {
-      if (bgSoundRef.current) {
-        const status = await bgSoundRef.current.getStatusAsync();
-        if (status.isLoaded && !status.isPlaying) {
-          await bgSoundRef.current.playAsync();
-        }
-      }
-    } catch {}
-  }, []);
-
   useEffect(() => {
     Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       staysActiveInBackground: true,
     });
-
-    // Load background ambient music silently — fails gracefully if URL is unreachable
-    Audio.Sound.createAsync(
-      { uri: BG_MUSIC_URL },
-      { shouldPlay: true, isLooping: true, volume: 0.12 }
-    )
-      .then(({ sound }) => {
-        bgSoundRef.current = sound;
-      })
-      .catch(() => { /* background music is optional */ });
-
     return () => {
       unloadSound();
-      if (bgSoundRef.current) {
-        bgSoundRef.current.stopAsync().catch(() => {});
-        bgSoundRef.current.unloadAsync().catch(() => {});
-        bgSoundRef.current = null;
-      }
       clearInterval_();
     };
   }, []);
@@ -154,7 +106,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const playStory = useCallback(
     async (story: Story) => {
-      await pauseBgMusic();
       clearInterval_();
       await unloadSound();
       sleepTimerRef.current = null;
@@ -162,6 +113,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setCurrentStory(story);
       setElapsedSeconds(0);
       setIsBuffering(false);
+      setIsPlaying(false);
 
       const remoteUri = story.audioUrl ?? null;
       const source = remoteUri ? { uri: remoteUri } : STORY_AUDIO[story.id];
@@ -183,7 +135,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             if (status.didJustFinish) {
               setIsPlaying(false);
               setIsBuffering(false);
-              resumeBgMusic();
             }
           });
 
@@ -197,19 +148,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         setIsPlaying(true);
       }
     },
-    [clearInterval_, unloadSound, pauseBgMusic, resumeBgMusic]
+    [clearInterval_, unloadSound]
   );
 
   const togglePlay = useCallback(async () => {
     if (soundRef.current) {
-      const status = await soundRef.current.getStatusAsync();
-      if (status.isLoaded) {
-        if (status.isPlaying) {
-          await soundRef.current.pauseAsync();
-        } else {
-          await soundRef.current.playAsync();
+      try {
+        const status = await soundRef.current.getStatusAsync();
+        if (status.isLoaded) {
+          if (status.isPlaying) {
+            await soundRef.current.pauseAsync();
+            setIsPlaying(false);
+          } else {
+            await soundRef.current.playAsync();
+            setIsPlaying(true);
+          }
         }
-      }
+      } catch {}
     } else {
       setIsPlaying((prev) => !prev);
     }
@@ -224,8 +179,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsBuffering(false);
     setCurrentStory(null);
     setElapsedSeconds(0);
-    await resumeBgMusic();
-  }, [clearInterval_, unloadSound, resumeBgMusic]);
+  }, [clearInterval_, unloadSound]);
 
   const safeSetPosition = useCallback(async (positionMs: number): Promise<boolean> => {
     if (!isFinite(positionMs) || isNaN(positionMs) || positionMs < 0) return false;
@@ -233,7 +187,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     try {
       const status = await soundRef.current.getStatusAsync();
       if (!status.isLoaded) return false;
-      // On web, durationMillis can be undefined/NaN before metadata loads — skip seeking then
       if (status.durationMillis !== undefined && !isFinite(status.durationMillis)) return false;
       await soundRef.current.setPositionAsync(Math.round(positionMs));
       return true;
@@ -290,19 +243,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const toggleBgMusic = useCallback(() => {
-    setBgMusicEnabled((prev) => {
-      const next = !prev;
-      bgMusicEnabledRef.current = next;
-      if (next) {
-        resumeBgMusic();
-      } else {
-        pauseBgMusic();
-      }
-      return next;
-    });
-  }, [resumeBgMusic, pauseBgMusic]);
-
   return (
     <AudioContext.Provider
       value={{
@@ -312,14 +252,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         progress,
         elapsedSeconds,
         sleepTimerSeconds,
-        bgMusicEnabled,
         playStory,
         togglePlay,
         seekBy,
         seekTo,
         stop,
         setSleepTimer,
-        toggleBgMusic,
       }}
     >
       {children}
