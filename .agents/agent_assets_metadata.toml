@@ -119,3 +119,9 @@ id = "UjMP5uiPypV-nGb1osc7A"
 uri = "file://artifacts/mobile/assets/store/tablet10-screenshot-flashcards.jpg"
 type = "image"
 title = "10-inch Tablet — Flashcards (1200×1920)"
+
+[[outputs]]
+id = "i5axPfWJIQDreQy7WRZuk"
+uri = "file://.local/exports/StoryLamp-Technical-Brief.md"
+type = "text"
+title = "StoryLamp Technical Brief"
