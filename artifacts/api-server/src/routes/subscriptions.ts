@@ -38,7 +38,7 @@ async function getOrCreateRazorpayPlan(): Promise<string> {
     period: "yearly",
     interval: 1,
     item: {
-      name: "Storytime Annual",
+      name: "StoryLamp Annual",
       amount: ANNUAL_AMOUNT_PAISE,
       currency: "INR",
       description: "Unlimited stories for kids",
