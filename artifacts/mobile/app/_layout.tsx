@@ -9,6 +9,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
+import { initMetaSdk } from "@/lib/meta-events";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AchievementCelebration from "@/components/AchievementCelebration";
@@ -113,6 +114,32 @@ function RootLayout() {
   useEffect(() => {
     injectWebFonts();
     patchWebAudioSeeking();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    initMetaSdk();
+    if (Platform.OS !== "ios") return;
+    // Request iOS App Tracking Transparency after a short delay so it doesn't
+    // fire before the splash screen is gone. Wrapped in try/catch so a missing
+    // native module (e.g. Expo Go) never crashes the app.
+    const timer = setTimeout(async () => {
+      try {
+        const { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } =
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          require("expo-tracking-transparency") as {
+            requestTrackingPermissionsAsync: () => Promise<{ status: string }>;
+            getTrackingPermissionsAsync: () => Promise<{ status: string }>;
+          };
+        const { status } = await getTrackingPermissionsAsync();
+        if (status === "undetermined") {
+          await requestTrackingPermissionsAsync();
+        }
+      } catch {
+        // Not available in Expo Go or if permission already settled
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const [fontsLoaded, fontError] = useFonts(

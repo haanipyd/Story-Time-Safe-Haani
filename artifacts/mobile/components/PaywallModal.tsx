@@ -14,6 +14,7 @@ import { WebView, type WebViewNavigation } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { trackPurchaseEvent } from "@/lib/meta-events";
 
 interface PaywallModalProps {
   visible: boolean;
@@ -38,12 +39,14 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
   const [selectedPlan, setSelectedPlan] = useState<Plan>("annual");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingMetaEvent, setPendingMetaEvent] = useState<{ eventId: string; plan: Plan } | null>(null);
 
   useEffect(() => {
     if (!visible) {
       setCheckoutUrl(null);
       setLoading(false);
       setSelectedPlan("annual");
+      setPendingMetaEvent(null);
     }
   }, [visible]);
 
@@ -57,6 +60,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
       const data = await res.json() as {
         short_url?: string;
         razorpay_subscription_id?: string;
+        meta_event_id?: string;
         error?: { message?: string } | string;
       };
       if (!res.ok || !data.short_url) {
@@ -64,6 +68,10 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
         Alert.alert("Payment unavailable", msg ?? "Could not start payment. Please try again.");
         setLoading(false);
         return;
+      }
+      // Capture event ID for client-side deduplication with the server CAPI event
+      if (data.meta_event_id) {
+        setPendingMetaEvent({ eventId: data.meta_event_id, plan: selectedPlan });
       }
       setCheckoutUrl(data.short_url);
     } catch {
@@ -81,6 +89,13 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
       url.startsWith("storytime://payment-success")
     ) {
       setCheckoutUrl(null);
+      // Fire client-side Meta SDK Purchase event with the same event ID the
+      // server will use in CAPI (from Razorpay notes), enabling deduplication.
+      if (pendingMetaEvent) {
+        const amountINR = pendingMetaEvent.plan === "annual" ? 999 : 149;
+        trackPurchaseEvent({ eventId: pendingMetaEvent.eventId, amountINR, plan: pendingMetaEvent.plan });
+        setPendingMetaEvent(null);
+      }
       await refreshSubscription();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onUnlock();
@@ -91,7 +106,7 @@ export default function PaywallModal({ visible, onClose, onUnlock }: PaywallModa
     ) {
       setCheckoutUrl(null);
     }
-  }, [refreshSubscription, onUnlock]);
+  }, [pendingMetaEvent, refreshSubscription, onUnlock]);
 
   const handleClose = useCallback(() => {
     setCheckoutUrl(null);

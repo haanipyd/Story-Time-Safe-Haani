@@ -13,6 +13,7 @@ import {
   hashToken,
   generateUserId,
 } from "../middleware/auth";
+import { trackCompleteRegistration } from "../lib/meta-capi";
 
 const router: IRouter = Router();
 
@@ -108,6 +109,7 @@ async function issueTokens(
   userId: string,
   phoneNumber: string,
   res: Response,
+  extra: Record<string, unknown> = {},
 ): Promise<void> {
   const [child] = await db
     .select({ id: childrenTable.id })
@@ -148,6 +150,7 @@ async function issueTokens(
     expires_in: 15 * 60,
     child_id: childId,
     sub_state: subState,
+    ...extra,
   });
 }
 
@@ -273,8 +276,9 @@ router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
   // Consume OTP
   await db.delete(otpRequestsTable).where(eq(otpRequestsTable.id, request_id));
 
-  // Upsert user
+  // Upsert user — track whether this is a brand-new account
   let userId: string;
+  let isNewUser: boolean;
   const [existing] = await db
     .select({ id: usersTable.id })
     .from(usersTable)
@@ -282,12 +286,14 @@ router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
     .limit(1);
 
   if (existing) {
+    isNewUser = false;
     userId = existing.id;
     await db
       .update(usersTable)
       .set({ lastLoginAt: now })
       .where(eq(usersTable.id, userId));
   } else {
+    isNewUser = true;
     userId = generateUserId();
     await db.insert(usersTable).values({
       id: userId,
@@ -296,8 +302,17 @@ router.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
     });
   }
 
-  req.log.info({ userId }, "User authenticated via OTP");
-  await issueTokens(userId, phone_number, res);
+  // Fire Meta CAPI CompleteRegistration for new accounts (fire-and-forget)
+  const metaEventId = crypto.randomUUID();
+  if (isNewUser) {
+    trackCompleteRegistration({ eventId: metaEventId, userId, phone: phone_number });
+  }
+
+  req.log.info({ userId, isNewUser }, "User authenticated via OTP");
+  await issueTokens(userId, phone_number, res, {
+    is_new_user: isNewUser,
+    ...(isNewUser ? { meta_event_id: metaEventId } : {}),
+  });
 });
 
 // ── POST /auth/refresh ──────────────────────────────────────────────────────

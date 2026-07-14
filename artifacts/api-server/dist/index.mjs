@@ -18908,14 +18908,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto8.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto9.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -22368,17 +22368,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto9.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto8.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto9.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -24008,11 +24008,11 @@ var require_lib3 = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature2 = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports) {
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto8.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto9.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -24021,7 +24021,7 @@ var require_cookie_signature2 = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto8.createHash("sha1").update(str).digest("hex");
+      return crypto9.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -31975,7 +31975,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "../../node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports, module) {
     "use strict";
-    var crypto8 = require_utils5();
+    var crypto9 = require_utils5();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -31987,7 +31987,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto8.randomBytes(18).toString("base64");
+      const clientNonce = crypto9.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -32022,20 +32022,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto8.hashByName(hashName, peerCert);
+        const certHash = await crypto9.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto8.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto8.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto8.sha256(clientKey);
-      const clientSignature = await crypto8.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto9.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto9.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto9.sha256(clientKey);
+      const clientSignature = await crypto9.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto8.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto8.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto9.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto9.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -34203,7 +34203,7 @@ var require_client = __commonJS({
     var Query2 = require_query();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
-    var crypto8 = require_utils5();
+    var crypto9 = require_utils5();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -34438,7 +34438,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto8.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto9.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -36011,14 +36011,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "../../node_modules/.pnpm/jwa@2.0.1/node_modules/jwa/index.js"(exports, module) {
     var Buffer3 = require_safe_buffer().Buffer;
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util2 = __require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto8.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto9.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -36108,17 +36108,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto8.createHmac("sha" + bits, secret);
+        var hmac = crypto9.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto8 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto9 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto8.timingSafeEqual(a, b);
+      return crypto9.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -36135,7 +36135,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto8.createSign("RSA-SHA" + bits);
+        var signer = crypto9.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -36145,7 +36145,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto8.createVerify("RSA-SHA" + bits);
+        var verifier = crypto9.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -36154,11 +36154,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto8.createSign("RSA-SHA" + bits);
+        var signer = crypto9.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto9.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto9.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -36168,12 +36168,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto8.createVerify("RSA-SHA" + bits);
+        var verifier = crypto9.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto8.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto8.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto9.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto9.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -48611,7 +48611,7 @@ var require_form_data = __commonJS({
     var parseUrl = __require("url").parse;
     var fs = __require("fs");
     var Stream = __require("stream").Stream;
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     var mime = require_mime_types2();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -48817,7 +48817,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData2.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto8.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto9.randomBytes(12).toString("hex");
     };
     FormData2.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -49454,7 +49454,7 @@ var require_axios = __commonJS({
   "../../node_modules/.pnpm/axios@1.16.0/node_modules/axios/dist/node/axios.cjs"(exports, module) {
     "use strict";
     var FormData$1 = require_form_data();
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     var url2 = __require("url");
     var http = __require("http");
     var https = __require("https");
@@ -50580,7 +50580,7 @@ var require_axios = __commonJS({
         length
       } = alphabet;
       const randomValues = new Uint32Array(size);
-      crypto8.randomFillSync(randomValues);
+      crypto9.randomFillSync(randomValues);
       for (let i = 0; i < size; i++) {
         str += alphabet[randomValues[i] % length];
       }
@@ -53533,7 +53533,7 @@ var require_razorpay_utils = __commonJS({
     } : function(obj) {
       return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
     };
-    var crypto8 = __require("crypto");
+    var crypto9 = __require("crypto");
     function getDateInSecs(date6) {
       return +new Date(date6) / 1e3;
     }
@@ -53570,12 +53570,12 @@ var require_razorpay_utils = __commonJS({
       return new Error("\n" + summary + "\n" + ("Expected(" + (typeof expectedVal === "undefined" ? "undefined" : _typeof(expectedVal)) + ")\n" + prettify(expectedVal) + "\n\n") + ("Got(" + (typeof gotVal === "undefined" ? "undefined" : _typeof(gotVal)) + ")\n" + prettify(gotVal)));
     }
     function validateWebhookSignature(body, signature, secret) {
-      var crypto9 = __require("crypto");
+      var crypto10 = __require("crypto");
       if (!isDefined(body) || !isDefined(signature) || !isDefined(secret)) {
         throw Error("Invalid Parameters: Please give request body,signature sent in X-Razorpay-Signature header and webhook secret from dashboard as parameters");
       }
       body = body.toString();
-      var expectedSignature = crypto9.createHmac("sha256", secret).update(body).digest("hex");
+      var expectedSignature = crypto10.createHmac("sha256", secret).update(body).digest("hex");
       return expectedSignature === signature;
     }
     function validatePaymentVerification() {
@@ -53613,7 +53613,7 @@ var require_razorpay_utils = __commonJS({
         var keyBytes = Buffer.from(secret.slice(0, 16), "utf8");
         var iv = Buffer.alloc(12);
         keyBytes.copy(iv, 0, 0, 12);
-        var cipher = crypto8.createCipheriv("aes-128-gcm", keyBytes, iv);
+        var cipher = crypto9.createCipheriv("aes-128-gcm", keyBytes, iv);
         var encryptedData = cipher.update(dataToEncrypt, "utf8");
         encryptedData = Buffer.concat([encryptedData, cipher.final()]);
         var authTag = cipher.getAuthTag();
@@ -83161,7 +83161,7 @@ var admin_default = router5;
 
 // src/routes/auth.ts
 var import_express6 = __toESM(require_express2(), 1);
-import crypto4 from "crypto";
+import crypto5 from "crypto";
 
 // ../../node_modules/.pnpm/bcryptjs@3.0.3/node_modules/bcryptjs/index.js
 import nodeCrypto from "crypto";
@@ -84886,6 +84886,123 @@ var bcryptjs_default = {
   decodeBase64
 };
 
+// src/lib/meta-capi.ts
+import crypto4 from "crypto";
+
+// src/lib/logger.ts
+var import_pino = __toESM(require_pino(), 1);
+var isProduction = process.env.NODE_ENV === "production";
+var logger = (0, import_pino.default)({
+  level: process.env.LOG_LEVEL ?? "info",
+  redact: [
+    "req.headers.authorization",
+    "req.headers.cookie",
+    "res.headers['set-cookie']"
+  ],
+  ...isProduction ? {} : {
+    transport: {
+      target: "pino-pretty",
+      options: { colorize: true }
+    }
+  }
+});
+
+// src/lib/meta-capi.ts
+var GRAPH_API_VERSION = "v21.0";
+function sha256hex(value) {
+  return crypto4.createHash("sha256").update(value).digest("hex");
+}
+function normalizePhone(phone) {
+  return phone.replace(/\D/g, "");
+}
+async function sendCapiEvents(events) {
+  const pixelId = process.env["META_PIXEL_ID"];
+  const accessToken = process.env["META_CAPI_ACCESS_TOKEN"];
+  if (!pixelId || !accessToken) {
+    logger.debug("Meta CAPI skipped \u2014 META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set");
+    return;
+  }
+  const data = events.map((e) => {
+    const user_data = {
+      external_id: [sha256hex(e.userData.userId)]
+    };
+    if (e.userData.phone) {
+      user_data["ph"] = [sha256hex(normalizePhone(e.userData.phone))];
+    }
+    return {
+      event_name: e.eventName,
+      event_time: e.eventTime ?? Math.floor(Date.now() / 1e3),
+      event_id: e.eventId,
+      action_source: "app",
+      user_data,
+      ...e.customData ? { custom_data: e.customData } : {}
+    };
+  });
+  const body = { data };
+  const testCode = process.env["META_TEST_EVENT_CODE"];
+  if (testCode) body["test_event_code"] = testCode;
+  const url2 = `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(pixelId)}/events?access_token=${encodeURIComponent(accessToken)}`;
+  try {
+    const res = await fetch(url2, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const text2 = await res.text().catch(() => "");
+      logger.warn(
+        { status: res.status, body: text2.slice(0, 500) },
+        "Meta CAPI request failed"
+      );
+    } else {
+      logger.info(
+        { events: events.map((e) => `${e.eventName}:${e.eventId}`) },
+        "Meta CAPI events sent"
+      );
+    }
+  } catch (err) {
+    logger.warn({ err }, "Meta CAPI fetch error \u2014 tracking skipped");
+  }
+}
+function trackCompleteRegistration(params) {
+  sendCapiEvents([
+    {
+      eventName: "CompleteRegistration",
+      eventId: params.eventId,
+      userData: { userId: params.userId, phone: params.phone },
+      customData: { status: "registered" }
+    }
+  ]).catch(() => {
+  });
+}
+function trackStartTrial(params) {
+  sendCapiEvents([
+    {
+      eventName: "StartTrial",
+      eventId: params.eventId,
+      userData: { userId: params.userId, phone: params.phone },
+      customData: { currency: "INR", value: 1 }
+    }
+  ]).catch(() => {
+  });
+}
+function trackPurchase(params) {
+  sendCapiEvents([
+    {
+      eventName: "Purchase",
+      eventId: params.eventId,
+      userData: { userId: params.userId, phone: params.phone },
+      customData: {
+        value: params.amountPaise / 100,
+        currency: "INR",
+        content_name: params.plan ?? "subscription",
+        content_type: "product"
+      }
+    }
+  ]).catch(() => {
+  });
+}
+
 // src/routes/auth.ts
 var router6 = (0, import_express6.Router)();
 var OTP_TTL_MINUTES = 5;
@@ -84922,7 +85039,7 @@ var refreshLimiter = rate_limit_default({
   message: { error: { code: "RATE_LIMIT", message: "Too many refresh attempts. Try again later." } }
 });
 function generateOtp() {
-  return crypto4.randomInt(1e5, 1e6).toString();
+  return crypto5.randomInt(1e5, 1e6).toString();
 }
 function maskPhone(phone) {
   return phone.slice(0, 4) + "****" + phone.slice(-3);
@@ -84948,7 +85065,7 @@ async function getSubState(userId) {
   const [sub] = await db.select({ state: subscriptionsTable.state }).from(subscriptionsTable).where(eq(subscriptionsTable.userId, userId)).orderBy(desc(subscriptionsTable.createdAt)).limit(1);
   return sub?.state ?? "free";
 }
-async function issueTokens(userId, phoneNumber, res) {
+async function issueTokens(userId, phoneNumber, res, extra = {}) {
   const [child] = await db.select({ id: childrenTable.id }).from(childrenTable).where(eq(childrenTable.userId, userId)).orderBy(desc(childrenTable.createdAt)).limit(1);
   const [user] = await db.select({ currentChildId: usersTable.currentChildId }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   const childId = user?.currentChildId ?? child?.id ?? null;
@@ -84972,7 +85089,8 @@ async function issueTokens(userId, phoneNumber, res) {
     refresh_token: refreshToken,
     expires_in: 15 * 60,
     child_id: childId,
-    sub_state: subState
+    sub_state: subState,
+    ...extra
   });
 }
 router6.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
@@ -85066,11 +85184,14 @@ router6.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
   }
   await db.delete(otpRequestsTable).where(eq(otpRequestsTable.id, request_id));
   let userId;
+  let isNewUser;
   const [existing] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.phoneNumber, phone_number)).limit(1);
   if (existing) {
+    isNewUser = false;
     userId = existing.id;
     await db.update(usersTable).set({ lastLoginAt: now }).where(eq(usersTable.id, userId));
   } else {
+    isNewUser = true;
     userId = generateUserId();
     await db.insert(usersTable).values({
       id: userId,
@@ -85078,8 +85199,15 @@ router6.post("/auth/verify-otp", verifyOtpLimiter, async (req, res) => {
       lastLoginAt: now
     });
   }
-  req.log.info({ userId }, "User authenticated via OTP");
-  await issueTokens(userId, phone_number, res);
+  const metaEventId = crypto5.randomUUID();
+  if (isNewUser) {
+    trackCompleteRegistration({ eventId: metaEventId, userId, phone: phone_number });
+  }
+  req.log.info({ userId, isNewUser }, "User authenticated via OTP");
+  await issueTokens(userId, phone_number, res, {
+    is_new_user: isNewUser,
+    ...isNewUser ? { meta_event_id: metaEventId } : {}
+  });
 });
 router6.post("/auth/refresh", refreshLimiter, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
@@ -85162,7 +85290,7 @@ var auth_default = router6;
 // src/routes/subscriptions.ts
 var import_express7 = __toESM(require_express2(), 1);
 var import_razorpay = __toESM(require_razorpay(), 1);
-import crypto5 from "crypto";
+import crypto6 from "crypto";
 var router7 = (0, import_express7.Router)();
 var MONTHLY_AMOUNT_PAISE = 14900;
 var ANNUAL_AMOUNT_PAISE = 99900;
@@ -85175,7 +85303,7 @@ function getRazorpay() {
   return new import_razorpay.default({ key_id, key_secret });
 }
 function generateId() {
-  return crypto5.randomUUID();
+  return crypto6.randomUUID();
 }
 function rzpAuth() {
   const key_id = process.env["RAZORPAY_KEY_ID"] ?? "";
@@ -85241,6 +85369,7 @@ router7.post("/subscription/create", requireAuth, async (req, res) => {
   }
   const userId = req.auth.sub;
   const selectedPlan = parsed.data.plan;
+  const metaEventId = crypto6.randomUUID();
   try {
     const planId = selectedPlan === "monthly" ? await getOrCreateMonthlyPlan() : await getOrCreateAnnualPlan();
     const rzp = getRazorpay();
@@ -85262,7 +85391,9 @@ router7.post("/subscription/create", requireAuth, async (req, res) => {
           }
         }
       ],
-      notes: { userId, plan: selectedPlan }
+      // Store meta_event_id in notes so the webhook handler can use it when
+      // firing the CAPI Purchase/StartTrial event, enabling deduplication.
+      notes: { userId, plan: selectedPlan, meta_event_id: metaEventId }
     });
     const subId = generateId();
     await db.insert(subscriptionsTable).values({
@@ -85276,7 +85407,10 @@ router7.post("/subscription/create", requireAuth, async (req, res) => {
     res.json({
       subscription_id: subId,
       razorpay_subscription_id: rzpSub.id,
-      short_url: rzpSub.short_url
+      short_url: rzpSub.short_url,
+      // Returned to the client so the mobile SDK can fire the matching event
+      // with the same ID, enabling server↔client deduplication in Meta.
+      meta_event_id: metaEventId
     });
   } catch (err) {
     req.log.error(err, "Failed to create Razorpay subscription");
@@ -85610,27 +85744,7 @@ var push_default = router11;
 
 // src/routes/webhooks.ts
 var import_express12 = __toESM(require_express2(), 1);
-import crypto6 from "crypto";
-
-// src/lib/logger.ts
-var import_pino = __toESM(require_pino(), 1);
-var isProduction = process.env.NODE_ENV === "production";
-var logger = (0, import_pino.default)({
-  level: process.env.LOG_LEVEL ?? "info",
-  redact: [
-    "req.headers.authorization",
-    "req.headers.cookie",
-    "res.headers['set-cookie']"
-  ],
-  ...isProduction ? {} : {
-    transport: {
-      target: "pino-pretty",
-      options: { colorize: true }
-    }
-  }
-});
-
-// src/routes/webhooks.ts
+import crypto7 from "crypto";
 var router12 = (0, import_express12.Router)();
 function verifyRazorpaySignature(body, signature) {
   const secret = process.env["RAZORPAY_WEBHOOK_SECRET"];
@@ -85638,8 +85752,8 @@ function verifyRazorpaySignature(body, signature) {
     logger.warn("RAZORPAY_WEBHOOK_SECRET not set \u2014 skipping signature verification (dev mode)");
     return true;
   }
-  const expected = crypto6.createHmac("sha256", secret).update(body).digest("hex");
-  return crypto6.timingSafeEqual(
+  const expected = crypto7.createHmac("sha256", secret).update(body).digest("hex");
+  return crypto7.timingSafeEqual(
     Buffer.from(expected, "hex"),
     Buffer.from(signature, "hex")
   );
@@ -85665,10 +85779,15 @@ router12.post("/webhooks/razorpay", async (req, res) => {
   const rzpSubId = subEntity?.id ?? payEntity?.subscription_id ?? null;
   let dbSubId = null;
   let dbUserId = null;
+  let dbUserPhone = null;
   if (rzpSubId) {
     const [sub] = await db.select({ id: subscriptionsTable.id, userId: subscriptionsTable.userId }).from(subscriptionsTable).where(eq(subscriptionsTable.razorpaySubscriptionId, rzpSubId)).limit(1);
     dbSubId = sub?.id ?? null;
     dbUserId = sub?.userId ?? null;
+    if (dbUserId) {
+      const [user] = await db.select({ phoneNumber: usersTable.phoneNumber }).from(usersTable).where(eq(usersTable.id, dbUserId)).limit(1);
+      dbUserPhone = user?.phoneNumber ?? null;
+    }
   }
   try {
     await db.insert(paymentEventsTable).values({
@@ -85697,7 +85816,18 @@ router12.post("/webhooks/razorpay", async (req, res) => {
   }
   if (dbSubId) {
     try {
-      await processSubscriptionEvent(eventType, dbSubId, subEntity, payEntity, req.log);
+      await processSubscriptionEvent(
+        eventType,
+        dbSubId,
+        subEntity,
+        payEntity,
+        req.log,
+        {
+          userId: dbUserId,
+          phone: dbUserPhone,
+          razorpayEventId
+        }
+      );
     } catch (err) {
       await db.update(paymentEventsTable).set({
         processingStatus: "failed",
@@ -85710,14 +85840,22 @@ router12.post("/webhooks/razorpay", async (req, res) => {
   }
   res.status(200).json({ ok: true });
 });
-async function processSubscriptionEvent(eventType, subId, subEntity, _payEntity, log) {
+async function processSubscriptionEvent(eventType, subId, subEntity, payEntity, log, meta) {
   const updates = { updatedAt: /* @__PURE__ */ new Date() };
+  const metaEventId = subEntity?.notes?.meta_event_id ?? meta.razorpayEventId;
   switch (eventType) {
     case "subscription.activated": {
       const trialEndsAt = subEntity?.charge_at ? new Date(subEntity.charge_at * 1e3) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
       updates["state"] = "trial";
       updates["trialStartedAt"] = /* @__PURE__ */ new Date();
       updates["trialEndsAt"] = trialEndsAt;
+      if (meta.userId) {
+        trackStartTrial({
+          eventId: metaEventId,
+          userId: meta.userId,
+          phone: meta.phone
+        });
+      }
       break;
     }
     case "subscription.charged": {
@@ -85726,6 +85864,14 @@ async function processSubscriptionEvent(eventType, subId, subEntity, _payEntity,
       updates["state"] = "active";
       updates["currentPeriodStart"] = start;
       if (end) updates["currentPeriodEnd"] = end;
+      if (meta.userId) {
+        trackPurchase({
+          eventId: metaEventId,
+          userId: meta.userId,
+          phone: meta.phone,
+          amountPaise: payEntity?.amount ?? 0
+        });
+      }
       break;
     }
     case "subscription.completed":
@@ -86117,7 +86263,7 @@ var interactive_stories_default = router15;
 
 // src/routes/feedback.ts
 var import_express16 = __toESM(require_express2(), 1);
-import crypto7 from "crypto";
+import crypto8 from "crypto";
 var router16 = (0, import_express16.Router)();
 var feedbackSchema = external_exports.object({
   type: external_exports.enum(["suggestion", "feature", "bug", "other"]).default("suggestion"),
@@ -86131,7 +86277,7 @@ router16.post("/feedback", async (req, res) => {
   }
   const userId = req.auth?.sub ?? null;
   await db.insert(feedbackTable).values({
-    id: crypto7.randomUUID(),
+    id: crypto8.randomUUID(),
     userId,
     type: parsed.data.type,
     message: parsed.data.message

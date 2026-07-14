@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { db, paymentEventsTable, subscriptionsTable } from "@workspace/db";
+import { db, paymentEventsTable, subscriptionsTable, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { trackStartTrial, trackPurchase } from "../lib/meta-capi";
 
 const router: IRouter = Router();
 
@@ -39,6 +40,7 @@ router.post("/webhooks/razorpay", async (req, res) => {
           current_start?: number;
           current_end?: number;
           charge_at?: number;
+          notes?: { meta_event_id?: string; meta_trial_event_id?: string; [key: string]: string | undefined };
         };
       };
       payment?: {
@@ -66,6 +68,7 @@ router.post("/webhooks/razorpay", async (req, res) => {
 
   let dbSubId: string | null = null;
   let dbUserId: string | null = null;
+  let dbUserPhone: string | null = null;
 
   if (rzpSubId) {
     const [sub] = await db
@@ -75,6 +78,16 @@ router.post("/webhooks/razorpay", async (req, res) => {
       .limit(1);
     dbSubId = sub?.id ?? null;
     dbUserId = sub?.userId ?? null;
+
+    // Fetch user phone for Meta CAPI user matching
+    if (dbUserId) {
+      const [user] = await db
+        .select({ phoneNumber: usersTable.phoneNumber })
+        .from(usersTable)
+        .where(eq(usersTable.id, dbUserId))
+        .limit(1);
+      dbUserPhone = user?.phoneNumber ?? null;
+    }
   }
 
   try {
@@ -112,10 +125,21 @@ router.post("/webhooks/razorpay", async (req, res) => {
     return;
   }
 
-  // Process subscription state change
+  // Process subscription state change + Meta CAPI tracking
   if (dbSubId) {
     try {
-      await processSubscriptionEvent(eventType, dbSubId, subEntity, payEntity, req.log);
+      await processSubscriptionEvent(
+        eventType,
+        dbSubId,
+        subEntity,
+        payEntity,
+        req.log,
+        {
+          userId: dbUserId,
+          phone: dbUserPhone,
+          razorpayEventId,
+        },
+      );
     } catch (err) {
       // Update the already-inserted row to reflect processing failure
       await db
@@ -143,11 +167,17 @@ async function processSubscriptionEvent(
     current_start?: number;
     current_end?: number;
     charge_at?: number;
+    notes?: { meta_event_id?: string; meta_trial_event_id?: string; [key: string]: string | undefined };
   } | undefined,
-  _payEntity: { id?: string; amount?: number; subscription_id?: string } | undefined,
+  payEntity: { id?: string; amount?: number; subscription_id?: string } | undefined,
   log: typeof logger,
+  meta: { userId: string | null; phone: string | null; razorpayEventId: string },
 ): Promise<void> {
   const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+  // Prefer the event ID stored in Razorpay notes for client-server deduplication;
+  // fall back to a UUID derived from the Razorpay event ID so it's always unique.
+  const metaEventId = subEntity?.notes?.meta_event_id ?? meta.razorpayEventId;
 
   switch (eventType) {
     case "subscription.activated": {
@@ -157,6 +187,15 @@ async function processSubscriptionEvent(
       updates["state"] = "trial";
       updates["trialStartedAt"] = new Date();
       updates["trialEndsAt"] = trialEndsAt;
+
+      // Fire Meta CAPI StartTrial (fire-and-forget)
+      if (meta.userId) {
+        trackStartTrial({
+          eventId: metaEventId,
+          userId: meta.userId,
+          phone: meta.phone,
+        });
+      }
       break;
     }
     case "subscription.charged": {
@@ -165,6 +204,16 @@ async function processSubscriptionEvent(
       updates["state"] = "active";
       updates["currentPeriodStart"] = start;
       if (end) updates["currentPeriodEnd"] = end;
+
+      // Fire Meta CAPI Purchase (fire-and-forget)
+      if (meta.userId) {
+        trackPurchase({
+          eventId: metaEventId,
+          userId: meta.userId,
+          phone: meta.phone,
+          amountPaise: payEntity?.amount ?? 0,
+        });
+      }
       break;
     }
     case "subscription.completed":

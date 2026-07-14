@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { trackRegistrationEvent } from "@/lib/meta-events";
 import React, {
   createContext,
   useCallback,
@@ -224,6 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           access_token?: string;
           refresh_token?: string;
           is_new_user?: boolean;
+          meta_event_id?: string;
           user?: AuthUser;
           current_child?: ChildProfile | null;
           error?: { message?: string } | string;
@@ -249,6 +251,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           subscription: null,
         }));
         loadSubscription();
+        // Fire client-side Meta SDK event using the server-generated event ID so
+        // Meta can deduplicate against the CAPI event already sent server-side.
+        if (data.is_new_user && data.meta_event_id) {
+          trackRegistrationEvent(data.meta_event_id);
+        }
         return { isNewUser: data.is_new_user ?? false };
       } catch {
         return { error: "Could not connect to server" };

@@ -102,6 +102,10 @@ router.post("/subscription/create", requireAuth, async (req, res) => {
   const userId = req.auth!.sub;
   const selectedPlan = parsed.data.plan;
 
+  // Generate a unique event ID for Meta deduplication between CAPI (fired from
+  // the webhook) and the client SDK event (fired after payment confirmation).
+  const metaEventId = crypto.randomUUID();
+
   try {
     const planId = selectedPlan === "monthly"
       ? await getOrCreateMonthlyPlan()
@@ -129,7 +133,9 @@ router.post("/subscription/create", requireAuth, async (req, res) => {
           },
         },
       ],
-      notes: { userId, plan: selectedPlan },
+      // Store meta_event_id in notes so the webhook handler can use it when
+      // firing the CAPI Purchase/StartTrial event, enabling deduplication.
+      notes: { userId, plan: selectedPlan, meta_event_id: metaEventId },
     }) as unknown as Promise<{ id: string; short_url: string }>);
 
     const subId = generateId();
@@ -147,6 +153,9 @@ router.post("/subscription/create", requireAuth, async (req, res) => {
       subscription_id: subId,
       razorpay_subscription_id: rzpSub.id,
       short_url: rzpSub.short_url,
+      // Returned to the client so the mobile SDK can fire the matching event
+      // with the same ID, enabling server↔client deduplication in Meta.
+      meta_event_id: metaEventId,
     });
   } catch (err) {
     req.log.error(err, "Failed to create Razorpay subscription");
