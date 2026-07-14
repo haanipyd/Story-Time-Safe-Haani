@@ -84933,7 +84933,7 @@ async function sendCapiEvents(events) {
       event_name: e.eventName,
       event_time: e.eventTime ?? Math.floor(Date.now() / 1e3),
       event_id: e.eventId,
-      action_source: "app",
+      action_source: "website",
       user_data,
       ...e.customData ? { custom_data: e.customData } : {}
     };
