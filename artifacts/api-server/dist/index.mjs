@@ -85054,10 +85054,12 @@ async function sendOtpViaMSG91(phone, otp) {
   const authKey = process.env["MSG91_AUTH_KEY"];
   const templateId = process.env["MSG91_TEMPLATE_ID"];
   const mobile = toMsg91Mobile(phone);
+  const payload = { mobile, otp };
+  if (templateId) payload["template_id"] = templateId;
   const res = await fetch("https://control.msg91.com/api/v5/otp", {
     method: "POST",
     headers: { authkey: authKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ template_id: templateId, mobile, otp })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error(`MSG91 error ${res.status}: ${await res.text()}`);
 }
@@ -85124,7 +85126,7 @@ router6.post("/auth/request-otp", requestOtpIpLimiter, async (req, res) => {
   const otpHash = await bcryptjs_default.hash(otp, OTP_BCRYPT_COST);
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1e3);
   const [otpRecord] = await db.insert(otpRequestsTable).values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 }).returning({ id: otpRequestsTable.id });
-  const hasMSG91 = !!(process.env["MSG91_AUTH_KEY"] && process.env["MSG91_TEMPLATE_ID"]);
+  const hasMSG91 = !!process.env["MSG91_AUTH_KEY"];
   if (hasMSG91) {
     try {
       await sendOtpViaMSG91(phone_number, otp);
