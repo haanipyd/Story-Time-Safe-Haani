@@ -1,0 +1,1454 @@
+# StoryLamp V1 Expansion — Curiosity Curriculum
+
+## Project context
+
+StoryLamp is an existing mobile application for Indian parents and children. The current application already includes:
+
+* Expo 54
+* React Native 0.81
+* Expo Router
+* React 19
+* React Query
+* Node.js 24
+* Express 5
+* TypeScript
+* PostgreSQL
+* Drizzle ORM
+* Passwordless phone OTP authentication through MSG91
+* JWT access tokens and refresh tokens
+* Razorpay subscriptions
+* Meta Conversions API
+* Audio story catalog
+* Favorites
+* Listening history
+* Continue listening
+* Listening streaks
+* Interactive branching stories
+* Flashcards
+* Multiple child profiles
+* Push notifications
+* Daily picks
+* Parent feedback
+* Admin panel
+* EAS Android production build
+
+The production API is currently deployed at:
+
+`story-time-safe--haanipyd.replit.app`
+
+Do not rebuild the project from scratch.
+
+First inspect the complete existing monorepo, database schema, API routes, authentication flow, mobile navigation, admin panel, subscription logic and existing content models.
+
+Preserve all working features unless a database migration or interface change is clearly required.
+
+Before implementing, create a concise internal implementation plan showing:
+
+1. Existing components that can be reused
+2. Database migrations required
+3. New API endpoints required
+4. New mobile routes required
+5. New admin features required
+6. Existing features that need modification
+7. Risks to current authentication, subscriptions and production data
+
+Do not delete or rename existing production tables, routes or fields without creating a backward-compatible migration.
+
+---
+
+# 1. Product vision
+
+StoryLamp should not be positioned only as an audio-story application.
+
+The expanded product is:
+
+> A personalized vernacular Curiosity Curriculum that helps children become more curious, aware, expressive, imaginative and knowledgeable through stories, picture learning, puzzles, conversations and real-world activities.
+
+The central parent promise is:
+
+> Never wonder what your child should discover next.
+
+StoryLamp should give parents a structured journey rather than an unorganized content library.
+
+Audio stories remain an important part of the product, but the complete experience should contain:
+
+* Audio stories
+* Illustrated stories
+* Words and names
+* Picture learning
+* General knowledge
+* Puzzles
+* Thinking activities
+* Values and emotional learning
+* Parent-child conversations
+* Real-world activities
+* Parent guidance
+* Progress summaries
+* Personalized recommendations
+
+The application must feel useful to the parent even when the child is not directly using the phone.
+
+---
+
+# 2. Initial target customer
+
+Build the guided Curiosity Journey primarily for:
+
+* Parents of children aged 3–6
+* Malayalam-speaking families
+* Parents who already buy books, toys, worksheets or educational content
+* Parents who want their children to become curious, expressive and aware
+* Parents who want meaningful learning without excessive passive screen time
+
+The existing story library can continue supporting children aged 2–10.
+
+Use the following initial age bands:
+
+* 2–3 years
+* 3–4 years
+* 5–6 years
+* 7–8 years
+* 9–10 years
+
+The structured V1 Curiosity Curriculum should initially prioritise the 3–4 and 5–6 age bands.
+
+---
+
+# 3. Core product structure
+
+The primary product structure must be:
+
+```text
+Monthly Theme
+    ↓
+Four Weekly Journeys
+    ↓
+Multiple connected content experiences
+    ↓
+Parent feedback and observation
+    ↓
+Progress summary
+    ↓
+Personalized next recommendation
+```
+
+Each monthly theme should contain four weekly subthemes.
+
+Each weekly journey should ideally contain:
+
+1. One audio or illustrated story
+2. One Picture Explorer set
+3. One puzzle or thinking activity
+4. One parent-child conversation
+5. One offline real-world activity
+6. One values, behaviour or emotional-learning idea
+7. One short parent guidance note
+8. One completion and feedback interaction
+
+All these items should be connected around the same topic.
+
+For example:
+
+```text
+Monthly theme: My Home, My World
+
+Week 1: Rooms in My Home
+Week 2: Objects We Use
+Week 3: My Family at Home
+Week 4: Keeping Our Home Safe and Clean
+```
+
+The child should build connected understanding rather than encounter random, disconnected facts.
+
+---
+
+# 4. Content-heavy product requirement
+
+The application should be designed to support a very large quantity of content without requiring code changes.
+
+The mobile application must provide access to as much relevant content as possible through:
+
+* Curated journeys
+* Content library
+* Search
+* Categories
+* Age filters
+* Language filters
+* Topic filters
+* Content-type filters
+* Difficulty filters
+* Duration filters
+* Recommendations
+* Favorites
+* History
+* Recently added
+* Popular content
+* Related content
+* Continue learning
+* Parent collections
+* Downloaded content where supported
+
+Do not artificially hide most content behind a small daily feed.
+
+The home screen should recommend a clear next activity, but parents must also be able to freely explore the complete available library.
+
+The content architecture should be capable of supporting hundreds or thousands of items.
+
+---
+
+# 5. Launch content architecture
+
+Create support for at least the following monthly themes:
+
+1. Myself and My Body
+2. My Family
+3. My Home
+4. Animals Around Us
+5. Birds and Insects
+6. Food and Where It Comes From
+7. Fruits and Vegetables
+8. Nature and Weather
+9. Water and the Ocean
+10. Vehicles and Travel
+11. Community Helpers
+12. Feelings and Emotions
+13. Friendship and Sharing
+14. Safety and Healthy Habits
+15. Colours, Shapes and Patterns
+16. Numbers in Everyday Life
+17. Space and the Sky
+18. Festivals and Culture
+19. My Neighbourhood
+20. How Things Work
+
+For the first implementation, create at least eight complete theme structures with four weekly journeys each.
+
+This should produce at least:
+
+* 32 weekly journey records
+* 32 story associations
+* 32 Picture Explorer sets
+* 32 conversation modules
+* 32 offline activities
+* 32 puzzle modules
+* 32 parent-guidance notes
+* 32 values or emotional-learning modules
+
+Use existing StoryLamp stories wherever they fit.
+
+Do not duplicate existing stories.
+
+Where finished content is unavailable, create clearly labelled draft or placeholder content that can be edited from the admin panel.
+
+All generated sample content must be stored as editable database records rather than hardcoded inside the application.
+
+---
+
+# 6. Supported content types
+
+Create a flexible shared content model that supports the following content types.
+
+## 6.1 Audio story
+
+Fields should include:
+
+* Title
+* Slug
+* Description
+* Cover image
+* Audio URL
+* Optional illustrated pages
+* Language
+* Age minimum
+* Age maximum
+* Duration
+* Theme
+* Weekly journey
+* Categories
+* Learning objectives
+* Values covered
+* Vocabulary introduced
+* Parent questions
+* Related content
+* Free or Premium
+* Published status
+* Featured status
+* Display order
+
+Reuse the existing story model where possible.
+
+## 6.2 Illustrated story
+
+Support stories that can be read page by page.
+
+Each page should support:
+
+* Page number
+* Illustration
+* Malayalam text
+* English text
+* Audio narration
+* Optional highlighted vocabulary
+
+## 6.3 Picture Explorer
+
+Upgrade the current flashcard feature into a richer Picture Explorer.
+
+Each Picture Explorer set should contain cards with:
+
+* Large image
+* Malayalam name
+* English name
+* Malayalam audio
+* English audio
+* Simple description
+* One interesting fact
+* Related category
+* Parent question
+* “Find it around you” challenge
+* Optional animal or object sound
+
+Example:
+
+```text
+Elephant
+
+Malayalam name
+English name
+Audio pronunciation
+Where it lives
+What it eats
+One interesting fact
+How it differs from another animal
+A movement or sound activity
+```
+
+Parents should be able to swipe, tap for audio and mark cards as explored.
+
+## 6.4 Puzzle
+
+Create reusable puzzle engines instead of hardcoding individual puzzles.
+
+Initially support:
+
+* Image matching
+* Object-to-place matching
+* Category sorting
+* Sort by size
+* Find the different object
+* Complete the pattern
+* Picture sequencing
+* Identify the missing item
+* Simple jigsaw
+* Memory matching
+
+Puzzle content should be configurable through JSON or admin forms.
+
+Each puzzle should support:
+
+* Instructions
+* Images
+* Answer configuration
+* Hint
+* Completion feedback
+* Age band
+* Difficulty
+* Theme
+* Learning objective
+* Free or Premium
+
+## 6.5 Parent-child conversation
+
+Each conversation module should support:
+
+* Conversation title
+* Context for the parent
+* Opening question
+* Follow-up questions
+* Suggested prompts
+* Possible child responses
+* Imagination question
+* Personal-experience question
+* Values question
+* Real-world observation question
+* Malayalam parent audio
+* English parent audio
+* Age band
+* Theme
+* Estimated duration
+
+The questions should help the parent move beyond testing memory.
+
+Use question types such as:
+
+* Recall
+* Observation
+* Comparison
+* Prediction
+* Imagination
+* Personal connection
+* Cause and effect
+* Values
+* Emotional understanding
+
+## 6.6 Offline activity
+
+Each activity should contain:
+
+* Activity title
+* Illustration
+* Age band
+* Estimated duration
+* Indoor or outdoor
+* Materials required
+* No-material alternative
+* Step-by-step instructions
+* Parent audio instructions
+* Learning objective
+* Questions to ask
+* Safety note
+* Completion action
+* Parent feedback
+* Related story or Picture Explorer set
+
+Examples include:
+
+* Find five red objects
+* Sort vegetables by shape
+* Count windows at home
+* Observe the evening sky
+* Draw your family
+* Identify sounds around the home
+* Arrange objects from smallest to largest
+* Act like different animals
+
+## 6.7 Values and emotional learning
+
+Support short modules related to:
+
+* Kindness
+* Sharing
+* Patience
+* Honesty
+* Gratitude
+* Empathy
+* Friendship
+* Courage
+* Responsibility
+* Safety
+* Handling disappointment
+* Understanding emotions
+
+Each module may be connected to a story, conversation or real-life activity.
+
+## 6.8 Parent guidance
+
+Create short parent guidance cards covering:
+
+* How to narrate stories
+* How to ask open-ended questions
+* How to build curiosity
+* How to respond when the child gives a wrong answer
+* Why repetition is useful
+* How to use Malayalam while introducing English
+* How to move from listening to conversation
+* How to reduce passive screen use
+* How to adapt activities for different ages
+* What to do when the child loses interest
+* How to notice emerging interests
+* How to use household routines for learning
+
+Parent guidance should be concise, practical and available in Malayalam and English.
+
+---
+
+# 7. Parent onboarding
+
+Preserve the existing phone OTP authentication.
+
+After successful authentication, guide the parent through child setup.
+
+Collect:
+
+* Child nickname
+* Age band
+* Preferred language
+* Optional secondary language
+* Child interests
+* Parent goals
+* Preferred activity duration
+* Preferred usage time
+* Optional bedtime reminder
+* Whether the child prefers stories, pictures, puzzles or activities
+
+Parent goal options should include:
+
+* Improve language
+* Build curiosity
+* Learn about the world
+* Develop values
+* Improve thinking skills
+* Build imagination
+* Improve parent-child conversations
+* Create a story habit
+* Reduce passive screen time
+
+Do not require the child’s full legal name or exact date of birth.
+
+Allow onboarding to be completed quickly.
+
+Immediately after profile creation, open the child’s first recommended journey.
+
+---
+
+# 8. Home dashboard
+
+The home screen should prioritize the child’s current journey while still giving parents broad access to content.
+
+Include:
+
+## Header
+
+* Child avatar
+* Child nickname
+* Profile switcher
+* Notification icon
+* Parent area access
+
+## Today’s Discovery
+
+Display one recommended activity with:
+
+* Content image
+* Content type
+* Duration
+* Why it is recommended
+* Start or continue button
+
+## Current Curiosity Journey
+
+Show:
+
+* Monthly theme
+* Current week
+* Completed items
+* Remaining items
+* Continue Journey button
+
+## Quick Explore
+
+Provide shortcuts for:
+
+* Stories
+* Picture Explorer
+* Puzzles
+* Activities
+* Conversations
+* Parent Guides
+
+## Continue
+
+Show unfinished:
+
+* Story
+* Puzzle
+* Activity
+* Journey
+
+## Recommended for the child
+
+Use age, language, interests, history and parent feedback.
+
+## Browse more
+
+Show sections such as:
+
+* Bedtime stories
+* Animals
+* Values
+* General knowledge
+* Malayalam favorites
+* New content
+* Popular this week
+* Five-minute activities
+* No-material activities
+
+## Weekly progress
+
+Show a simple parent-oriented summary.
+
+Do not show examination marks or compare the child with other children.
+
+---
+
+# 9. Monthly journey screen
+
+The monthly journey screen should show:
+
+* Theme title
+* Theme illustration
+* Theme description
+* Four weekly stages
+* Completion state
+* Locked or unlocked state
+* Content count
+* Estimated journey duration
+* Certificate or celebration after completion
+
+Each weekly journey card should show:
+
+* Weekly topic
+* Story count
+* Picture Explorer count
+* Puzzle count
+* Conversation count
+* Activity count
+* Progress percentage
+
+Parents should be able to open future weeks and preview the content even when some items are Premium.
+
+---
+
+# 10. Weekly journey screen
+
+The weekly journey screen should present the content in a recommended sequence:
+
+1. Listen
+2. Discover
+3. Think
+4. Talk
+5. Do
+6. Reflect
+
+Use parent-friendly labels:
+
+* Listen to a story
+* Discover pictures and facts
+* Try a puzzle
+* Talk together
+* Explore away from the screen
+* Tell us what your child enjoyed
+
+Parents should not be forced to complete every item in a rigid order.
+
+Allow them to open any available item.
+
+Show a recommended order, but support flexible use.
+
+---
+
+# 11. Parent sharing features
+
+StoryLamp should make it easy to share useful information with parents and other permitted caregivers.
+
+Add sharing for:
+
+## Content sharing
+
+Allow a parent to share:
+
+* Story link
+* Activity instructions
+* Conversation prompt
+* Picture Explorer set
+* Weekly journey
+* Parent guidance card
+
+Support system share sheets, including WhatsApp.
+
+Shared links should use deep links where possible.
+
+If the recipient does not have the app, open an appropriate web preview or app-download page.
+
+Do not publicly expose private child data.
+
+## Shareable activity card
+
+Generate a clean share card containing:
+
+* Activity title
+* Materials
+* Duration
+* Three key steps
+* StoryLamp branding
+* Deep link
+
+## Shareable weekly plan
+
+Allow parents to share the week’s plan with:
+
+* Spouse
+* Grandparent
+* Caregiver
+* Teacher
+
+The shared plan must not include sensitive child information unless the parent explicitly chooses to include the nickname.
+
+## Shareable progress summary
+
+Allow a parent to share a monthly progress card containing:
+
+* Themes explored
+* Stories completed
+* Activities completed
+* Child’s reported interests
+* Positive parent observations
+
+Do not include diagnostic conclusions or comparisons.
+
+## Caregiver access
+
+Prepare the data model for invited caregiver access.
+
+For V1, a parent may share content through WhatsApp without requiring a second account.
+
+Formal caregiver accounts can be added later.
+
+---
+
+# 12. Library and discovery
+
+Create a content-rich library.
+
+Parents should be able to browse by:
+
+* Content type
+* Age group
+* Language
+* Theme
+* Interest
+* Skill area
+* Duration
+* Difficulty
+* Free or Premium
+* Indoor or outdoor
+* Materials or no materials
+
+Include:
+
+* Search
+* Search suggestions
+* Recent searches
+* Favorites
+* History
+* Recently added
+* Trending
+* Staff picks
+* Related content
+* Continue listening
+* Continue journey
+* Downloaded items where supported
+
+Search should cover:
+
+* Titles
+* Descriptions
+* Themes
+* Categories
+* Keywords
+* Vocabulary
+* Learning objectives
+
+Use PostgreSQL full-text search initially unless a better search system already exists in the repository.
+
+---
+
+# 13. Personalization
+
+V1 personalization can be rule-based.
+
+Do not build a complex AI recommendation system yet.
+
+Recommendations should consider:
+
+* Child age band
+* Preferred language
+* Selected interests
+* Parent goals
+* Previously completed content
+* Favorites
+* Content difficulty feedback
+* Content enjoyment feedback
+* Recently explored topics
+* Unexplored themes
+* Time of day
+* Preferred session duration
+
+Avoid recommending the same content repeatedly unless the parent or child has favorited or replayed it.
+
+Show a short explanation such as:
+
+* Because your child likes animals
+* Good for a five-minute activity
+* Continue the current journey
+* Related to a story completed yesterday
+* Recommended for ages 3–4
+
+---
+
+# 14. Parent completion and observation
+
+After a child experiences a content item, allow the parent to submit quick feedback.
+
+Required options:
+
+* Completed
+* Not completed
+* Child enjoyed it
+* Child was not interested
+* Too easy
+* Appropriate
+* Too difficult
+
+Optional fields:
+
+* What did your child say?
+* What did your child notice?
+* What was your child most interested in?
+* Add a short text note
+* Add a private voice note
+* Add a private photo
+
+Photos and voice notes must be private by default.
+
+Do not send private child observations to Meta CAPI or marketing systems.
+
+---
+
+# 15. Progress journey
+
+Progress should focus on exposure, participation and observed interests.
+
+Show:
+
+* Stories completed
+* Picture sets explored
+* Puzzles attempted
+* Conversations completed
+* Offline activities completed
+* Weekly journeys completed
+* Monthly themes completed
+* Parent observations
+* Favorite themes
+* Emerging interests
+* Total family-learning days
+
+Use broad development categories:
+
+* Language and expression
+* Curiosity
+* Awareness of the world
+* Thinking and problem-solving
+* Imagination
+* Values and relationships
+* Observation
+* Parent-child participation
+
+Do not present clinical, diagnostic or academic claims.
+
+Do not compare one child against other children.
+
+Generate a readable monthly summary such as:
+
+> This month, Anaya explored homes, families, household objects and daily routines. She especially enjoyed picture activities and questions about where objects belong.
+
+Allow the parent to share this summary.
+
+---
+
+# 16. Premium subscription
+
+Preserve the existing ₹149 monthly and ₹999 annual plans unless changing them is specifically requested.
+
+Premium should unlock the complete Curiosity Curriculum, not only the audio library.
+
+## Free access
+
+Allow free users to experience:
+
+* One child profile
+* One complete starter journey
+* Several audio stories
+* One Picture Explorer set
+* One puzzle
+* One conversation activity
+* One offline activity
+* Basic progress summary
+
+## Premium access
+
+Premium should include:
+
+* All monthly journeys
+* Complete story library
+* All Picture Explorer content
+* All puzzles
+* All conversations
+* All offline activities
+* Full Parent Corner
+* Multiple child profiles
+* Personalized recommendations
+* Detailed progress journey
+* Monthly summaries
+* New themes and content
+* Offline content where supported
+
+The paywall headline should be:
+
+> Unlock your child’s complete Curiosity Journey
+
+Do not make “unlimited audio stories” the only subscription message.
+
+Trigger the paywall when:
+
+* The parent opens Premium content
+* The parent completes the free starter journey
+* The parent previews the next journey
+* The parent attempts to access a Premium monthly theme
+
+Preserve the existing subscription, webhook and entitlement logic.
+
+Make entitlement checks reusable across every content type.
+
+---
+
+# 17. Admin content-management system
+
+The admin panel is essential because StoryLamp must support a large amount of content.
+
+Expand the existing admin panel to include:
+
+* Themes
+* Weekly journeys
+* Audio stories
+* Illustrated stories
+* Story pages
+* Picture Explorer sets
+* Picture cards
+* Puzzles
+* Conversations
+* Offline activities
+* Values modules
+* Parent guides
+* Categories
+* Tags
+* Learning objectives
+* Age groups
+* Languages
+* Recommendations
+* Premium rules
+* Content scheduling
+
+Every content type should support:
+
+* Draft
+* In review
+* Published
+* Archived
+
+Include:
+
+* Search
+* Filters
+* Pagination
+* Duplicate content
+* Preview
+* Reorder
+* Publish or unpublish
+* Schedule publishing
+* Featured content
+* Free or Premium status
+* Related-content linking
+* Language versions
+* Audit timestamps
+
+## Bulk import
+
+Create bulk content-import tools.
+
+Support at least:
+
+* CSV import
+* JSON import
+* Bulk image URLs
+* Bulk audio URLs
+* Import validation
+* Error report
+* Preview before saving
+* Draft-only import mode
+
+Provide downloadable sample templates for:
+
+* Stories
+* Picture cards
+* Activities
+* Conversations
+* Parent guides
+* Journey mappings
+
+The product team should be able to add hundreds of content records without developer assistance.
+
+## Translation workflow
+
+Support Malayalam and English versions.
+
+Each item should have:
+
+* Source language
+* Translation status
+* Translated fields
+* Review status
+* Reviewer notes
+
+Do not assume that Malayalam content is always a direct translation of English content.
+
+---
+
+# 18. Suggested database entities
+
+Reuse existing entities where possible.
+
+Add or extend models similar to:
+
+```text
+users
+child_profiles
+subscriptions
+stories
+story_pages
+story_progress
+favorites
+listening_history
+
+themes
+theme_translations
+weekly_journeys
+weekly_journey_items
+
+content_items
+content_item_translations
+content_categories
+content_tags
+content_relations
+
+picture_sets
+picture_cards
+
+puzzles
+puzzle_questions
+puzzle_attempts
+
+conversation_modules
+conversation_questions
+
+offline_activities
+activity_steps
+
+parent_guides
+
+learning_objectives
+age_bands
+languages
+
+child_content_progress
+child_theme_progress
+parent_observations
+child_interests
+recommendations
+
+share_links
+share_events
+```
+
+A shared `content_items` table may be used as the base entity for common fields such as:
+
+* ID
+* Type
+* Title
+* Description
+* Language
+* Age range
+* Theme
+* Premium status
+* Publication status
+* Cover image
+* Duration
+* Difficulty
+* Display order
+* Created time
+* Updated time
+
+Use separate subtype tables for content-specific fields.
+
+All migrations must be backward compatible.
+
+---
+
+# 19. API requirements
+
+Create or extend APIs for:
+
+## Parent and child
+
+* Get current child profile
+* Switch child profile
+* Update interests and goals
+* Get personalized home dashboard
+* Get current journey
+* Get weekly journey
+* Complete content
+* Submit feedback
+* Submit observation
+* Get progress summary
+* Get monthly summary
+
+## Content
+
+* List content
+* Search content
+* Filter content
+* Get content details
+* Get related content
+* Get recommendations
+* Favorite content
+* Get favorites
+* Get history
+* Continue content
+
+## Journey
+
+* List themes
+* Get theme
+* Get weekly journey
+* Get journey progress
+* Complete journey item
+* Unlock next journey
+* Preview Premium journey
+
+## Sharing
+
+* Generate secure share link
+* Resolve share link
+* Track share event
+* Revoke share link
+* Generate shareable progress data
+
+## Admin
+
+* CRUD for all content types
+* Bulk import
+* Translation management
+* Content review
+* Publish scheduling
+* Content analytics
+* Journey ordering
+
+Follow existing API conventions, authentication middleware, validation, error handling and Drizzle patterns.
+
+---
+
+# 20. Mobile navigation
+
+Recommended bottom navigation:
+
+1. Home
+2. Journey
+3. Library
+4. Progress
+5. Parent
+
+Keep the audio mini-player visible when audio is active.
+
+Suggested Expo Router sections:
+
+```text
+/(auth)
+/(onboarding)
+/(tabs)/home
+/(tabs)/journey
+/(tabs)/library
+/(tabs)/progress
+/(tabs)/parent
+
+/story/[id]
+/player/[id]
+/picture-set/[id]
+/puzzle/[id]
+/conversation/[id]
+/activity/[id]
+/theme/[id]
+/week/[id]
+/search
+/favorites
+/history
+/paywall
+/subscription
+/settings
+```
+
+Adapt this to the existing route structure rather than creating duplicate routes.
+
+---
+
+# 21. Design direction
+
+Use the visual direction already established in the StoryLamp mockups:
+
+* Warm cream backgrounds
+* Soft purple as the primary action colour
+* Pastel yellow, green and peach accents
+* Rounded cards
+* Friendly illustrations
+* Large readable Malayalam typography
+* Simple icons
+* Generous spacing
+* Calm visual design
+* Parent-friendly rather than game-heavy
+* Minimal visual clutter
+* Clear Premium labels
+* Strong accessibility
+
+The app should feel like a premium children’s book combined with a calm parent assistant.
+
+Do not make it feel like:
+
+* A noisy mobile game
+* A school examination app
+* A video-streaming platform
+* A social-media feed
+* A complex learning-management system
+
+---
+
+# 22. Analytics
+
+Preserve the existing Meta CAPI events for:
+
+* CompleteRegistration
+* Purchase
+
+Do not send child information to Meta.
+
+Add first-party product analytics events such as:
+
+```text
+profile_created
+goal_selected
+theme_viewed
+weekly_journey_started
+content_viewed
+story_started
+story_completed
+picture_set_started
+picture_set_completed
+puzzle_started
+puzzle_completed
+conversation_opened
+activity_started
+activity_completed
+parent_feedback_submitted
+parent_observation_added
+share_clicked
+share_link_created
+paywall_viewed
+checkout_started
+purchase_completed
+subscription_renewed
+subscription_cancelled
+```
+
+Track content IDs, content types, theme IDs, age bands and language without exposing unnecessary personal information.
+
+The main V1 success metric should be:
+
+> Paying families completing at least two Curiosity Journey experiences per week.
+
+---
+
+# 23. Performance and reliability
+
+The expanded content system must not make the application slow.
+
+Implement:
+
+* Paginated API responses
+* React Query caching
+* Image caching
+* Audio preloading only when appropriate
+* Lazy loading
+* Optimized database queries
+* Database indexes
+* Skeleton loading states
+* Empty states
+* Error states
+* Retry handling
+* Poor-network handling
+* Offline-friendly behavior where currently supported
+
+Do not load the entire catalog into memory at once.
+
+---
+
+# 24. Privacy and safety
+
+The parent owns and controls the account.
+
+Requirements:
+
+* No advertisements
+* No public child profiles
+* No public child photos
+* No child-to-child messaging
+* No child location collection
+* No child phone numbers
+* Parent-controlled sharing
+* Private observations
+* Delete child profile
+* Delete parent account
+* Delete private recordings and photos
+* Clear Premium purchase controls
+* Parental gate for sensitive account actions
+
+Do not make developmental, medical or diagnostic claims.
+
+---
+
+# 25. V1 delivery priority
+
+Implement in the following order.
+
+## Phase 1: Foundation
+
+* Inspect existing code
+* Create migrations
+* Add shared content model
+* Add themes
+* Add weekly journeys
+* Add journey-content relationships
+* Preserve existing story functionality
+
+## Phase 2: Core Curiosity Journey
+
+* Monthly theme screen
+* Weekly journey screen
+* Picture Explorer
+* Conversations
+* Offline activities
+* Parent guidance
+* Completion feedback
+
+## Phase 3: Discovery
+
+* Expanded content library
+* Search
+* Filters
+* Related content
+* Recommendations
+* Favorites and history integration
+
+## Phase 4: Progress and sharing
+
+* Progress overview
+* Parent observations
+* Monthly summary
+* Shareable activities
+* Shareable weekly plans
+* Shareable progress summaries
+* Deep links
+
+## Phase 5: Premium integration
+
+* Entitlement rules for all content types
+* Starter journey
+* Premium journey paywall
+* Subscription-state integration
+* Purchase analytics
+
+## Phase 6: Admin and content scale
+
+* Full CRUD
+* Bulk imports
+* Translation workflow
+* Publishing workflow
+* Journey ordering
+* Content preview
+* Content analytics
+
+---
+
+# 26. V1 acceptance criteria
+
+The build is ready for validation when a parent can:
+
+1. Sign in using the existing OTP system
+2. Create a child profile
+3. Select interests and goals
+4. See a personalized home dashboard
+5. Open a monthly theme
+6. Open a weekly journey
+7. Listen to an audio story
+8. Explore a Picture Explorer set
+9. Complete a puzzle
+10. Open parent-child questions
+11. Follow an offline activity
+12. Read or listen to parent guidance
+13. Mark content as completed
+14. Submit enjoyment and difficulty feedback
+15. Add a parent observation
+16. See weekly and monthly progress
+17. Browse the complete content library
+18. Search and filter content
+19. Favorite content
+20. Continue unfinished content
+21. Share an activity or weekly plan through WhatsApp
+22. Experience the free starter journey
+23. View the Premium paywall
+24. Purchase or restore Premium using the existing system
+25. Access Premium journeys after successful entitlement
+26. Manage multiple child profiles
+27. Delete child data or the parent account
+
+An administrator must be able to:
+
+1. Create and edit every content type
+2. Organize content into themes and weekly journeys
+3. Add Malayalam and English versions
+4. Upload images and audio
+5. Bulk import content
+6. Preview content
+7. Publish and unpublish content
+8. Mark content as Free or Premium
+9. View content completion data
+10. Review parent feedback
+
+---
+
+# 27. Important implementation instructions
+
+* Extend the existing StoryLamp monorepo.
+* Do not create a separate prototype repository.
+* Do not replace working authentication.
+* Do not replace working subscription logic.
+* Do not break the current production API.
+* Do not hardcode curriculum content in mobile components.
+* Store all content in PostgreSQL.
+* Use Drizzle migrations.
+* Use TypeScript throughout.
+* Reuse current design components where appropriate.
+* Reuse the current audio player and story history.
+* Keep API contracts backward compatible.
+* Add automated validation for new content schemas.
+* Add tests for critical journey, entitlement and progress logic.
+* Mark generated content as Draft until reviewed.
+* Never automatically publish AI-generated content.
+* Keep private child observations out of marketing analytics.
+
+After inspecting the codebase, begin with the database and shared content architecture. Then implement one complete end-to-end sample theme before expanding the remaining themes.
+
+The first complete sample theme should be:
+
+> My Home, My World
+
+It should include four weekly journeys and all major content types.
+
+Once that theme works end to end, use the same reusable architecture to add the remaining themes and maximum available content.
