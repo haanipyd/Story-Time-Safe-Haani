@@ -8,7 +8,7 @@ import {
   storiesTable,
   subscriptionsTable,
 } from "@workspace/db";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireAdminAuth } from "../middleware/auth";
 import { generateSignedUrl } from "../lib/storage";
 import { z } from "zod/v4";
 import type { DbStory } from "@workspace/db";
@@ -32,6 +32,12 @@ function maskAudio(
   return serialize(story);
 }
 
+// Always strips audioUrl — used on public (unauthenticated) endpoints so that
+// audio is only ever reachable through the authenticated stream-url endpoint.
+function stripAudio(story: DbStory): DbStory & { duration: number } {
+  return serialize({ ...story, audioUrl: "" });
+}
+
 router.get("/stories", async (req, res) => {
   try {
     const stories = await db
@@ -39,7 +45,7 @@ router.get("/stories", async (req, res) => {
       .from(storiesTable)
       .where(eq(storiesTable.isActive, true))
       .orderBy(desc(storiesTable.publishedAt));
-    res.json(stories.map(serialize));
+    res.json(stories.map(stripAudio));
   } catch (err) {
     req.log.error(err, "Failed to list stories");
     res.status(500).json({ error: "Internal server error" });
@@ -54,7 +60,11 @@ router.get("/stories/home", requireAuth, async (req, res) => {
     const freeStories = await db
       .select()
       .from(storiesTable)
-      .where(and(eq(storiesTable.isActive, true), eq(storiesTable.isFree, true)))
+      .where(
+        isFreeUser
+          ? and(eq(storiesTable.isActive, true), eq(storiesTable.isFree, true))
+          : eq(storiesTable.isActive, true),
+      )
       .orderBy(desc(storiesTable.playCount))
       .limit(12);
     const mask = (s: DbStory) => maskAudio(s, isFreeUser);
@@ -259,7 +269,7 @@ router.get("/stories/:id", async (req, res) => {
     res.status(404).json({ error: "Story not found" });
     return;
   }
-  res.json(serialize(story));
+  res.json(stripAudio(story));
 });
 
 const insertStorySchema = z.object({
@@ -276,7 +286,7 @@ const insertStorySchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-router.post("/stories", requireAuth, async (req, res) => {
+router.post("/stories", requireAdminAuth, async (req, res) => {
   const parsed = insertStorySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -296,7 +306,7 @@ router.post("/stories", requireAuth, async (req, res) => {
   }
 });
 
-router.put("/stories/:id", requireAuth, async (req, res) => {
+router.put("/stories/:id", requireAdminAuth, async (req, res) => {
   const putId = String(req.params["id"]);
   const parsed = insertStorySchema.partial().omit({ id: true }).safeParse(req.body);
   if (!parsed.success) {
@@ -320,7 +330,7 @@ router.put("/stories/:id", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/stories/:id", requireAuth, async (req, res) => {
+router.delete("/stories/:id", requireAdminAuth, async (req, res) => {
   const delId = String(req.params["id"]);
   const [story] = await db.delete(storiesTable).where(eq(storiesTable.id, delId)).returning();
   if (!story) {

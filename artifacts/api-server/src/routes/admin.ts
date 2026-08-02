@@ -290,6 +290,10 @@ function adminPage(
             <input type="checkbox" name="published" value="true" checked style="width:auto" />
             Publish immediately
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" name="isFree" value="on" style="width:auto" />
+            Free story (no subscription required)
+          </label>
         </div>
       </form>
     </div>
@@ -404,6 +408,10 @@ function adminPage(
           <input type="checkbox" name="published" id="e_published" value="true" style="width:auto" />
           Published
         </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
+          <input type="checkbox" name="isFree" id="e_isFree" value="on" style="width:auto" />
+          Free story
+        </label>
       </div>
     </form>
   </div>
@@ -487,6 +495,7 @@ function openEdit(s) {
   document.getElementById('e_audioUrl').value = s.audioUrl || '';
   document.getElementById('e_videoUrl').value = s.videoUrl || '';
   document.getElementById('e_published').checked = s.isActive;
+  document.getElementById('e_isFree').checked = !!s.isFree;
   document.getElementById('editForm').action = '/api/admin/stories/' + encodeURIComponent(s.id);
   document.getElementById('editOverlay').classList.add('open');
 }
@@ -905,6 +914,7 @@ router.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
         thumbnailUrl: normalizeMediaUrl(s.thumbnailUrl as string | null) ?? "",
         audioUrl: normalizeMediaUrl(s.audioUrl as string | null) ?? "",
         isActive: s.published !== false,
+        isFree: Boolean(s.isFree),
       }).onConflictDoNothing();
       inserted++;
     } catch (err) {
@@ -931,6 +941,7 @@ router.post("/admin/stories", requireAdminAuth, async (req, res) => {
       thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? "",
       audioUrl: normalizeMediaUrl(b.audioUrl) ?? "",
       isActive: b.published === "true",
+      isFree: b.isFree === "on",
     });
     res.redirect("/api/admin?msg=Story+added+successfully");
   } catch (err: unknown) {
@@ -956,6 +967,7 @@ router.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
         thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? undefined,
         audioUrl: normalizeMediaUrl(b.audioUrl) ?? undefined,
         isActive: b.published === "true",
+        isFree: b.isFree === "on",
       })
       .where(eq(storiesTable.id, id));
     res.redirect("/api/admin?msg=Story+updated+successfully");

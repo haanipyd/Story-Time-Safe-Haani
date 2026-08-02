@@ -278,7 +278,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         addToHistory,
         toggleFavourite,
         freePlayCount: subscription.freePlayCount,
-        isPremium: true,
+        isPremium: subscription.isPremium,
         incrementPlayCount,
         unlockPremium,
       }}

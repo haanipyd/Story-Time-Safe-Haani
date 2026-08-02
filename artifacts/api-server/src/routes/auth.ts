@@ -408,8 +408,9 @@ router.get("/auth/me", requireAuth, async (req, res) => {
 });
 
 // ── POST /auth/test-otp ─────────────────────────────────────────────────────
-// Admin-only: generates a fresh OTP for any phone number and returns it in
-// plain text. Use only for testing when MSG91 is not configured.
+// Dev-only: generates a fresh OTP for any phone number and returns it in
+// plain text. Not registered in production.
+if (process.env["NODE_ENV"] !== "production") {
 router.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
   const parsed = z.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
   if (!parsed.success) {
@@ -436,5 +437,6 @@ router.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
     warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead.",
   });
 });
+} // end NODE_ENV !== 'production' guard
 
 export default router;

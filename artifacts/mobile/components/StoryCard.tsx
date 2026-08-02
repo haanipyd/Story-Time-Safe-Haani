@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import PaywallModal from "@/components/PaywallModal";
 import { useAudio } from "@/context/AudioContext";
 import { useProfile } from "@/context/ProfileContext";
 import { getCategoryById } from "@/data/preferences";
@@ -91,8 +90,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const colors = useColors();
   const router = useRouter();
   const { playStory } = useAudio();
-  const { addToHistory, freePlayCount, isPremium, incrementPlayCount, unlockPremium, toggleFavourite, currentProfile } = useProfile();
-  const [showPaywall, setShowPaywall] = useState(false);
+  const { addToHistory, incrementPlayCount, toggleFavourite, currentProfile } = useProfile();
   const isFavourited = currentProfile?.favourites?.includes(story.id) ?? false;
   const category = getCategoryById(story.category);
   const remoteThumbnail = story.thumbnailUrl ?? null;
@@ -111,12 +109,8 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   }, [story, playStory, addToHistory, incrementPlayCount, router]);
 
   const handlePress = useCallback(() => {
-    if (freePlayCount >= 5 && !isPremium) {
-      setShowPaywall(true);
-      return;
-    }
     doPlay();
-  }, [freePlayCount, isPremium, doPlay]);
+  }, [doPlay]);
 
   const RADIUS = size === "featured" ? 20 : colors.radius;
   const emojiSize = EMOJI_SIZE[size];
@@ -124,17 +118,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
   const metaSize = size === "featured" ? 12 : 11;
 
   return (
-    <>
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onUnlock={() => {
-          unlockPremium();
-          setShowPaywall(false);
-          doPlay();
-        }}
-      />
-      <View style={{ width }}>
+    <View style={{ width }}>
         <TouchableOpacity
           onPress={handlePress}
           activeOpacity={0.88}
@@ -252,7 +236,7 @@ export default function StoryCard({ story, size = "card" }: StoryCardProps) {
           </View>
         ) : null}
       </View>
-    </>
+    </View>
   );
 }
 

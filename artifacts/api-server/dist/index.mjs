@@ -82031,10 +82031,13 @@ function maskAudio(story, isFreeUser) {
   }
   return serialize(story);
 }
+function stripAudio(story) {
+  return serialize({ ...story, audioUrl: "" });
+}
 router4.get("/stories", async (req, res) => {
   try {
     const stories = await db.select().from(storiesTable).where(eq(storiesTable.isActive, true)).orderBy(desc(storiesTable.publishedAt));
-    res.json(stories.map(serialize));
+    res.json(stories.map(stripAudio));
   } catch (err) {
     req.log.error(err, "Failed to list stories");
     res.status(500).json({ error: "Internal server error" });
@@ -82044,7 +82047,9 @@ router4.get("/stories/home", requireAuth, async (req, res) => {
   const { sub: userId, child_id: childId, sub_state: subState } = req.auth;
   const isFreeUser = subState === "free" || subState === "expired";
   if (!childId) {
-    const freeStories = await db.select().from(storiesTable).where(and(eq(storiesTable.isActive, true), eq(storiesTable.isFree, true))).orderBy(desc(storiesTable.playCount)).limit(12);
+    const freeStories = await db.select().from(storiesTable).where(
+      isFreeUser ? and(eq(storiesTable.isActive, true), eq(storiesTable.isFree, true)) : eq(storiesTable.isActive, true)
+    ).orderBy(desc(storiesTable.playCount)).limit(12);
     const mask2 = (s) => maskAudio(s, isFreeUser);
     res.json({
       today_pick: freeStories[0] ? mask2(freeStories[0]) : null,
@@ -82166,7 +82171,7 @@ router4.get("/stories/:id", async (req, res) => {
     res.status(404).json({ error: "Story not found" });
     return;
   }
-  res.json(serialize(story));
+  res.json(stripAudio(story));
 });
 var insertStorySchema2 = external_exports.object({
   id: external_exports.string().min(1).max(10),
@@ -82181,7 +82186,7 @@ var insertStorySchema2 = external_exports.object({
   isFree: external_exports.boolean().default(false),
   isActive: external_exports.boolean().default(true)
 });
-router4.post("/stories", requireAuth, async (req, res) => {
+router4.post("/stories", requireAdminAuth, async (req, res) => {
   const parsed = insertStorySchema2.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
@@ -82200,7 +82205,7 @@ router4.post("/stories", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.put("/stories/:id", requireAuth, async (req, res) => {
+router4.put("/stories/:id", requireAdminAuth, async (req, res) => {
   const putId = String(req.params["id"]);
   const parsed = insertStorySchema2.partial().omit({ id: true }).safeParse(req.body);
   if (!parsed.success) {
@@ -82219,7 +82224,7 @@ router4.put("/stories/:id", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.delete("/stories/:id", requireAuth, async (req, res) => {
+router4.delete("/stories/:id", requireAdminAuth, async (req, res) => {
   const delId = String(req.params["id"]);
   const [story] = await db.delete(storiesTable).where(eq(storiesTable.id, delId)).returning();
   if (!story) {
@@ -82497,6 +82502,10 @@ function adminPage(stories, iStories, message) {
             <input type="checkbox" name="published" value="true" checked style="width:auto" />
             Publish immediately
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
+            <input type="checkbox" name="isFree" value="on" style="width:auto" />
+            Free story (no subscription required)
+          </label>
         </div>
       </form>
     </div>
@@ -82611,6 +82620,10 @@ function adminPage(stories, iStories, message) {
           <input type="checkbox" name="published" id="e_published" value="true" style="width:auto" />
           Published
         </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;cursor:pointer">
+          <input type="checkbox" name="isFree" id="e_isFree" value="on" style="width:auto" />
+          Free story
+        </label>
       </div>
     </form>
   </div>
@@ -82694,6 +82707,7 @@ function openEdit(s) {
   document.getElementById('e_audioUrl').value = s.audioUrl || '';
   document.getElementById('e_videoUrl').value = s.videoUrl || '';
   document.getElementById('e_published').checked = s.isActive;
+  document.getElementById('e_isFree').checked = !!s.isFree;
   document.getElementById('editForm').action = '/api/admin/stories/' + encodeURIComponent(s.id);
   document.getElementById('editOverlay').classList.add('open');
 }
@@ -83097,7 +83111,8 @@ router5.post("/admin/stories/bulk", requireAdminAuth, async (req, res) => {
         description: String(s.description),
         thumbnailUrl: normalizeMediaUrl(s.thumbnailUrl) ?? "",
         audioUrl: normalizeMediaUrl(s.audioUrl) ?? "",
-        isActive: s.published !== false
+        isActive: s.published !== false,
+        isFree: Boolean(s.isFree)
       }).onConflictDoNothing();
       inserted++;
     } catch (err) {
@@ -83121,7 +83136,8 @@ router5.post("/admin/stories", requireAdminAuth, async (req, res) => {
       description: b.description,
       thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? "",
       audioUrl: normalizeMediaUrl(b.audioUrl) ?? "",
-      isActive: b.published === "true"
+      isActive: b.published === "true",
+      isFree: b.isFree === "on"
     });
     res.redirect("/api/admin?msg=Story+added+successfully");
   } catch (err) {
@@ -83143,7 +83159,8 @@ router5.post("/admin/stories/:id", requireAdminAuth, async (req, res) => {
       description: b.description,
       thumbnailUrl: normalizeMediaUrl(b.thumbnailUrl) ?? void 0,
       audioUrl: normalizeMediaUrl(b.audioUrl) ?? void 0,
-      isActive: b.published === "true"
+      isActive: b.published === "true",
+      isFree: b.isFree === "on"
     }).where(eq(storiesTable.id, id));
     res.redirect("/api/admin?msg=Story+updated+successfully");
   } catch (err) {
@@ -85268,25 +85285,27 @@ router6.get("/auth/me", requireAuth, async (req, res) => {
     created_at: user.createdAt
   });
 });
-router6.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
-  const parsed = external_exports.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: { code: "VALIDATION", message: external_exports.prettifyError(parsed.error) } });
-    return;
-  }
-  const { phone_number } = parsed.data;
-  const otp = generateOtp();
-  const otpHash = await bcryptjs_default.hash(otp, OTP_BCRYPT_COST);
-  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1e3);
-  const [otpRecord] = await db.insert(otpRequestsTable).values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 }).returning({ id: otpRequestsTable.id });
-  req.log.info({ phone: maskPhone(phone_number) }, "Test OTP generated via admin endpoint");
-  res.json({
-    otp,
-    request_id: otpRecord.id,
-    expires_in: OTP_TTL_MINUTES * 60,
-    warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead."
+if (process.env["NODE_ENV"] !== "production") {
+  router6.post("/auth/test-otp", requireAdminAuth, async (req, res) => {
+    const parsed = external_exports.object({ phone_number: phoneSchema }).strict().safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "VALIDATION", message: external_exports.prettifyError(parsed.error) } });
+      return;
+    }
+    const { phone_number } = parsed.data;
+    const otp = generateOtp();
+    const otpHash = await bcryptjs_default.hash(otp, OTP_BCRYPT_COST);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1e3);
+    const [otpRecord] = await db.insert(otpRequestsTable).values({ phoneNumber: phone_number, otpHash, expiresAt, attempts: 0 }).returning({ id: otpRequestsTable.id });
+    req.log.info({ phone: maskPhone(phone_number) }, "Test OTP generated via admin endpoint");
+    res.json({
+      otp,
+      request_id: otpRecord.id,
+      expires_in: OTP_TTL_MINUTES * 60,
+      warning: "This endpoint is for testing only. Remove MSG91 credentials to disable SMS and use this instead."
+    });
   });
-});
+}
 var auth_default = router6;
 
 // src/routes/subscriptions.ts

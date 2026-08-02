@@ -18,7 +18,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import PaywallModal from "@/components/PaywallModal";
 import { useAudio } from "@/context/AudioContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useProgress } from "@/context/ProgressContext";
@@ -104,12 +103,10 @@ export default function PlayerScreen() {
   const progressViewRef = useRef<View>(null);
   const isDraggingRef = useRef(false);
   const { stories: allStories, getStoryById } = useStoriesContext();
-  const { freePlayCount, isPremium, incrementPlayCount, unlockPremium, addToHistory } = useProfile();
+  const { incrementPlayCount, addToHistory } = useProfile();
   const { recordAudioPlay } = useProgress();
   const playRecordedRef = React.useRef(false);
 
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [pendingStory, setPendingStory] = useState<Story | null>(null);
   const [showTimerSheet, setShowTimerSheet] = useState(false);
   const [seekFlashSide, setSeekFlashSide] = useState<"left" | "right" | null>(null);
 
@@ -275,9 +272,8 @@ export default function PlayerScreen() {
     : null;
 
   const doPlayStory = useCallback((s: Story) => {
-    if (freePlayCount >= 3 && !isPremium) { setPendingStory(s); setShowPaywall(true); return; }
     incrementPlayCount(); addToHistory(s.id); playStory(s);
-  }, [freePlayCount, isPremium, incrementPlayCount, addToHistory, playStory]);
+  }, [incrementPlayCount, addToHistory, playStory]);
 
   const handlePrev = () => { if (prevStory && !isLoading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(prevStory); } };
   const handleNext = () => { if (nextStory && !isLoading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); doPlayStory(nextStory); } };
@@ -288,10 +284,6 @@ export default function PlayerScreen() {
     setSleepTimer(minutes);
     setShowTimerSheet(false);
   };
-  const handlePaywallUnlock = useCallback(() => {
-    unlockPremium(); setShowPaywall(false);
-    if (pendingStory) { incrementPlayCount(); addToHistory(pendingStory.id); playStory(pendingStory); setPendingStory(null); }
-  }, [pendingStory, unlockPremium, incrementPlayCount, addToHistory, playStory]);
 
   const topPadding = Platform.OS === "web" ? 20 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 20 : insets.bottom;
@@ -528,12 +520,6 @@ export default function PlayerScreen() {
           </View>
         ) : null}
       </ScrollView>
-
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => { setShowPaywall(false); setPendingStory(null); }}
-        onUnlock={handlePaywallUnlock}
-      />
 
       <Modal
         visible={showTimerSheet}
